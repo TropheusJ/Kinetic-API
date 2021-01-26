@@ -1,0 +1,209 @@
+buildscript {
+    repositories {
+        //maven { url = 'https://files.minecraftforge.net/maven' }
+        jcenter()
+        mavenCentral()
+	maven { url = 'https://oss.sonatype.org/content/groups/public/' }
+	maven { url = 'https://maven.fabricmc.net/' }
+    }
+    dependencies {
+        //classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+	//classpath("me.ramidzkh:yarnforge-plugin:1.3.0-SNAPSHOT")
+    }
+}
+plugins {
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'com.matthewprenger.cursegradle' version '1.4.0'
+}
+//apply plugin: 'net.minecraftforge.gradle'
+// Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+//apply plugin: 'yarnforge-plugin'
+boolean dev = System.getenv('RELEASE') == null || System.getenv('RELEASE').equals('false');
+
+ext.buildnumber = 0
+project.buildnumber = System.getenv('BUILD_NUMBER') != null ? System.getenv('BUILD_NUMBER') : "custom"
+
+version = "mc${minecraft_version}_v${mod_version}" + (dev ? "+${buildnumber}" : '')
+group = 'com.simibubi.create'
+//archivesBaseName = 'create'
+
+//sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+
+/*minecraft {
+    //mappings channel: 'snapshot', version: '20200920-mixed-1.16.3'
+	accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    
+    runs {		
+		client {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'info'
+            property 'fml.earlyprogresswindow', 'false'
+            mods {
+                create {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run/server')
+            property 'forge.logging.console.level', 'info'
+            mods {
+                create {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES,REGISTRYDUMP'
+            property 'forge.logging.console.level', 'debug'
+            property 'fml.earlyprogresswindow', 'false'
+            args '--mod', 'create', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources')
+            mods {
+                create {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}*/
+
+/*compileJava {
+    options.compilerArgs = ["-Xdiags:verbose"]
+}*/
+
+/*sourceSets.main.resources {
+    srcDir 'src/generated/resources'
+}*/
+
+repositories {
+    maven {
+        // location of the maven that hosts JEI files (And TiC)
+        name "Progwml6 maven"
+        url "https://dvs1.progwml6.com/files/maven/"
+    }
+    /*
+    maven {
+        // location of a maven mirror for JEI files, as a fallback
+        name "ModMaven"
+        url "https://modmaven.k-4u.nl"
+    }*/
+    maven {
+        //location of the maven for vazkii's mods
+        name "blamejared"
+        url "http://maven.blamejared.com/"
+    }
+    maven {
+        //location of the maven for mixed mappings and registrate
+        name = "tterrag maven"
+        url = "https://maven.tterrag.com/"
+    }
+}
+
+configurations {
+    shade
+}
+
+dependencies {
+    //minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    def registrate = "com.tterrag.registrate:Registrate:MC1.16.2-${registrate_version}"
+    /*implementation fg.deobf(registrate)
+    shade registrate
+
+    // compile against the JEI API but do not include it at runtime
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}:${jei_version}:api")
+    // at runtime, use the full JEI jar
+    runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}:${jei_version}")
+
+    // i'll leave this here commented for easier testing
+    //runtimeOnly fg.deobf("vazkii.arl:AutoRegLib:1.4-35.69")
+    //runtimeOnly fg.deobf("vazkii.quark:Quark:r2.0-212.984")
+    // runtimeOnly fg.deobf("slimeknights.mantle:Mantle:1.16.3-1.6.40")
+    // runtimeOnly fg.deobf("slimeknights.tconstruct:TConstruct:1.16.3-3.0.1.24")
+}*/
+
+    /*jar {
+        classifier = 'slim'
+        manifest {
+            attributes([
+                    "Specification-Title"     : "create",
+                    "Specification-Vendor"    : "simibubi",
+                    "Specification-Version"   : "1",
+                    "Implementation-Title"    : project.name,
+                    "Implementation-Version"  : "${version}",
+                    "Implementation-Vendor"   : "simibubi",
+                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+            ])
+        }
+    }*/
+/*
+    shadowJar {
+        classifier = ''
+        configurations = [project.configurations.shade]
+        relocate 'com.tterrag.registrate', 'com.simibubi.create.repack.registrate'
+    }
+
+    reobf {
+        shadowJar {}
+    }
+
+    String getChangelogText() {
+        def changelogFile = file('changelog.txt')
+        String str = ''
+        int lineCount = 0
+        boolean done = false
+        changelogFile.eachLine {
+            if (done || it == null) {
+                return
+            }
+            if (it.size() > 1) {
+                def temp = it
+                if (lineCount == 0) {
+                    temp = "Create ${version}"
+                    temp = "<span style=\"font-size: 18px; color: #333399;\">Create v${mod_version}</span>&nbsp;&nbsp;<em>for Minecraft ${minecraft_version}</em><br/>"
+                } else if (it.startsWith('-')) {
+                    temp = "&nbsp;&nbsp;&nbsp;$temp<br/>"
+                    temp = temp.replaceAll("(\\S+\\/\\S+)#([0-9]+)\\b", "<a href=\"https://github.com/\$1/issues/\$2\">\$0</a>");
+                    temp = temp.replaceAll("#([0-9]+)\\b(?!<\\/a>)", "<a href=\"https://github.com/$github_project/issues/\$1\">\$0</a>");
+                } else {
+                    temp = "<h4>$temp</h4>"
+                }
+                str += temp
+                lineCount++
+            } else {
+                str += "<p>Please submit any Issues you come across on the&nbsp;<a href=\"https://github.com/${github_project}/issues\" rel=\"nofollow\">Issue Tracker</a>.</p>"
+                done = true
+            }
+        }
+        return str
+    }*/
+
+//changelog debugging
+//new File("changelog.html").write getChangelogText()
+/*
+    tasks.curseforge.enabled = !dev && project.hasProperty('simi_curseforge_key')
+
+    curseforge {
+        if (project.hasProperty('simi_curseforge_key')) {
+            apiKey = project.simi_curseforge_key
+        }
+
+        project {
+            id = project.projectId
+            changelog = System.getenv('CHANGELOG') == null || System.getenv('CHANGELOG').equals('none') ? getChangelogText() : System.getenv('CHANGELOG')
+            changelogType = 'html'
+            releaseType = project.curse_type
+            mainArtifact(shadowJar) {
+                displayName = "Create - ${version}"
+            }
+            relations {
+                optionalDependency 'jei'
+            }
+        }
+    }*/
+}
