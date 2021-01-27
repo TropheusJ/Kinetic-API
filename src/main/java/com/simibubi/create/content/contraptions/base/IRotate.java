@@ -14,6 +14,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
+import org.apache.commons.codec.language.bm.Lang;
 
 public interface IRotate extends IWrenchable {
 
@@ -34,7 +35,7 @@ public interface IRotate extends IWrenchable {
 		public int getParticleSpeed() {
 			return this == NONE ? 10 : this == MEDIUM ? 20 : 30;
 		}
-
+/*todo: configs
 		public static SpeedLevel of(float speed) {
 			speed = Math.abs(speed);
 
@@ -57,7 +58,7 @@ public interface IRotate extends IWrenchable {
 				return 0;
 			}
 		}
-
+*/
 		public static Text getFormattedSpeedText(float speed, boolean overstressed){
 			SpeedLevel speedLevel = of(speed);
 

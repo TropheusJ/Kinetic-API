@@ -56,7 +56,7 @@ import net.minecraftforge.fml.event.lifecycle.GatherDataEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 */
 
- class Create implements ModInitializer {
+ public class Create implements ModInitializer {
 
  	// strings for things
 	 public static final String ID = "create";
@@ -71,7 +71,8 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 		 // item group creation
 		final ItemGroup CREATE = FabricItemGroupBuilder.build(new Identifier(ID, "group"), () -> new ItemStack(Blocks.DIRT)); //todo: fix block
 		/*
-		i dont know why this is "ChorusFruitItem" but its probably important
+		todo: i dont know why this is "ChorusFruitItem" but its probably important
+
 		 ChorusFruitItem baseCreativeTab = new CreateItemGroup();
 		 ChorusFruitItem palettesCreativeTab = new PalettesItemGroup();
 		*/
@@ -90,6 +91,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 /*		//final NonNullLazyValue<CreateRegistrate> registrate = CreateRegistrate.lazy(ID);
  todo: figure out what all this means
+
 		 Create() {
 			IEventBus modEventBus = FMLJavaModLoadingContext.get()
 					.getModEventBus();
