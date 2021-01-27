@@ -98,10 +98,10 @@ public class AllFluids {
 		return null;
 	}
 
-	/**
+	*
 	 * Removing alpha from tint prevents optifine from forcibly applying biome
 	 * colors to modded fluids (Makes translucent fluids disappear)
-	 */
+	 *
 	private static class NoColorFluidAttributes extends FluidAttributes {
 
 		protected NoColorFluidAttributes(Builder builder, cut fluid) {

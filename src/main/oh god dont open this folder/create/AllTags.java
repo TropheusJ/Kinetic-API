@@ -1,5 +1,8 @@
 package com.simibubi.create;
 
+import com.simibubi.create.foundation.data.CreateRegistrate;
+
+
 import static com.simibubi.create.AllTags.NameSpace.FORGE;
 import static com.simibubi.create.AllTags.NameSpace.MC;
 import static com.simibubi.create.AllTags.NameSpace.MOD;
@@ -7,7 +10,6 @@ import static com.simibubi.create.AllTags.NameSpace.TIC;
 
 import java.util.function.Function;
 
-import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.utility.EmptyNamedTag;
 import com.simibubi.create.foundation.utility.Lang;
 import com.tterrag.registrate.builders.BlockBuilder;
