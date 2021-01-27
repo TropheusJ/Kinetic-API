@@ -9,3 +9,6 @@ The entirety(?) of Create has already been remapped from MCP to Yarn, and other 
 Cut (yes, cut. not copy.) and paste a file or set of files from "oh god dont open this folder" into src. Fix errors and PR.
 Keep your code and organization consistent with the original mod. Only exception is comments - please comment everything.
 note: build.gradle.old and gradle.properties.old are the files from the original mod unchanged. 
+
+## Development Roadmap 
+I'm starting with the basics. literally. Stuff from create.content.contraptions.base needs to come first, everything relies on that.

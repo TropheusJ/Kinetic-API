@@ -1,7 +1,9 @@
 package com.simibubi.create.content.contraptions.base;
 
-import com.simibubi.create.foundation.item.ItemDescription.Palette;
+//import com.simibubi.create.foundation.item.ItemDescription.Palette;
 import net.minecraft.block.BeetrootsBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BeehiveBlockEntity;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.client.color.world.GrassColors;
@@ -13,23 +15,23 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.MobSpawnerLogic;
-import net.minecraftforge.common.ToolType;
+//import net.minecraftforge.common.ToolType;
 
-public abstract class KineticBlock extends BeetrootsBlock implements IRotate {
+public abstract class KineticBlock extends Block implements IRotate {
 
-	protected static final Palette color = Palette.Red;
+	//protected static final Palette color = Palette.Red; todo: tooltips(?)
 
-	public KineticBlock(c properties) {
+	public KineticBlock(Settings properties) {
 		super(properties);
 	}
-
+	//oh god these are forge things not minecraft things
 	@Override
-	public ToolType getHarvestTool(PistonHandler state) {
+	public ToolType getHarvestTool(BlockState state) {
 		return null;
 	}
 
 	@Override
-	public boolean canHarvestBlock(PistonHandler state, MobSpawnerLogic world, BlockPos pos, PlayerAbilities player) {
+	public boolean canHarvestBlock(BlockState state, MobSpawnerLogic world, BlockPos pos, PlayerAbilities player) {
 		for (ToolType toolType : player.dC().getToolTypes()) {
 			if (isToolEffective(state, toolType))
 				return true;

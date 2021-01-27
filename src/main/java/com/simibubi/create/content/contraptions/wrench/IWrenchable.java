@@ -1,5 +1,5 @@
 package com.simibubi.create.content.contraptions.wrench;
-
+/* todo: future stuff
 import bnx;
 import com.simibubi.create.content.contraptions.base.DirectionalAxisKineticBlock;
 import com.simibubi.create.content.contraptions.base.DirectionalKineticBlock;
@@ -11,60 +11,70 @@ import com.simibubi.create.content.contraptions.base.RotatedPillarKineticBlock;
 import com.simibubi.create.foundation.utility.BlockHelper;
 import com.simibubi.create.foundation.utility.DirectionHelper;
 import com.simibubi.create.foundation.utility.VoxelShaper;
+*/
 import net.minecraft.block.BeetrootsBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BeehiveBlockEntity;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.entity.player.ItemCooldownManager;
 import net.minecraft.entity.player.PlayerAbilities;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 public interface IWrenchable {
+/*
+	default ActionResult onWrenched(BlockState state, ItemUsageContext context) {
+		World world = context.getWorld();
+		BlockState rotated = getRotatedBlockState(state, context.getSide());
+		if (!rotated.canPlaceAt(world, context.getBlockPos()))
+			return ActionResult.PASS;
+		//todo: kineticTileEntity
+		//KineticTileEntity.switchToBlockState(world, context.getBlockPos(), updateAfterWrenched(rotated, context));
 
-	default Difficulty onWrenched(PistonHandler state, bnx context) {
-		GameMode world = context.p();
-		PistonHandler rotated = getRotatedBlockState(state, context.j());
-		if (!rotated.a(world, context.a()))
-			return Difficulty.PASS;
-
-		KineticTileEntity.switchToBlockState(world, context.a(), updateAfterWrenched(rotated, context));
-
-		BeehiveBlockEntity te = context.p()
-			.c(context.a());
+		BlockEntity te = context.getWorld()
+			.getBlockEntity(context.getBlockPos());
 		if (te != null)
-			te.s();
-		if (te instanceof GeneratingKineticTileEntity) {
-			((GeneratingKineticTileEntity) te).updateGeneratedRotation();
-		}
+			//te.updateContainingBlockInfo(); //todo: what
+	//	todo: generatingKineticTileEntity
+	//	if (te instanceof GeneratingKineticTileEntity) {
+	//		((GeneratingKineticTileEntity) te).updateGeneratedRotation();
+	//	}
 
-		return Difficulty.SUCCESS;
+		return ActionResult.SUCCESS;
 	}
-
-	default PistonHandler updateAfterWrenched(PistonHandler newState, bnx context) {
+*/
+	default BlockState updateAfterWrenched(BlockState newState, ItemUsageContext context) {
 		return newState;
 	}
 
-	default Difficulty onSneakWrenched(PistonHandler state, bnx context) {
-		GameMode world = context.p();
-		BlockPos pos = context.a();
-		PlayerAbilities player = context.n();
+	default ActionResult onSneakWrenched(BlockState state, ItemUsageContext context) {
+		World world = context.getWorld();
+		BlockPos pos = context.getBlockPos();
+		PlayerEntity player = context.getPlayer();
 		if (world instanceof ServerWorld) {
-			if (player != null && !player.b_())
-				BeetrootsBlock.a(state, (ServerWorld) world, pos, world.c(pos), player, context.m())
+			if (player != null && !player.isCreative())
+				Block.getDroppedStacks(state, (ServerWorld) world, pos, world.getBlockEntity(pos), player, context.getStack())
 					.forEach(itemStack -> {
-						player.bm.a(world, itemStack);
+						player.inventory.offerOrDrop(world, itemStack);
 					});
-			state.a((ServerWorld) world, pos, ItemCooldownManager.tick);
-			world.b(pos, false);
+			state.onStacksDropped((ServerWorld) world, pos, ItemStack.EMPTY);
+			world.breakBlock(pos, false);
 		}
-		return Difficulty.SUCCESS;
+		return ActionResult.SUCCESS;
 	}
-
-	default PistonHandler getRotatedBlockState(PistonHandler originalState, Direction targetedFace) {
-		PistonHandler newState = originalState;
+/*todo: lots of stuff to add in the future
+	default BlockState getRotatedBlockState(BlockState originalState, Direction targetedFace) {
+		BlockState newState = originalState;
 
 		if (targetedFace.getAxis() == Direction.Axis.Y) {
 			if (BlockHelper.hasBlockStateProperty(originalState, HorizontalAxisKineticBlock.HORIZONTAL_AXIS))
@@ -107,5 +117,5 @@ public interface IWrenchable {
 				.equals(targetedFace.getAxis()));
 		}
 		return newState;
-	}
+	} */
 }
