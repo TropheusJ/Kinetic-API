@@ -11,4 +11,4 @@ Keep your code and organization consistent with the original mod. Only exception
 note: build.gradle.old and gradle.properties.old are the files from the original mod unchanged. 
 
 ## Development Roadmap 
-I'm starting with the basics. literally. Stuff from create.content.contraptions.base needs to come first, everything relies on that.
+The regular mod is going to be split into multiple for this port. This repo is going to be for the rotation and contraption API/engine/whatever it is. I'm starting with the basics. literally. Stuff from create.content.contraptions.base needs to come first, everything relies on that.
