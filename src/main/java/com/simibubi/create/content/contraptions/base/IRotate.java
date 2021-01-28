@@ -5,6 +5,7 @@ import com.simibubi.create.content.contraptions.wrench.IWrenchable;
 //import com.simibubi.create.foundation.config.AllConfigs;
 //import com.simibubi.create.foundation.item.ItemDescription;
 //import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.text.LiteralText;
@@ -14,6 +15,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.world.WorldView;
 import org.apache.commons.codec.language.bm.Lang;
 
 public interface IRotate extends IWrenchable {
@@ -122,11 +124,11 @@ public interface IRotate extends IWrenchable {
 			}*/
 		}
 
-		public boolean hasShaftTowards(ItemConvertible world, BlockPos pos, PistonHandler state, Direction face);
+		public boolean hasShaftTowards(WorldView world, BlockPos pos, BlockState state, Direction face);
 
-		public boolean hasIntegratedCogwheel(ItemConvertible world, BlockPos pos, PistonHandler state);
+		public boolean hasIntegratedCogwheel(WorldView world, BlockPos pos, BlockState state);
 
-		public Axis getRotationAxis(PistonHandler state);
+		public Axis getRotationAxis(BlockState state);
 
 		public default SpeedLevel getMinimumRequiredSpeedLevel() {
 			return SpeedLevel.NONE;

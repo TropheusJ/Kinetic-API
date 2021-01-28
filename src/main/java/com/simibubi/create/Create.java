@@ -70,13 +70,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 		 // item group creation
 		final ItemGroup CREATE = FabricItemGroupBuilder.build(new Identifier(ID, "group"), () -> new ItemStack(Blocks.DIRT)); //todo: fix block
-		/*
-		todo: i dont know why this is "ChorusFruitItem" but its probably important
-
-		 ChorusFruitItem baseCreativeTab = new CreateItemGroup();
-		 ChorusFruitItem palettesCreativeTab = new PalettesItemGroup();
-		*/
-
+		 // ???
 		 Gson GSON = new GsonBuilder().setPrettyPrinting()
 				.disableHtmlEscaping()
 				.create();

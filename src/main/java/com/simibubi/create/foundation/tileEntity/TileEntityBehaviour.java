@@ -2,12 +2,15 @@ package com.simibubi.create.foundation.tileEntity;
 
 import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
 import net.minecraft.block.entity.BeehiveBlockEntity;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.World;
 
 public abstract class TileEntityBehaviour {
 
@@ -68,26 +71,26 @@ public abstract class TileEntityBehaviour {
 	}
 
 	public BlockPos getPos() {
-		return tileEntity.o();
+		return tileEntity.getPos();
 	}
 
-	public GameMode getWorld() {
-		return tileEntity.v();
+	public World getWorld() {
+		return tileEntity.getWorld();
 	}
 
-	public static <T extends TileEntityBehaviour> T get(MobSpawnerLogic reader, BlockPos pos,
-			BehaviourType<T> type) {
-		return get(reader.c(pos), type);
+	public static <T extends TileEntityBehaviour> T get(BlockView reader, BlockPos pos,
+		BehaviourType<T> type) {
+		return get(reader.getBlockEntity(pos), type);
 	}
 	
-	public static <T extends TileEntityBehaviour> void destroy(MobSpawnerLogic reader, BlockPos pos,
+	public static <T extends TileEntityBehaviour> void destroy(BlockView reader, BlockPos pos,
 			BehaviourType<T> type) {
-		T behaviour = get(reader.c(pos), type);
+		T behaviour = get(reader.getBlockEntity(pos), type);
 		if (behaviour != null)
 			behaviour.destroy();
 	}
 
-	public static <T extends TileEntityBehaviour> T get(BeehiveBlockEntity te, BehaviourType<T> type) {
+	public static <T extends TileEntityBehaviour> T get(BlockEntity te, BehaviourType<T> type) {
 		if (te == null)
 			return null;
 		if (!(te instanceof SmartTileEntity))

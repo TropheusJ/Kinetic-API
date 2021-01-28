@@ -7,15 +7,20 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BellBlockEntity;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.entity.StructureBlockBlockEntity;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.Tickable;
+/* todo: replace these
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
-
-public abstract class SmartTileEntity extends SyncedTileEntity implements StructureBlockBlockEntity {
+*/
+public abstract class SmartTileEntity extends SyncedTileEntity implements Tickable {
 
 	private Map<BehaviourType<?>, TileEntityBehaviour> behaviours;
 	private boolean initialized;
@@ -23,7 +28,7 @@ public abstract class SmartTileEntity extends SyncedTileEntity implements Struct
 	private int lazyTickRate;
 	private int lazyTickCounter;
 
-	public SmartTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public SmartTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		behaviours = new HashMap<>();
 		initialized = false;
@@ -44,8 +49,8 @@ public abstract class SmartTileEntity extends SyncedTileEntity implements Struct
 	public void addBehavioursDeferred(List<TileEntityBehaviour> behaviours) {}
 
 	@Override
-	public void aj_() {
-		if (!initialized && n()) {
+	public void tick() {
+		if (!initialized && hasWorld()) {
 			initialize();
 			initialized = true;
 		}
@@ -66,7 +71,7 @@ public abstract class SmartTileEntity extends SyncedTileEntity implements Struct
 	}
 
 	@Override
-	public final CompoundTag a(CompoundTag compound) {
+	public final CompoundTag toTag(CompoundTag compound) {
 		write(compound, false);
 		return compound;
 	}
@@ -78,26 +83,26 @@ public abstract class SmartTileEntity extends SyncedTileEntity implements Struct
 	}
 
 	@Override
-	public final void readClientUpdate(PistonHandler state, CompoundTag tag) {
+	public final void readClientUpdate(BlockState state, CompoundTag tag) {
 		fromTag(state, tag, true);
 	}
 
 	@Override
-	public final void a(PistonHandler state, CompoundTag tag) {
+	public final void fromTag(BlockState state, CompoundTag tag) {
 		fromTag(state, tag, false);
 	}
 
 	/**
 	 * Hook only these in future subclasses of STE
 	 */
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		if (firstNbtRead) {
 			firstNbtRead = false;
 			ArrayList<TileEntityBehaviour> list = new ArrayList<>();
 			addBehavioursDeferred(list);
 			list.forEach(b -> behaviours.put(b.getType(), b));
 		}
-		super.a(state, compound);
+		super.fromTag(state, compound);
 		behaviours.values()
 			.forEach(tb -> tb.read(compound, clientPacket));
 	}
@@ -106,15 +111,15 @@ public abstract class SmartTileEntity extends SyncedTileEntity implements Struct
 	 * Hook only these in future subclasses of STE
 	 */
 	protected void write(CompoundTag compound, boolean clientPacket) {
-		super.a(compound);
+		super.toTag(compound);
 		behaviours.values()
 			.forEach(tb -> tb.write(compound, clientPacket));
 	}
 
 	@Override
-	public void al_() {
+	public void markRemoved() {
 		forEachBehaviour(TileEntityBehaviour::remove);
-		super.al_();
+		super.markRemoved();
 	}
 
 	public void setLazyTickRate(int slowTickRate) {
@@ -148,7 +153,7 @@ public abstract class SmartTileEntity extends SyncedTileEntity implements Struct
 			return (T) behaviours.get(type);
 		return null;
 	}
-	
+	/*todo: item and fluid handling
 	protected boolean isItemHandlerCap(Capability<?> cap) {
 		return cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY;
 	}
@@ -156,5 +161,5 @@ public abstract class SmartTileEntity extends SyncedTileEntity implements Struct
 	protected boolean isFluidHandlerCap(Capability<?> cap) {
 		return cap == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY;
 	}
-
+*/
 }
