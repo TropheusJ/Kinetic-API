@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.simibubi.create.content.contraptions.base.KineticTileEntity;
-import com.simibubi.create.content.contraptions.components.flywheel.FlywheelTileEntity;
-import com.simibubi.create.foundation.advancement.AllTriggers;
+//import com.simibubi.create.content.contraptions.components.flywheel.FlywheelTileEntity;
+//import com.simibubi.create.foundation.advancement.AllTriggers;
 
 public class KineticNetwork {
 
@@ -40,12 +40,13 @@ public class KineticNetwork {
 	public void addSilently(KineticTileEntity te, float lastCapacity, float lastStress) {
 		if (members.containsKey(te))
 			return;
+		/*todo: flywheels
 		if (te.isSource()) {
 			unloadedCapacity -= lastCapacity * getStressMultiplierForSpeed(te.getGeneratedSpeed());
 			float addedStressCapacity = te.calculateAddedStressCapacity();
 			sources.put(te, addedStressCapacity);
 			containsFlywheel |= te instanceof FlywheelTileEntity;
-		}
+		}*/
 
 		unloadedStress -= lastStress * getStressMultiplierForSpeed(te.getTheoreticalSpeed());
 		float stressApplied = te.calculateStressApplied();

@@ -23,7 +23,7 @@ import com.simibubi.create.foundation.utility.Lang;
 import net.minecraft.block.BeetrootsBlock;
 import net.minecraft.block.entity.BeehiveBlockEntity;
 import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.entity.StructureBlockBlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.client.texture.StatusEffectSpriteManager;
 import net.minecraft.nbt.CompoundTag;
@@ -31,13 +31,14 @@ import net.minecraft.nbt.NbtHelper;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.AxisDirection;
 import net.minecraft.world.GameMode;
 
 public abstract class KineticTileEntity extends SmartTileEntity
-	implements StructureBlockBlockEntity, IHaveGoggleInformation, IHaveHoveringInformation {
+	implements Tickable, IHaveGoggleInformation, IHaveHoveringInformation {
 
 	public @Nullable Long network;
 	public @Nullable BlockPos source;
@@ -57,7 +58,7 @@ public abstract class KineticTileEntity extends SmartTileEntity
 	private float lastStressApplied;
 	private float lastCapacityProvided;
 
-	public KineticTileEntity(BellBlockEntity<?> typeIn) {
+	public KineticTileEntity(BlockEntityType<?> typeIn) {
 		super(typeIn);
 		effects = new KineticEffectHandler(this);
 		updateSpeed = true;

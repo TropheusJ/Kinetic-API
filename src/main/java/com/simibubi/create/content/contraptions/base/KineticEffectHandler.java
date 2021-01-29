@@ -3,10 +3,13 @@ package com.simibubi.create.content.contraptions.base;
 import java.util.Random;
 
 import com.simibubi.create.content.contraptions.base.IRotate.SpeedLevel;
-import com.simibubi.create.content.contraptions.particle.RotationIndicatorParticleData;
-import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.content.contraptions.base.KineticBlock;
+//import com.simibubi.create.content.contraptions.particle.RotationIndicatorParticleData;
+//import com.simibubi.create.foundation.advancement.AllTriggers;
 import com.simibubi.create.foundation.utility.VecHelper;
 import net.minecraft.block.BeetrootsBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
@@ -14,7 +17,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 public class KineticEffectHandler {
 
@@ -28,9 +33,9 @@ public class KineticEffectHandler {
 	}
 
 	public void tick() {
-		GameMode world = kte.v();
+		World world = kte.getWorld();
 
-		if (world.v) {
+		if (world.isClient) {
 			if (overStressedTime > 0)
 				if (--overStressedTime == 0)
 					if (kte.isOverStressed()) {
@@ -58,16 +63,16 @@ public class KineticEffectHandler {
 	}
 
 	public void spawnEffect(ParticleEffect particle, float maxMotion, int amount) {
-		GameMode world = kte.v();
+		World world = kte.getWorld();
 		if (world == null)
 			return;
-		if (!world.v)
+		if (!world.isClient)
 			return;
-		Random r = world.t;
+		Random r = world.random;
 		for (int i = 0; i < amount; i++) {
-			EntityHitResult motion = VecHelper.offsetRandomly(EntityHitResult.a, r, maxMotion);
-			EntityHitResult position = VecHelper.getCenterOf(kte.o());
-			world.addParticle(particle, position.entity, position.c, position.d, motion.entity, motion.c, motion.d);
+			Vec3d motion = VecHelper.offsetRandomly(Vec3d.ZERO, r, maxMotion);
+			Vec3d position = VecHelper.getCenterOf(kte.getPos());
+			world.addParticle(particle, position.x, position.y, position.z, motion.x, motion.y, motion.z);
 		}
 	}
 
@@ -76,8 +81,8 @@ public class KineticEffectHandler {
 		if (speed == 0)
 			return;
 
-		PistonHandler state = kte.p();
-		BeetrootsBlock block = state.b();
+		BlockState state = kte.getCachedState();
+		Block block = state.getBlock();
 		if (!(block instanceof KineticBlock))
 			return;
 
@@ -86,20 +91,20 @@ public class KineticEffectHandler {
 		float radius2 = kb.getParticleTargetRadius();
 
 		Axis axis = kb.getRotationAxis(state);
-		BlockPos pos = kte.o();
-		GameMode world = kte.v();
+		BlockPos pos = kte.getPos();
+		World world = kte.getWorld();
 		if (axis == null)
 			return;
 		if (world == null)
 			return;
 
 		char axisChar = axis.name().charAt(0);
-		EntityHitResult vec = VecHelper.getCenterOf(pos);
+		Vec3d vec = VecHelper.getCenterOf(pos);
 		SpeedLevel speedLevel = SpeedLevel.of(speed);
 		int color = speedLevel.getColor();
 		int particleSpeed = speedLevel.getParticleSpeed();
 		particleSpeed *= Math.signum(speed);
-
+/*todo: advancements
 		if (world instanceof ServerWorld) {
 			AllTriggers.triggerForNearbyPlayers(AllTriggers.ROTATION, world, pos, 5);
 			RotationIndicatorParticleData particleData =
@@ -110,6 +115,6 @@ public class KineticEffectHandler {
 
 	public void triggerOverStressedEffect() {
 		overStressedTime = overStressedTime == 0 ? 2 : 0;
-	}
+	*/}
 
 }

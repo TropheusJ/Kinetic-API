@@ -95,22 +95,21 @@ todo: kineticTileEntity
 	public void onPlaced(World worldIn, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
 		if (worldIn.isClient)
 			return;
-/*todo: kineticTileEntity
-		BeehiveBlockEntity tileEntity = worldIn.c(pos);
+
+		BlockEntity tileEntity = worldIn.getBlockEntity(pos);
 		if (!(tileEntity instanceof KineticTileEntity))
 			return;
 
 		KineticTileEntity kte = (KineticTileEntity) tileEntity;
 		kte.effects.queueRotationIndicators();
 	}
-todo: KineticAffectHandler
 
 	public float getParticleTargetRadius() {
 		return .65f;
 	}
 
 	public float getParticleInitialRadius() {
-		return .75f;*/
+		return .75f;
 	}
 
 }

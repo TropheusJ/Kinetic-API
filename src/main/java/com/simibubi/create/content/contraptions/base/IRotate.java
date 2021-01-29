@@ -37,8 +37,32 @@ public interface IRotate extends IWrenchable {
 		public int getParticleSpeed() {
 			return this == NONE ? 10 : this == MEDIUM ? 20 : 30;
 		}
+		//replace this code with the code below once configs are done
+		public static SpeedLevel of(float speed) {
+			speed = Math.abs(speed);
+
+			if (speed >= 1) {
+				return FAST;
+			} else if (speed >= 1) {
+				return MEDIUM;
+			}
+			return NONE;
+		}
+
+		public float getSpeedValue() {
+			switch (this) {
+				case FAST:
+					return 1;
+				case MEDIUM:
+					return 1;
+				case NONE:
+				default:
+					return 0;
+			}
+		}
 
 		/*todo: configs
+
 				public static SpeedLevel of(float speed) {
 					speed = Math.abs(speed);
 

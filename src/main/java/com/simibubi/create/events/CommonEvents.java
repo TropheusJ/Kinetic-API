@@ -18,16 +18,13 @@ import com.simibubi.create.foundation.utility.Iterate;
 import com.simibubi.create.foundation.utility.ServerSpeedProvider;
 import com.simibubi.create.foundation.utility.WorldAttached;
 import com.simibubi.create.foundation.utility.recipe.RecipeFinder;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.tag.BlockTags;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.minecraft.world.WorldAccess;
+
+import java.util.logging.Level;
+
+/*todo: oh god just kill me already
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent.Phase;
@@ -44,10 +41,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
-
-@EventBusSubscriber
+*/
+//@EventBusSubscriber
 public class CommonEvents {
-
+/*
 	@SubscribeEvent
 	public static void onServerTick(ServerTickEvent event) {
 		if (event.phase == Phase.START)
@@ -133,22 +130,22 @@ public class CommonEvents {
 	public static void serverStopped(FMLServerStoppingEvent event) {
 		Create.schematicReceiver.shutdown();
 	}
-
-	@SubscribeEvent
-	public static void onLoadWorld(WorldEvent.Load event) {
-		GrassColors world = event.getWorld();
-		Create.redstoneLinkNetworkHandler.onLoadWorld(world);
+*/
+//todo: redstone links
+	ServerWorldEvents.LOAD.register((server, world) -> {
+		WorldAccess world = event.getWorld();
+		//Create.redstoneLinkNetworkHandler.onLoadWorld(world);
 		Create.torquePropagator.onLoadWorld(world);
 	}
 
-	@SubscribeEvent
-	public static void onUnloadWorld(WorldEvent.Unload event) {
-		GrassColors world = event.getWorld();
-		Create.redstoneLinkNetworkHandler.onUnloadWorld(world);
+	ServerWorldEvents.UNLOAD.register((server, world) -> {
+		WorldAccess world = event.getWorld();
+		//Create.redstoneLinkNetworkHandler.onUnloadWorld(world);
 		Create.torquePropagator.onUnloadWorld(world);
 		WorldAttached.invalidateWorld(world);
 	}
 
+/*
 	@SubscribeEvent
 	public static void attachCapabilities(AttachCapabilitiesEvent<apx> event) {
 		CapabilityMinecartController.attach(event);
@@ -165,5 +162,5 @@ public class CommonEvents {
 			ZapperInteractionHandler.trySelect(stack, player);
 		}
 	}
-
+*/
 }
