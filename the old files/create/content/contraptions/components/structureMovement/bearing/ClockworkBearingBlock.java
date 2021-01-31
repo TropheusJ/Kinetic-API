@@ -1,0 +1,53 @@
+package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing;
+
+import com.simibubi.kinetic_api.AllTileEntities;
+import com.simibubi.kinetic_api.foundation.block.ITE;
+import dcg;
+import net.minecraft.block.entity.BeehiveBlockEntity;
+import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.entity.player.PlayerAbilities;
+import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.GameMode;
+import net.minecraft.world.MobSpawnerLogic;
+
+public class ClockworkBearingBlock extends BearingBlock implements ITE<ClockworkBearingTileEntity> {
+
+	public ClockworkBearingBlock(c properties) {
+		super(properties);
+	}
+
+	@Override
+	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+		return AllTileEntities.CLOCKWORK_BEARING.create();
+	}
+
+	@Override
+	public Difficulty a(PistonHandler state, GameMode worldIn, BlockPos pos,
+			PlayerAbilities player, ItemScatterer handIn, dcg hit) {
+		if (!player.eJ())
+			return Difficulty.FAIL;
+		if (player.bt())
+			return Difficulty.FAIL;
+		if (player.b(handIn).a()) {
+			if (!worldIn.v) {
+				withTileEntityDo(worldIn, pos, te -> {
+					if (te.running) {
+						te.disassemble();
+						return;
+					}
+					te.assembleNextTick = true;
+				});
+			}
+			return Difficulty.SUCCESS;
+		}
+		return Difficulty.PASS;
+	}
+
+	@Override
+	public Class<ClockworkBearingTileEntity> getTileEntityClass() {
+		return ClockworkBearingTileEntity.class;
+	}
+
+}

@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "id": "create",
+  "id": "kinetic_api",
   "version": "0.3.1-0.1",
 
-  "name": "Create - Refabricated",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Kinetic API",
+  "description": "The kinetics of the Create mod ported to Fabric and separated from the content.",
   "authors": [
-    "Me!"
+    "The Create Team + Tropheus Jay"
   ],
   "contact": {
     "homepage": "https://fabricmc.net/",
@@ -14,16 +14,16 @@
   },
 
   "license": "GNU GPLv3",
-  "icon": "assets/create/icon.png",
+  "icon": "assets/kinetic_api/icon.png",
 
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.simibubi.create.Create"
+      "com.tropheus_jay.kinetic_api.KineticAPI"
     ]
   },
   "mixins": [
-    "create.mixins.json"
+    "kinetic_api.mixins.json"
   ],
 
   "depends": {

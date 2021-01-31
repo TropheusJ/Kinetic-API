@@ -26,7 +26,7 @@ ext.buildnumber = 0
 project.buildnumber = System.getenv('BUILD_NUMBER') != null ? System.getenv('BUILD_NUMBER') : "custom"
 
 version = "mc${minecraft_version}_v${mod_version}" + (dev ? "+${buildnumber}" : '')
-group = 'com.simibubi.create'
+group = 'com.simibubi.kinetic_api'
 //archivesBaseName = 'create'
 
 //sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
@@ -145,7 +145,7 @@ dependencies {
     shadowJar {
         classifier = ''
         configurations = [project.configurations.shade]
-        relocate 'com.tterrag.registrate', 'com.simibubi.create.repack.registrate'
+        relocate 'com.tterrag.registrate', 'com.simibubi.kinetic_api.repack.registrate'
     }
 
     reobf {
