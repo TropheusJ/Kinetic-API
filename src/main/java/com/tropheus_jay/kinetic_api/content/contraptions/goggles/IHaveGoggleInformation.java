@@ -1,9 +1,10 @@
-package com.simibubi.create.content.contraptions.goggles;
+package com.tropheus_jay.kinetic_api.content.contraptions.goggles;
+
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 
 import java.text.DecimalFormat;
 import java.util.List;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
 
 /*
 * Implement this Interface in the TileEntity class that wants to add info to the screen

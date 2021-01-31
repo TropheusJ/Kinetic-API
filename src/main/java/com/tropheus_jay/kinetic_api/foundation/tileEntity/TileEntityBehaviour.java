@@ -1,6 +1,6 @@
-package com.simibubi.create.foundation.tileEntity;
+package com.tropheus_jay.kinetic_api.foundation.tileEntity;
 
-import com.simibubi.create.foundation.behaviour.BehaviourType;
+import com.tropheus_jay.kinetic_api.foundation.behaviour.BehaviourType;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.nbt.CompoundTag;

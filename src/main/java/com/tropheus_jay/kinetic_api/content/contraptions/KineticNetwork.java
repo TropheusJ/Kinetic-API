@@ -1,12 +1,12 @@
-package com.simibubi.create.content.contraptions;
+package com.tropheus_jay.kinetic_api.content.contraptions;
+
+import com.tropheus_jay.kinetic_api.content.contraptions.base.KineticTileEntity;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import com.simibubi.create.content.contraptions.base.KineticTileEntity;
-//import com.simibubi.create.content.contraptions.components.flywheel.FlywheelTileEntity;
-//import com.simibubi.create.foundation.advancement.AllTriggers;
+//import com.simibubi.kinetic_api.content.contraptions.components.flywheel.FlywheelTileEntity;
+//import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
 
 public class KineticNetwork {
 

@@ -1,14 +1,12 @@
-package com.simibubi.create.content.contraptions.base;
+package com.tropheus_jay.kinetic_api.content.contraptions.base;
 
-import com.simibubi.create.Create;
-import com.simibubi.create.content.contraptions.KineticNetwork;
-import com.simibubi.create.content.contraptions.RotationPropagator;
-import com.simibubi.create.content.contraptions.base.IRotate.SpeedLevel;
-import com.simibubi.create.content.contraptions.base.IRotate.StressImpact;
-import com.simibubi.create.content.contraptions.goggles.IHaveGoggleInformation;
-import com.simibubi.create.content.contraptions.goggles.IHaveHoveringInformation;
-import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.tropheus_jay.kinetic_api.KineticAPI;
+import com.tropheus_jay.kinetic_api.content.contraptions.KineticNetwork;
+import com.tropheus_jay.kinetic_api.content.contraptions.RotationPropagator;
+import com.tropheus_jay.kinetic_api.content.contraptions.goggles.IHaveGoggleInformation;
+import com.tropheus_jay.kinetic_api.content.contraptions.goggles.IHaveHoveringInformation;
+import com.tropheus_jay.kinetic_api.foundation.tileEntity.SmartTileEntity;
+import com.tropheus_jay.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -124,7 +122,7 @@ public abstract class KineticTileEntity extends SmartTileEntity
 		this.capacity = maxStress;
 		this.stress = currentStress;
 		this.networkSize = networkSize;
-		boolean overStressed = maxStress < currentStress && StressImpact.isEnabled();
+		boolean overStressed = maxStress < currentStress && IRotate.StressImpact.isEnabled();
 
 		if (overStressed != this.overStressed) {
 			float prevSpeed = getSpeed();
@@ -229,7 +227,7 @@ public abstract class KineticTileEntity extends SmartTileEntity
 			networkSize = networkTag.getInt("Size");
 			lastStressApplied = networkTag.getFloat("AddedStress");
 			lastCapacityProvided = networkTag.getFloat("AddedCapacity");
-			overStressed = capacity < stress && StressImpact.isEnabled();
+			overStressed = capacity < stress && IRotate.StressImpact.isEnabled();
 		}
 
 		super.fromTag(state, compound, clientPacket);
@@ -307,7 +305,7 @@ public abstract class KineticTileEntity extends SmartTileEntity
 	}
 
 	public KineticNetwork getOrCreateNetwork() {
-		return Create.torquePropagator.getOrCreateNetworkFor(this);
+		return KineticAPI.torquePropagator.getOrCreateNetworkFor(this);
 	}
 
 	public boolean hasNetwork() {
@@ -328,7 +326,7 @@ public abstract class KineticTileEntity extends SmartTileEntity
 		if (!(getCachedState().getBlock() instanceof IRotate))
 			return true;
 		IRotate def = (IRotate) state.getBlock();
-		SpeedLevel minimumRequiredSpeedLevel = def.getMinimumRequiredSpeedLevel();
+		IRotate.SpeedLevel minimumRequiredSpeedLevel = def.getMinimumRequiredSpeedLevel();
 		if (minimumRequiredSpeedLevel == null)
 			return true;
 		/*if (minimumRequiredSpeedLevel == SpeedLevel.MEDIUM)

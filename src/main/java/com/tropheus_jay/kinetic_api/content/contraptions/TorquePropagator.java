@@ -1,11 +1,12 @@
-package com.simibubi.create.content.contraptions;
+package com.tropheus_jay.kinetic_api.content.contraptions;
+
+import com.tropheus_jay.kinetic_api.KineticAPI;
+import com.tropheus_jay.kinetic_api.content.contraptions.base.KineticTileEntity;
+import com.tropheus_jay.kinetic_api.foundation.utility.WorldHelper;
+import net.minecraft.world.WorldAccess;
 
 import java.util.HashMap;
 import java.util.Map;
-import com.simibubi.create.Create;
-import com.simibubi.create.content.contraptions.base.KineticTileEntity;
-import com.simibubi.create.foundation.utility.WorldHelper;
-import net.minecraft.world.WorldAccess;
 
 public class TorquePropagator {
 
@@ -13,12 +14,12 @@ public class TorquePropagator {
 
 	public void onLoadWorld(WorldAccess world) {
 		networks.put(world, new HashMap<>());
-		Create.logger.debug("Prepared Kinetic Network Space for " + WorldHelper.getDimensionID(world));
+		KineticAPI.logger.debug("Prepared Kinetic Network Space for " + WorldHelper.getDimensionID(world));
 	}
 
 	public void onUnloadWorld(WorldAccess world) {
 		networks.remove(world);
-		Create.logger.debug("Removed Kinetic Network Space for " + WorldHelper.getDimensionID(world));
+		KineticAPI.logger.debug("Removed Kinetic Network Space for " + WorldHelper.getDimensionID(world));
 	}
 
 	public KineticNetwork getOrCreateNetworkFor(KineticTileEntity te) {

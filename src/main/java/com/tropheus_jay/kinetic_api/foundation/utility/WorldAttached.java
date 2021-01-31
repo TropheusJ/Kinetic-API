@@ -1,14 +1,13 @@
-package com.simibubi.create.foundation.utility;
+package com.tropheus_jay.kinetic_api.foundation.utility;
+
+import net.minecraft.world.WorldAccess;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.world.WorldAccess;
-import org.jetbrains.annotations.Nullable;
 
 public class WorldAttached<T> {
 

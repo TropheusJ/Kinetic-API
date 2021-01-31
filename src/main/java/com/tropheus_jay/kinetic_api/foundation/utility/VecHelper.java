@@ -1,12 +1,12 @@
-package com.simibubi.create.foundation.utility;
+package com.tropheus_jay.kinetic_api.foundation.utility;
 
 
-import java.util.Random;
-//import javax.annotation.Nullable; tee to do on bottom
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.Direction.Axis;
+
+import java.util.Random;
 
 public class VecHelper {
 

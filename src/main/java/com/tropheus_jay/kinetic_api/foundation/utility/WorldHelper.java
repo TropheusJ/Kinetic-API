@@ -1,6 +1,5 @@
-package com.simibubi.create.foundation.utility;
+package com.tropheus_jay.kinetic_api.foundation.utility;
 
-import net.minecraft.client.color.world.GrassColors;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.WorldAccess;

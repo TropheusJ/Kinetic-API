@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.simibubi.create.mixin",
+  "package": "com.simibubi.kinetic_api.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
   ],

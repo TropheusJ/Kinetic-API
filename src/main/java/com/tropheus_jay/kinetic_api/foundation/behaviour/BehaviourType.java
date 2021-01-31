@@ -1,6 +1,6 @@
-package com.simibubi.create.foundation.behaviour;
+package com.tropheus_jay.kinetic_api.foundation.behaviour;
 
-import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.tropheus_jay.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
 
 public class BehaviourType<T extends TileEntityBehaviour> {
 //https://i.ytimg.com/vi/CZFKWt3S2Ys/maxresdefault.jpg

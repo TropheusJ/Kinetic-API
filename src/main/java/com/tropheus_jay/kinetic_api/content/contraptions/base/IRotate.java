@@ -1,22 +1,14 @@
-package com.simibubi.create.content.contraptions.base;
+package com.tropheus_jay.kinetic_api.content.contraptions.base;
 //todo: imports
-//import com.simibubi.create.content.contraptions.goggles.IHaveGoggleInformation;
-import com.simibubi.create.content.contraptions.wrench.IWrenchable;
-//import com.simibubi.create.foundation.config.AllConfigs;
-//import com.simibubi.create.foundation.item.ItemDescription;
-//import com.simibubi.create.foundation.utility.Lang;
+//import IHaveGoggleInformation;
+
+import com.tropheus_jay.kinetic_api.content.contraptions.wrench.IWrenchable;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.world.WorldView;
-import org.apache.commons.codec.language.bm.Lang;
 
 public interface IRotate extends IWrenchable {
 

@@ -1,17 +1,16 @@
-package com.simibubi.create.foundation.tileEntity;
+package com.tropheus_jay.kinetic_api.foundation.tileEntity;
+
+import com.tropheus_jay.kinetic_api.foundation.behaviour.BehaviourType;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.Tickable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import com.simibubi.create.foundation.behaviour.BehaviourType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.Tickable;
 /* todo: replace these
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;

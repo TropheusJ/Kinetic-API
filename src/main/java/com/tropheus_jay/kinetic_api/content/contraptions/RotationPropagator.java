@@ -1,24 +1,8 @@
-package com.simibubi.create.content.contraptions;
+package com.tropheus_jay.kinetic_api.content.contraptions;
 
-import java.util.LinkedList;
-import java.util.List;
-/* todo: future stuff
-import static net.minecraft.block.enums.BambooLeaves.F;
-import com.simibubi.create.AllBlocks;
-import static com.simibubi.create.content.contraptions.relays.elementary.CogWheelBlock.isLargeCog;
-import com.simibubi.create.content.contraptions.relays.advanced.SpeedControllerBlock;
-import com.simibubi.create.content.contraptions.relays.advanced.SpeedControllerTileEntity;
-import com.simibubi.create.content.contraptions.relays.belt.BeltTileEntity;
-import com.simibubi.create.content.contraptions.relays.elementary.CogWheelBlock;
-import com.simibubi.create.content.contraptions.relays.encased.DirectionalShaftHalvesTileEntity;
-import com.simibubi.create.content.contraptions.relays.encased.EncasedBeltBlock;
-import com.simibubi.create.content.contraptions.relays.encased.SplitShaftTileEntity;
-import com.simibubi.create.content.contraptions.relays.gearbox.GearboxTileEntity;
-import com.simibubi.create.foundation.config.AllConfigs;
-*/
-import com.simibubi.create.content.contraptions.base.IRotate;
-import com.simibubi.create.content.contraptions.base.KineticTileEntity;
-import com.simibubi.create.foundation.utility.Iterate;
+import com.tropheus_jay.kinetic_api.content.contraptions.base.IRotate;
+import com.tropheus_jay.kinetic_api.content.contraptions.base.KineticTileEntity;
+import com.tropheus_jay.kinetic_api.foundation.utility.Iterate;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -26,6 +10,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.world.World;
+
+import java.util.LinkedList;
+import java.util.List;
 
 public class RotationPropagator {
 

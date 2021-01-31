@@ -1,25 +1,16 @@
-package com.simibubi.create.content.contraptions.base;
+package com.tropheus_jay.kinetic_api.content.contraptions.base;
 
-import java.util.Random;
-
-import com.simibubi.create.content.contraptions.base.IRotate.SpeedLevel;
-import com.simibubi.create.content.contraptions.base.KineticBlock;
-//import com.simibubi.create.content.contraptions.particle.RotationIndicatorParticleData;
-//import com.simibubi.create.foundation.advancement.AllTriggers;
-import com.simibubi.create.foundation.utility.VecHelper;
-import net.minecraft.block.BeetrootsBlock;
+import com.tropheus_jay.kinetic_api.foundation.utility.VecHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
+
+import java.util.Random;
 
 public class KineticEffectHandler {
 
@@ -100,7 +91,7 @@ public class KineticEffectHandler {
 
 		char axisChar = axis.name().charAt(0);
 		Vec3d vec = VecHelper.getCenterOf(pos);
-		SpeedLevel speedLevel = SpeedLevel.of(speed);
+		IRotate.SpeedLevel speedLevel = IRotate.SpeedLevel.of(speed);
 		int color = speedLevel.getColor();
 		int particleSpeed = speedLevel.getParticleSpeed();
 		particleSpeed *= Math.signum(speed);

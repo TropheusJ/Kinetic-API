@@ -1,25 +1,16 @@
-package com.simibubi.create.content.contraptions.base;
+package com.tropheus_jay.kinetic_api.content.contraptions.base;
 
-//import com.simibubi.create.foundation.item.ItemDescription.Palette;
-import net.minecraft.block.BeetrootsBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BeehiveBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.*;
-//import net.minecraftforge.common.ToolType;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
-public abstract class KineticBlock extends Block implements IRotate {
+public class KineticBlock extends Block implements IRotate {
 
 	//protected static final Palette color = Palette.Red; todo: tooltips(?)
 
@@ -52,24 +43,29 @@ todo: possibly redundant/unused
 		// onBlockAdded is useless for init, as sometimes the TE gets re-instantiated
 	}
 */
-	//@Override todo: see if these overrides are important. they probably are. kill me.
+	@Override
 	public boolean hasShaftTowards(WorldView world, BlockPos pos, BlockState state, Direction face) {
 		return false;
 	}
 
-	//@Override
+	@Override
 	public boolean hasIntegratedCogwheel(WorldView world, BlockPos pos, BlockState state) {
 		return false;
 	}
 
-	//@Override
+	@Override
+	public Direction.Axis getRotationAxis(BlockState state) {
+		return null;
+	}
+/*
+	@Override
 	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
-	//@Override
+	@Override
 	public abstract BlockEntity createTileEntity(BlockState state, MobSpawnerLogic world);
-
+*/
 	// TODO 1.16 is this the right replacement for updateNeighbors?
 	//@Override
 	/*todo: why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error

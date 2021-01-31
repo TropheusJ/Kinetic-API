@@ -1,78 +1,38 @@
-package com.simibubi.create;
-
-import java.util.Random;
-
-import com.simibubi.create.content.contraptions.TorquePropagator;
-import com.simibubi.create.foundation.utility.WorldAttached;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.*;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.WorldAccess;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+package com.tropheus_jay.kinetic_api;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-/* todo: imports
-import com.simibubi.create.content.CreateItemGroup;
-import com.simibubi.create.content.contraptions.TorquePropagator;
-import com.simibubi.create.content.contraptions.components.structureMovement.train.capability.CapabilityMinecartController;
-import com.simibubi.create.content.logistics.RedstoneLinkNetworkHandler;
-import com.simibubi.create.content.palettes.AllPaletteBlocks;
-import com.simibubi.create.content.palettes.PalettesItemGroup;
-import com.simibubi.create.content.schematics.ServerSchematicLoader;
-import com.simibubi.create.foundation.advancement.AllAdvancements;
-import com.simibubi.create.foundation.advancement.AllTriggers;
-import com.simibubi.create.foundation.command.ChunkUtil;
-import com.simibubi.create.foundation.command.ServerLagger;
-import com.simibubi.create.foundation.config.AllConfigs;
-import com.simibubi.create.foundation.data.CreateRegistrate;
-import com.simibubi.create.foundation.data.LangMerger;
-import com.simibubi.create.foundation.data.recipe.MechanicalCraftingRecipeGen;
-import com.simibubi.create.foundation.data.recipe.ProcessingRecipeGen;
-import com.simibubi.create.foundation.data.recipe.StandardRecipeGen;
-import com.simibubi.create.foundation.networking.AllPackets;
-import com.simibubi.create.foundation.worldgen.AllWorldFeatures;
-import com.tterrag.registrate.util.NonNullLazyValue;
-*/
-import net.minecraft.data.DataGenerator;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.recipe.MapExtendingRecipe;
-import net.minecraft.screen.LecternScreenHandler;
-import net.minecraft.sound.MusicSound;
+import com.tropheus_jay.kinetic_api.content.contraptions.TorquePropagator;
+import com.tropheus_jay.kinetic_api.foundation.utility.WorldAttached;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.minecraft.block.Blocks;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
-import static net.minecraft.block.Blocks.RED_CONCRETE;
-/*
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.world.BiomeLoadingEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.GatherDataEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-*/
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
- public class Create implements ModInitializer {
+import java.util.Random;
+
+ public class KineticAPI implements ModInitializer {
 
  	// strings for things
-	 public static final String ID = "create";
-	 public static final String NAME = "Create";
-	 public static final String VERSION = "0.3";
+	 public static final String ID = "kinetic_api";
+	 public static final String NAME = "KineticAPI";
+	 //public static final String VERSION = "0.3";
+
 	 // non-string things that also do things
 	 public static TorquePropagator torquePropagator = new TorquePropagator();
 	 public static Logger logger = LogManager.getLogger();
+
+
+
 	 @Override
 	public void onInitialize() {
 
-
+		 AllBlocks.init();
 
 		 // item group creation
 		final ItemGroup CREATE = FabricItemGroupBuilder.build(new Identifier(ID, "group"), () -> new ItemStack(Blocks.DIRT)); //todo: fix block
@@ -92,7 +52,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 /*		//final NonNullLazyValue<CreateRegistrate> registrate = CreateRegistrate.lazy(ID);
  todo: figure out what all this means
 
-		 Create() {
+		 KineticAPI() {
 			IEventBus modEventBus = FMLJavaModLoadingContext.get()
 					.getModEventBus();
 
@@ -106,8 +66,8 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 			AllMovementBehaviours.register();
 todo: pretty sure these are events. time to learn mixin.
 
-			modEventBus.addListener(Create::init);
-			MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGH, Create::onBiomeLoad);
+			modEventBus.addListener(KineticAPI::init);
+			MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGH, KineticAPI::onBiomeLoad);
 			modEventBus.addGenericListener(MapExtendingRecipe.class, AllRecipeTypes::register);
 			modEventBus.addGenericListener(LecternScreenHandler.class, AllContainerTypes::register);
 			modEventBus.addGenericListener(ParticleType.class, AllParticleTypes::register);
@@ -165,14 +125,14 @@ todo: pretty sure these are events. time to learn mixin.
 		 // ok it doesnt
 		 ServerWorldEvents.LOAD.register((server, world) -> {
 			 //WorldAccess world = event.getWorld();
-			 //Create.redstoneLinkNetworkHandler.onLoadWorld(world);
-			 Create.torquePropagator.onLoadWorld(world);
+			 //KineticAPI.redstoneLinkNetworkHandler.onLoadWorld(world);
+			 KineticAPI.torquePropagator.onLoadWorld(world);
 		 });
 
 		 ServerWorldEvents.UNLOAD.register((server, world) -> {
 			 //WorldAccess world = event.getWorld();
-			 //Create.redstoneLinkNetworkHandler.onUnloadWorld(world);
-			 Create.torquePropagator.onUnloadWorld(world);
+			 //KineticAPI.redstoneLinkNetworkHandler.onUnloadWorld(world);
+			 KineticAPI.torquePropagator.onUnloadWorld(world);
 			 WorldAttached.invalidateWorld(world);
 		 });
 	}
