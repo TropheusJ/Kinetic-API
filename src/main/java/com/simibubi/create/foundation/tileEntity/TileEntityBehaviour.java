@@ -1,15 +1,12 @@
 package com.simibubi.create.foundation.tileEntity;
 
-import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
-import net.minecraft.block.entity.BeehiveBlockEntity;
+import com.simibubi.create.foundation.behaviour.BehaviourType;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
 import net.minecraft.world.World;
 
 public abstract class TileEntityBehaviour {

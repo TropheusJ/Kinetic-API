@@ -3,13 +3,16 @@ package com.simibubi.create;
 import java.util.Random;
 
 import com.simibubi.create.content.contraptions.TorquePropagator;
+import com.simibubi.create.foundation.utility.WorldAttached;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.*;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.WorldAccess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,11 +68,11 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 	 public static final String VERSION = "0.3";
 	 // non-string things that also do things
 	 public static TorquePropagator torquePropagator;
-
+	 public static Logger logger = LogManager.getLogger();
 	 @Override
 	public void onInitialize() {
 
-		 Logger logger = LogManager.getLogger();
+
 
 		 // item group creation
 		final ItemGroup CREATE = FabricItemGroupBuilder.build(new Identifier(ID, "group"), () -> new ItemStack(Blocks.DIRT)); //todo: fix block
@@ -155,5 +158,22 @@ todo: pretty sure these are events. time to learn mixin.
 			gen.install(new MechanicalCraftingRecipeGen(gen));
 			ProcessingRecipeGen.registerAll(gen);
 		}*/
+
+		 //CommonEvents.java has basically been relocated to here.
+		 //todo: redstone links
+		 //todo: this might work like this? needs testing.
+		 // ok it doesnt
+		 ServerWorldEvents.LOAD.register((server, world) -> {
+			 //WorldAccess world = event.getWorld();
+			 //Create.redstoneLinkNetworkHandler.onLoadWorld(world);
+			 Create.torquePropagator.onLoadWorld(world);
+		 });
+
+		 ServerWorldEvents.UNLOAD.register((server, world) -> {
+			 //WorldAccess world = event.getWorld();
+			 //Create.redstoneLinkNetworkHandler.onUnloadWorld(world);
+			 Create.torquePropagator.onUnloadWorld(world);
+			 WorldAttached.invalidateWorld(world);
+		 });
 	}
 }

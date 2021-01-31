@@ -110,11 +110,11 @@ public class KineticEffectHandler {
 			RotationIndicatorParticleData particleData =
 				new RotationIndicatorParticleData(color, particleSpeed, radius1, radius2, 10, axisChar);
 			((ServerWorld) world).spawnParticles(particleData, vec.entity, vec.c, vec.d, 20, 0, 0, 0, 1);
-		}
+		}*/
 	}
 
 	public void triggerOverStressedEffect() {
 		overStressedTime = overStressedTime == 0 ? 2 : 0;
-	*/}
+	}
 
 }

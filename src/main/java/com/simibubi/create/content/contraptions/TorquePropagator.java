@@ -2,7 +2,6 @@ package com.simibubi.create.content.contraptions;
 
 import java.util.HashMap;
 import java.util.Map;
-import net.minecraft.client.color.world.GrassColors;
 import com.simibubi.create.Create;
 import com.simibubi.create.content.contraptions.base.KineticTileEntity;
 import com.simibubi.create.foundation.utility.WorldHelper;
@@ -25,7 +24,7 @@ public class TorquePropagator {
 	public KineticNetwork getOrCreateNetworkFor(KineticTileEntity te) {
 		Long id = te.network;
 		KineticNetwork network;
-		Map<Long, KineticNetwork> map = networks.get(te.v());
+		Map<Long, KineticNetwork> map = networks.get(te.getWorld());
 		if (id == null)
 			return null;
 

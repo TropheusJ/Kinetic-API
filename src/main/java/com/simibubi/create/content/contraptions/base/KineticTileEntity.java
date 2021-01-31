@@ -1,12 +1,5 @@
 package com.simibubi.create.content.contraptions.base;
 
-import static net.minecraft.util.Formatting.GOLD;
-import static net.minecraft.util.Formatting.GRAY;
-
-import java.util.List;
-
-import javax.annotation.Nullable;
-
 import com.simibubi.create.Create;
 import com.simibubi.create.content.contraptions.KineticNetwork;
 import com.simibubi.create.content.contraptions.RotationPropagator;
@@ -14,28 +7,23 @@ import com.simibubi.create.content.contraptions.base.IRotate.SpeedLevel;
 import com.simibubi.create.content.contraptions.base.IRotate.StressImpact;
 import com.simibubi.create.content.contraptions.goggles.IHaveGoggleInformation;
 import com.simibubi.create.content.contraptions.goggles.IHaveHoveringInformation;
-import com.simibubi.create.foundation.advancement.AllTriggers;
-import com.simibubi.create.foundation.config.AllConfigs;
-import com.simibubi.create.foundation.item.TooltipHelper;
 import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
 import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.create.foundation.utility.Lang;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.texture.StatusEffectSpriteManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.AxisDirection;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public abstract class KineticTileEntity extends SmartTileEntity
 	implements Tickable, IHaveGoggleInformation, IHaveHoveringInformation {
@@ -77,18 +65,19 @@ public abstract class KineticTileEntity extends SmartTileEntity
 	}
 
 	@Override
-	public void aj_() {
-		if (!d.v && needsSpeedUpdate())
+	public void tick() {
+		if (!world.isClient && needsSpeedUpdate())
 			attachKinetics();
 
-		super.aj_();
+		super.tick();
 		effects.tick();
 
-		if (d.v)
+		if (world.isClient)
 			return;
 
 		if (validationCountdown-- <= 0) {
-			validationCountdown = AllConfigs.SERVER.kinetics.kineticValidationFrequency.get();
+			//validationCountdown = AllConfigs.SERVER.kinetics.kineticValidationFrequency.get(); todo: configs
+			validationCountdown = 1;
 			validateKinetics();
 		}
 
@@ -109,10 +98,10 @@ public abstract class KineticTileEntity extends SmartTileEntity
 				return;
 			}
 
-			if (!d.p(source))
+			if (!world.canSetBlock(source))
 				return;
 
-			BeehiveBlockEntity tileEntity = d.c(source);
+			BlockEntity tileEntity = world.getBlockEntity(source);
 			KineticTileEntity sourceTe =
 				tileEntity instanceof KineticTileEntity ? (KineticTileEntity) tileEntity : null;
 			if (sourceTe == null || sourceTe.speed == 0) {
@@ -146,17 +135,19 @@ public abstract class KineticTileEntity extends SmartTileEntity
 	}
 
 	public float calculateAddedStressCapacity() {
-		float capacity = (float) AllConfigs.SERVER.kinetics.stressValues.getCapacityOf(getStressConfigKey());
+		//float capacity = (float) AllConfigs.SERVER.kinetics.stressValues.getCapacityOf(getStressConfigKey()); todo: configs
+		float capacity = 1.0F;
 		this.lastCapacityProvided = capacity;
 		return capacity;
 	}
 
-	protected BeetrootsBlock getStressConfigKey() {
-		return p().b();
+	protected Block getStressConfigKey() {
+		return getCachedState().getBlock();
 	}
 
 	public float calculateStressApplied() {
-		float impact = (float) AllConfigs.SERVER.kinetics.stressValues.getImpactOf(p().b());
+		//float impact = (float) AllConfigs.SERVER.kinetics.stressValues.getImpactOf(p().b()); todo: configs
+		float impact = 1.0F;
 		this.lastStressApplied = impact;
 		return impact;
 	}
@@ -167,19 +158,19 @@ public abstract class KineticTileEntity extends SmartTileEntity
 		if (fromOrToZero || directionSwap)
 			flickerTally = getFlickerScore() + 5;
 
-		if (fromOrToZero && previousSpeed == 0 && !d.v)
-			AllTriggers.getPlayersInRange(d, e, 4)
-				.forEach(p -> AllTriggers.KINETIC_BLOCK.trigger(p, p()));
+		if (fromOrToZero && previousSpeed == 0 && !world.isClient)
+			/*AllTriggers.getPlayersInRange(world, pos, 4)
+				.forEach(p -> AllTriggers.KINETIC_BLOCK.trigger(p, p())); todo: advancements */;
 	}
-
+//todo: not sure if this is correct method. original was "remove"
 	@Override
-	public void al_() {
-		if (!d.v) {
+	public void markRemoved() {
+		if (!world.isClient) {
 			if (hasNetwork())
 				getOrCreateNetwork().remove(this);
 			detachKinetics();
 		}
-		super.al_();
+		super.markRemoved();
 	}
 
 	@Override
@@ -215,7 +206,7 @@ public abstract class KineticTileEntity extends SmartTileEntity
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		boolean overStressedBefore = overStressed;
 		clearKineticInformation();
 
@@ -275,10 +266,10 @@ public abstract class KineticTileEntity extends SmartTileEntity
 
 	public void setSource(BlockPos source) {
 		this.source = source;
-		if (d == null || d.v)
+		if (world == null || world.isClient)
 			return;
 
-		BeehiveBlockEntity tileEntity = d.c(source);
+		BlockEntity tileEntity = world.getBlockEntity(source);
 		if (!(tileEntity instanceof KineticTileEntity)) {
 			removeSource();
 			return;
@@ -325,40 +316,40 @@ public abstract class KineticTileEntity extends SmartTileEntity
 
 	public void attachKinetics() {
 		updateSpeed = false;
-		RotationPropagator.handleAdded(d, e, this);
+		RotationPropagator.handleAdded(world, pos, this);
 	}
 
 	public void detachKinetics() {
-		RotationPropagator.handleRemoved(d, e, this);
+		RotationPropagator.handleRemoved(world, pos, this);
 	}
 
 	public boolean isSpeedRequirementFulfilled() {
-		PistonHandler state = p();
-		if (!(p().b() instanceof IRotate))
+		BlockState state = getCachedState();
+		if (!(getCachedState().getBlock() instanceof IRotate))
 			return true;
-		IRotate def = (IRotate) state.b();
+		IRotate def = (IRotate) state.getBlock();
 		SpeedLevel minimumRequiredSpeedLevel = def.getMinimumRequiredSpeedLevel();
 		if (minimumRequiredSpeedLevel == null)
 			return true;
-		if (minimumRequiredSpeedLevel == SpeedLevel.MEDIUM)
+		/*if (minimumRequiredSpeedLevel == SpeedLevel.MEDIUM)
 			return Math.abs(getSpeed()) >= AllConfigs.SERVER.kinetics.mediumSpeed.get();
 		if (minimumRequiredSpeedLevel == SpeedLevel.FAST)
-			return Math.abs(getSpeed()) >= AllConfigs.SERVER.kinetics.fastSpeed.get();
+			return Math.abs(getSpeed()) >= AllConfigs.SERVER.kinetics.fastSpeed.get(); todo: configs */
 		return true;
 	}
 
-	public static void switchToBlockState(GameMode world, BlockPos pos, PistonHandler state) {
-		if (world.v)
+	public static void switchToBlockState(World world, BlockPos pos, BlockState state) {
+		if (world.isClient)
 			return;
 
-		BeehiveBlockEntity tileEntityIn = world.c(pos);
-		PistonHandler currentState = world.d_(pos);
+		BlockEntity tileEntityIn = world.getBlockEntity(pos);
+		BlockState currentState = world.getBlockState(pos);
 		boolean isKinetic = tileEntityIn instanceof KineticTileEntity;
 
 		if (currentState == state)
 			return;
 		if (tileEntityIn == null || !isKinetic) {
-			world.a(pos, state, 3);
+			world.setBlockState(pos, state, 3);
 			return;
 		}
 
@@ -368,13 +359,13 @@ public abstract class KineticTileEntity extends SmartTileEntity
 				.remove(tileEntity);
 		tileEntity.detachKinetics();
 		tileEntity.removeSource();
-		world.a(pos, state, 3);
+		world.setBlockState(pos, state, 3);
 	}
 
 	@Override
 	public void addBehaviours(List<TileEntityBehaviour> behaviours) {}
 
-	@Override
+	/* @Override
 	public boolean addToTooltip(List<Text> tooltip, boolean isPlayerSneaking) {
 		boolean notFastEnough = !isSpeedRequirementFulfilled() && getSpeed() != 0;
 
@@ -398,13 +389,13 @@ public abstract class KineticTileEntity extends SmartTileEntity
 		}
 
 		return false;
-	}
+	} todo: configs */
 
 	@Override
 	public boolean addToGoggleTooltip(List<Text> tooltip, boolean isPlayerSneaking) {
 		boolean added = false;
 		float stressAtBase = calculateStressApplied();
-
+/* todo: something with lang
 		if (calculateStressApplied() != 0 && StressImpact.isEnabled()) {
 			tooltip.add(componentSpacing.copy().append(Lang.translate("gui.goggles.kinetic_stats")));
 			tooltip.add(componentSpacing.copy().append(Lang.translate("tooltip.stressImpact").formatted(Formatting.GRAY)));
@@ -415,7 +406,7 @@ public abstract class KineticTileEntity extends SmartTileEntity
 				.append(Lang.translate("generic.unit.stress")).append(" ").formatted(Formatting.AQUA)).append(Lang.translate("gui.goggles.at_current_speed").formatted(Formatting.DARK_GRAY)));
 
 			added = true;
-		}
+		} */
 
 		return added;
 

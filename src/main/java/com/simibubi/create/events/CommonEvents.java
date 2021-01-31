@@ -1,5 +1,5 @@
 package com.simibubi.create.events;
-
+/*
 import apx;
 import com.simibubi.create.AllFluids;
 import com.simibubi.create.Create;
@@ -24,7 +24,7 @@ import net.minecraft.world.WorldAccess;
 
 import java.util.logging.Level;
 
-/*todo: oh god just kill me already
+
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent.Phase;
@@ -44,6 +44,9 @@ import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 */
 //@EventBusSubscriber
 public class CommonEvents {
+    /* THIS FILE IS REDUNDANT
+    ACTUAL CODE IS IN Create.java
+     */
 /*
 	@SubscribeEvent
 	public static void onServerTick(ServerTickEvent event) {
@@ -130,22 +133,7 @@ public class CommonEvents {
 	public static void serverStopped(FMLServerStoppingEvent event) {
 		Create.schematicReceiver.shutdown();
 	}
-*/
-//todo: redstone links
-	ServerWorldEvents.LOAD.register((server, world) -> {
-		WorldAccess world = event.getWorld();
-		//Create.redstoneLinkNetworkHandler.onLoadWorld(world);
-		Create.torquePropagator.onLoadWorld(world);
-	}
 
-	ServerWorldEvents.UNLOAD.register((server, world) -> {
-		WorldAccess world = event.getWorld();
-		//Create.redstoneLinkNetworkHandler.onUnloadWorld(world);
-		Create.torquePropagator.onUnloadWorld(world);
-		WorldAttached.invalidateWorld(world);
-	}
-
-/*
 	@SubscribeEvent
 	public static void attachCapabilities(AttachCapabilitiesEvent<apx> event) {
 		CapabilityMinecartController.attach(event);

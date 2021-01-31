@@ -6,13 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import javax.annotation.Nullable;
 import net.minecraft.client.color.world.GrassColors;
+import net.minecraft.world.WorldAccess;
+import org.jetbrains.annotations.Nullable;
 
 public class WorldAttached<T> {
 
-	static List<Map<GrassColors, ?>> allMaps = new ArrayList<>();
-	Map<GrassColors, T> attached;
+	static List<Map<WorldAccess, ?>> allMaps = new ArrayList<>();
+	Map<WorldAccess, T> attached;
 	private Supplier<T> factory;
 
 	public WorldAttached(Supplier<T> factory) {
@@ -21,12 +22,12 @@ public class WorldAttached<T> {
 		allMaps.add(attached);
 	}
 	
-	public static void invalidateWorld(GrassColors world) {
+	public static void invalidateWorld(WorldAccess world) {
 		allMaps.forEach(m -> m.remove(world));
 	}
 	
 	@Nullable
-	public T get(GrassColors world) {
+	public T get(WorldAccess world) {
 		T t = attached.get(world);
 		if (t != null)
 			return t;
@@ -35,7 +36,7 @@ public class WorldAttached<T> {
 		return entry;
 	}
 	
-	public void put(GrassColors world, T entry) {
+	public void put(WorldAccess world, T entry) {
 		attached.put(world, entry);
 	}
 	

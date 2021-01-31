@@ -130,11 +130,11 @@ public interface IRotate extends IWrenchable {
 				else return StressImpact.LOW;
 			}
 
-			/*todo: more configs
+
 			public static boolean isEnabled() {
-				return !AllConfigs.SERVER.kinetics.disableStress.get();
+				return false; //!AllConfigs.SERVER.kinetics.disableStress.get(); todo: more configs
 			}
-			*/
+
 			/*public static Text getFormattedStressText(double stressPercent) {
 				StressImpact stressLevel = of(stressPercent);
 				Formatting color = stressLevel.getRelativeColor();

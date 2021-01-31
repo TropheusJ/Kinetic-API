@@ -6,13 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.foundation.behaviour.BehaviourType;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BellBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.block.entity.StructureBlockBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Tickable;
 /* todo: replace these

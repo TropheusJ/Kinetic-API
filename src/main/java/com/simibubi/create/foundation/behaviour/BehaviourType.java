@@ -1,4 +1,4 @@
-package com.simibubi.create.foundation.tileEntity.behaviour;
+package com.simibubi.create.foundation.behaviour;
 
 import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
 
