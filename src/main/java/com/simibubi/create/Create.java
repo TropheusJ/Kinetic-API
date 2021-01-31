@@ -67,7 +67,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 	 public static final String NAME = "Create";
 	 public static final String VERSION = "0.3";
 	 // non-string things that also do things
-	 public static TorquePropagator torquePropagator;
+	 public static TorquePropagator torquePropagator = new TorquePropagator();
 	 public static Logger logger = LogManager.getLogger();
 	 @Override
 	public void onInitialize() {
