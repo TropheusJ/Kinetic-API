@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.utility.outliner;
+package com.tropheus_jay.kinetic_api.foundation.utility.outliner;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -6,11 +6,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import afj;
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBox;
-import com.simibubi.kinetic_api.foundation.utility.outliner.LineOutline.EndChasingLineOutline;
-import com.simibubi.kinetic_api.foundation.utility.outliner.Outline.OutlineParams;
 import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.render.BufferVertexConsumer;
 import net.minecraft.util.hit.EntityHitResult;

@@ -1,20 +1,20 @@
-package com.simibubi.kinetic_api.foundation.renderState;
+package com.tropheus_jay.kinetic_api.foundation.renderState;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.simibubi.kinetic_api.AllSpecialTextures;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.RenderPhase;
+import net.minecraft.client.render.RenderPhase;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.screen.GrindstoneScreenHandler;
 import net.minecraft.util.Identifier;
 
-public class RenderTypes extends LightmapTextureManager {
+public class RenderTypes extends RenderPhase {
 
-	protected static final LightmapTextureManager.c A = new NoCullState();
+	protected static final RenderPhase.Cull DISABLE_CULLING = new NoCullState();
 
 	public static VertexConsumerProvider getOutlineTranslucent(Identifier texture, boolean cull) {
 		VertexConsumerProvider.b rendertype$state = VertexConsumerProvider.b.a()
-			.a(new LightmapTextureManager.o(texture, false, false))
+			.a(new RenderPhase.o(texture, false, false))
 			.a(client)
 			.a(x)
 			.a(i)
@@ -29,7 +29,7 @@ public class RenderTypes extends LightmapTextureManager {
 	private static final VertexConsumerProvider OUTLINE_SOLID =
 		VertexConsumerProvider.a("outline_solid", BufferBuilder.parameters, 7, 256, true,
 			false, VertexConsumerProvider.b.a()
-				.a(new LightmapTextureManager.o(AllSpecialTextures.BLANK.getLocation(), false, false))
+				.a(new RenderPhase.o(AllSpecialTextures.BLANK.getLocation(), false, false))
 				.a(image)
 				.a(x)
 				.a(t)
@@ -38,7 +38,7 @@ public class RenderTypes extends LightmapTextureManager {
 
 	public static VertexConsumerProvider getGlowingSolid(Identifier texture) {
 		VertexConsumerProvider.b rendertype$state = VertexConsumerProvider.b.a()
-			.a(new LightmapTextureManager.o(texture, false, false))
+			.a(new RenderPhase.o(texture, false, false))
 			.a(image)
 			.a(y)
 			.a(t)
@@ -50,7 +50,7 @@ public class RenderTypes extends LightmapTextureManager {
 
 	public static VertexConsumerProvider getGlowingTranslucent(Identifier texture) {
 		VertexConsumerProvider.b rendertype$state = VertexConsumerProvider.b.a()
-			.a(new LightmapTextureManager.o(texture, false, false))
+			.a(new RenderPhase.o(texture, false, false))
 			.a(client)
 			.a(y)
 			.a(i)
@@ -69,7 +69,7 @@ public class RenderTypes extends LightmapTextureManager {
 	private static final VertexConsumerProvider ITEM_PARTIAL_SOLID =
 		VertexConsumerProvider.a("item_solid", BufferBuilder.parameters, 7, 256, true,
 			false, VertexConsumerProvider.b.a()
-				.a(new LightmapTextureManager.o(GrindstoneScreenHandler.result, false, false))
+				.a(new RenderPhase.o(GrindstoneScreenHandler.result, false, false))
 				.a(image)
 				.a(x)
 				.a(t)
@@ -78,7 +78,7 @@ public class RenderTypes extends LightmapTextureManager {
 
 	private static final VertexConsumerProvider ITEM_PARTIAL_TRANSLUCENT = VertexConsumerProvider.a("entity_translucent",
 		BufferBuilder.parameters, 7, 256, true, true, VertexConsumerProvider.b.a()
-			.a(new LightmapTextureManager.o(GrindstoneScreenHandler.result, false, false))
+			.a(new RenderPhase.o(GrindstoneScreenHandler.result, false, false))
 			.a(client)
 			.a(x)
 			.a(i)
@@ -107,7 +107,7 @@ public class RenderTypes extends LightmapTextureManager {
 		return GLOWING_TRANSLUCENT;
 	}
 
-	protected static class NoCullState extends LightmapTextureManager.c {
+	protected static class NoCullState extends RenderPhase.c {
 		public NoCullState() {
 			super(false);
 		}

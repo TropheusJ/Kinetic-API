@@ -1,19 +1,16 @@
-package com.simibubi.kinetic_api.foundation.renderState;
+package com.tropheus_jay.kinetic_api.foundation.renderState;
 
 import java.util.SortedMap;
-
 import com.mojang.blaze3d.systems.RenderSystem;
-import elk;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.gl.GlShader;
 import net.minecraft.client.gl.ShaderEffect;
 import net.minecraft.client.input.KeyboardInput;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.OverlayVertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.*;
+import net.minecraft.client.render.chunk.BlockBufferBuilderStorage;
 import net.minecraft.util.Util;
 
-public class SuperRenderTypeBuffer implements BackgroundRenderer {
+public class SuperRenderTypeBuffer implements VertexConsumerProvider {
 
 	static SuperRenderTypeBuffer instance;
 
@@ -33,49 +30,49 @@ public class SuperRenderTypeBuffer implements BackgroundRenderer {
 		lateBuffer = new SuperRenderTypeBufferPhase();
 	}
 
-	public OverlayVertexConsumer getEarlyBuffer(VertexConsumerProvider type) {
+	public VertexConsumer getEarlyBuffer(RenderLayer type) {
 		return earlyBuffer.getBuffer(type);
 	}
 
 	@Override
-	public OverlayVertexConsumer getBuffer(VertexConsumerProvider type) {
+	public VertexConsumer getBuffer(RenderLayer type) {
 		return defaultBuffer.getBuffer(type);
 	}
 
-	public OverlayVertexConsumer getLateBuffer(VertexConsumerProvider type) {
+	public VertexConsumer getLateBuffer(RenderLayer type) {
 		return lateBuffer.getBuffer(type);
 	}
 
 	public void draw() {
 		RenderSystem.disableCull();
-		earlyBuffer.method_23792();
-		defaultBuffer.method_23792();
-		lateBuffer.method_23792();
+		earlyBuffer.draw();
+		defaultBuffer.draw();
+		lateBuffer.draw();
 	}
 
-	public void draw(VertexConsumerProvider type) {
+	public void draw(RenderLayer type) {
 		RenderSystem.disableCull();
-		earlyBuffer.a(type);
-		defaultBuffer.a(type);
-		lateBuffer.a(type);
+		earlyBuffer.draw(type);
+		defaultBuffer.draw(type);
+		lateBuffer.draw(type);
 	}
 
-	private static class SuperRenderTypeBufferPhase extends BackgroundRenderer.FogType {
+	private static class SuperRenderTypeBufferPhase extends VertexConsumerProvider.Immediate {
 
 		// Visible clones from net.minecraft.client.renderer.RenderTypeBuffers
-		static final KeyboardInput blockBuilders = new KeyboardInput();
-		static final SortedMap<VertexConsumerProvider, GlShader> createEntityBuilders() {
+		static final BlockBufferBuilderStorage blockBuilders = new BlockBufferBuilderStorage();
+		static final SortedMap<RenderLayer, BufferBuilder> createEntityBuilders() {
 			return Util.make(new Object2ObjectLinkedOpenHashMap<>(), (map) -> {
-				map.put(ShaderEffect.g(), blockBuilders.a(VertexConsumerProvider.c()));
+				map.put(TexturedRenderLayers.getEntitySolid(), blockBuilders.get(RenderLayer.getSolid()));
 				assign(map, RenderTypes.getOutlineSolid());
-				map.put(ShaderEffect.h(), blockBuilders.a(VertexConsumerProvider.e()));
-				map.put(ShaderEffect.a(), blockBuilders.a(VertexConsumerProvider.d()));
-				map.put(ShaderEffect.j(), blockBuilders.a(VertexConsumerProvider.f())); // FIXME new equivalent of getEntityTranslucent() ?
-				assign(map, ShaderEffect.b());
-				assign(map, ShaderEffect.c());
-				assign(map, ShaderEffect.d());
-				assign(map, ShaderEffect.e());
-				assign(map, ShaderEffect.f());
+				map.put(TexturedRenderLayers.h(), blockBuilders.a(VertexConsumerProvider.e()));
+				map.put(TexturedRenderLayers.a(), blockBuilders.a(VertexConsumerProvider.d()));
+				map.put(TexturedRenderLayers.j(), blockBuilders.a(VertexConsumerProvider.f())); // FIXME new equivalent of getEntityTranslucent() ?
+				assign(map, TexturedRenderLayers.b());
+				assign(map, TexturedRenderLayers.c());
+				assign(map, TexturedRenderLayers.d());
+				assign(map, TexturedRenderLayers.e());
+				assign(map, TexturedRenderLayers.f());
 				assign(map, VertexConsumerProvider.h());
 				assign(map, VertexConsumerProvider.n());
 				assign(map, VertexConsumerProvider.p());

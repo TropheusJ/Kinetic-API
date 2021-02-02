@@ -79,7 +79,7 @@ todo: pretty sure these are events. time to learn mixin.
 			AllConfigs.register(); todo: configs
 			random = new Random();
 
-			DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> CreateClient.addClientListeners(modEventBus));
+			DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> KineticAPIClient.addClientListeners(modEventBus));
 		}
 
 		 void init ( final FMLCommonSetupEvent event){

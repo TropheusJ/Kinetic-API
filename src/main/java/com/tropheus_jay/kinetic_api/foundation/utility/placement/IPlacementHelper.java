@@ -1,11 +1,6 @@
-package com.simibubi.kinetic_api.foundation.utility.placement;
+package com.tropheus_jay.kinetic_api.foundation.utility.placement;
 
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import dcg;
-import mcp.MethodsReturnNonnullByDefault;
+import com.tropheus_jay.kinetic_api.KineticAPIClient;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.entity.player.ItemCooldownManager;
 import net.minecraft.util.hit.EntityHitResult;
@@ -18,7 +13,8 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@MethodsReturnNonnullByDefault
+// uh its probably fine, riiiiiiiiiiiight?
+//@MethodsReturnNonnullByDefault
 public interface IPlacementHelper {
 
 	/**
@@ -56,10 +52,10 @@ public interface IPlacementHelper {
 		EntityHitResult offsetB = facing.c(direction).d().a(.25);
 		EntityHitResult endA = center.e(direction.a(.75)).e(offsetA);
 		EntityHitResult endB = center.e(direction.a(.75)).e(offsetB);
-		CreateClient.outliner.showLine("placementArrowA" + center + target, start.e(offset), endA.e(offset)).lineWidth(1/16f);
-		CreateClient.outliner.showLine("placementArrowB" + center + target, start.e(offset), endB.e(offset)).lineWidth(1/16f);
+		KineticAPIClient.outliner.showLine("placementArrowA" + center + target, start.e(offset), endA.e(offset)).lineWidth(1/16f);
+		KineticAPIClient.outliner.showLine("placementArrowB" + center + target, start.e(offset), endB.e(offset)).lineWidth(1/16f);
 	}
-
+// note: this comment was not my doing
 	/*@OnlyIn(Dist.CLIENT)
 	static void renderArrow(Vec3d center, Direction towards, BlockRayTraceResult ray) {
 		Direction hitFace = ray.getFace();
@@ -74,7 +70,7 @@ public interface IPlacementHelper {
 		for (Direction dir : directions) {
 			Vec3d arrowOffset = new Vec3d(dir.getDirectionVec()).scale(.25);
 			Vec3d target = center.add(startOffset.scale(0.75)).add(arrowOffset);
-			CreateClient.outliner.showLine("placementArrow" + towards + dir, start, target).lineWidth(1/16f);
+			KineticAPIClient.outliner.showLine("placementArrow" + towards + dir, start, target).lineWidth(1/16f);
 		}
 	}*/
 

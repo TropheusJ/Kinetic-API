@@ -1,63 +1,41 @@
-package com.simibubi.kinetic_api;
+package com.tropheus_jay.kinetic_api;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntityRenderer;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.ContraptionRenderer;
-import com.simibubi.kinetic_api.content.contraptions.relays.encased.CasingConnectivity;
-import com.simibubi.kinetic_api.content.schematics.ClientSchematicLoader;
-import com.simibubi.kinetic_api.content.schematics.client.SchematicAndQuillHandler;
-import com.simibubi.kinetic_api.content.schematics.client.SchematicHandler;
-import com.simibubi.kinetic_api.foundation.ResourceReloadHandler;
-import com.simibubi.kinetic_api.foundation.block.render.CustomBlockModels;
-import com.simibubi.kinetic_api.foundation.block.render.SpriteShifter;
-import com.simibubi.kinetic_api.foundation.item.CustomItemModels;
-import com.simibubi.kinetic_api.foundation.item.CustomRenderedItems;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBufferCache;
-import com.simibubi.kinetic_api.foundation.utility.outliner.Outliner;
-import elg;
+import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.resource.metadata.TextureResourceMetadataReader;
 import net.minecraft.item.HoeItem;
-import net.minecraft.resource.ProfilingResourceReloader;
-import net.minecraft.resource.ReloadableResourceManager;
 import net.minecraft.screen.GrindstoneScreenHandler;
 import net.minecraft.util.Identifier;
-import net.minecraftforge.client.event.ModelBakeEvent;
-import net.minecraftforge.client.event.ModelRegistryEvent;
-import net.minecraftforge.client.event.TextureStitchEvent;
-import net.minecraftforge.client.model.ModelLoader;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
-public class CreateClient {
-
+public class KineticAPIClient implements ClientModInitializer {
+/* todo
 	public static ClientSchematicLoader schematicSender;
 	public static SchematicHandler schematicHandler;
 	public static SchematicAndQuillHandler schematicAndQuillHandler;
 	public static SuperByteBufferCache bufferCache;
-	public static final Outliner outliner = new Outliner();
-
+	*/public static final Outliner outliner = new Outliner();
+/*
 	private static CustomBlockModels customBlockModels;
 	private static CustomItemModels customItemModels;
 	private static CustomRenderedItems customRenderedItems;
 	private static AllColorHandlers colorHandlers;
 	private static CasingConnectivity casingConnectivity;
+todo: ugh
 
 	public static void addClientListeners(IEventBus modEventBus) {
-		modEventBus.addListener(CreateClient::clientInit);
-		modEventBus.addListener(CreateClient::onModelBake);
-		modEventBus.addListener(CreateClient::onModelRegistry);
-		modEventBus.addListener(CreateClient::onTextureStitch);
+		modEventBus.addListener(KineticAPIClient::clientInit);
+		modEventBus.addListener(KineticAPIClient::onModelBake);
+		modEventBus.addListener(KineticAPIClient::onModelRegistry);
+		modEventBus.addListener(KineticAPIClient::onTextureStitch);
 		modEventBus.addListener(AllParticleTypes::registerFactories);
 	}
-
-	public static void clientInit(FMLClientSetupEvent event) {
+*/
+	public void onInitializeClient() {
+		/* I am REALLY hoping none of this is important yet
 		schematicSender = new ClientSchematicLoader();
 		schematicHandler = new SchematicHandler();
 		schematicAndQuillHandler = new SchematicAndQuillHandler();
@@ -77,8 +55,9 @@ public class CreateClient {
 			.M();
 		if (resourceManager instanceof ProfilingResourceReloader)
 			((ProfilingResourceReloader) resourceManager).a(new ResourceReloadHandler());
+		*/
 	}
-
+/* todo: i have ZERO clue what to do with all this
 	public static void onTextureStitch(TextureStitchEvent.Pre event) {
 		if (!event.getMap()
 			.g()
@@ -169,5 +148,5 @@ public class CreateClient {
 			casingConnectivity = new CasingConnectivity();
 		return casingConnectivity;
 	}
-
+*/
 }

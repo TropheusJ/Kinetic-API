@@ -1,20 +1,21 @@
 package com.tropheus_jay.kinetic_api.content.contraptions.relays.elementary;
 
-import com.tropheus_jay.kinetic_api.AllBlocks;
 import com.simibubi.kinetic_api.AllShapes;
-import com.tropheus_jay.kinetic_api.content.contraptions.base.KineticTileEntity;
 import com.simibubi.kinetic_api.content.contraptions.relays.encased.EncasedShaftBlock;
 import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
 import com.simibubi.kinetic_api.foundation.utility.placement.IPlacementHelper;
 import com.simibubi.kinetic_api.foundation.utility.placement.PlacementHelpers;
 import com.simibubi.kinetic_api.foundation.utility.placement.PlacementOffset;
 import com.simibubi.kinetic_api.foundation.utility.placement.util.PoleHelper;
+import com.tropheus_jay.kinetic_api.AllBlocks;
+import com.tropheus_jay.kinetic_api.content.contraptions.base.KineticTileEntity;
 import dcg;
 import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.entity.player.ItemCooldownManager;
 import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.item.BannerItem;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -30,7 +31,7 @@ public class ShaftBlock extends AbstractShaftBlock {
 
 	private static final int placementHelperId = PlacementHelpers.register(new PlacementHelper());
 
-	public ShaftBlock(c properties) {
+	public ShaftBlock(Properties properties) {
 		super(properties);
 	}
 

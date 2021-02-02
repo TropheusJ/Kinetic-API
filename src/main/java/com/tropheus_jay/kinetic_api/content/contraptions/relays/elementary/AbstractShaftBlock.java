@@ -1,28 +1,24 @@
 package com.tropheus_jay.kinetic_api.content.contraptions.relays.elementary;
 
-import bnx;
-import com.simibubi.kinetic_api.AllTileEntities;
 import com.tropheus_jay.kinetic_api.content.contraptions.base.RotatedPillarKineticBlock;
 import com.tropheus_jay.kinetic_api.content.contraptions.wrench.IWrenchableWithBracket;
-import com.tropheus_jay.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import javafx.util.Builder;
-import net.minecraft.block.*;
-import net.minecraft.block.enums.BambooLeaves;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Waterloggable;
 import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.fluid.*;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemUsageContext;
-import net.minecraft.potion.PotionUtil;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.*;
-
-import java.util.Optional;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
+import net.minecraft.world.WorldView;
 
 public abstract class AbstractShaftBlock extends RotatedPillarKineticBlock implements Waterloggable, IWrenchableWithBracket {
 
@@ -75,31 +71,31 @@ public abstract class AbstractShaftBlock extends RotatedPillarKineticBlock imple
 /* todo: why is builder the wrong builder */
 
 	@Override
-	protected void appendProperties(Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(Properties.WATERLOGGED);
 		super.appendProperties(builder);
 	}
 
 	@Override
-	public BlockState a(BlockState state, Direction direction, BlockState neighbourState,
-		GrassColors world, BlockPos pos, BlockPos neighbourPos) {
-		if (state.c(BambooLeaves.C)) {
-			world.H()
-				.a(pos, FlowableFluid.c, FlowableFluid.c.a(world));
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighbourState,
+		WorldAccess world, BlockPos pos, BlockPos neighbourPos) {
+		if (state.get(Properties.WATERLOGGED)) {
+			world.getFluidTickScheduler()
+				.schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
 		}
 		return state;
 	}
 
 	@Override
-	public BlockState a(PotionUtil context) {
-		EmptyFluid ifluidstate = context.p()
-			.b(context.a());
-		return super.a(context).a(BambooLeaves.C,
-			Boolean.valueOf(ifluidstate.a() == FlowableFluid.c));
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		FluidState ifluidstate = context.getWorld()
+			.getFluidState(context.getBlockPos());
+		return super.getPlacementState(context).with(Properties.WATERLOGGED,
+			Boolean.valueOf(ifluidstate.getFluid() == Fluids.WATER));
 	}
-
+/* todo: brackets
 	@Override
-	public Optional<ItemCooldownManager> removeBracket(MobSpawnerLogic world, BlockPos pos, boolean inOnReplacedContext) {
+	public Optional<ItemStack> removeBracket(BlockView world, BlockPos pos, boolean inOnReplacedContext) {
 		BracketedTileEntityBehaviour behaviour = TileEntityBehaviour.get(world, pos, BracketedTileEntityBehaviour.TYPE);
 		if (behaviour == null)
 			return Optional.empty();
@@ -108,5 +104,5 @@ public abstract class AbstractShaftBlock extends RotatedPillarKineticBlock imple
 		if (bracket == BellBlock.FACING.n())
 			return Optional.empty();
 		return Optional.of(new ItemCooldownManager(bracket.b()));
-	}
+	}*/
 }

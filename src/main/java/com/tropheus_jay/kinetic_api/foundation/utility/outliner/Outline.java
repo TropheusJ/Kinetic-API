@@ -1,24 +1,12 @@
-package com.simibubi.kinetic_api.foundation.utility.outliner;
+package com.tropheus_jay.kinetic_api.foundation.utility.outliner;
 
 import java.util.Optional;
-
-import javax.annotation.Nullable;
 import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.BufferVertexConsumer.a;
 import net.minecraft.client.render.OverlayVertexConsumer;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Matrix3f;
-import afj;
-import com.simibubi.kinetic_api.AllSpecialTextures;
-import com.simibubi.kinetic_api.foundation.renderState.RenderTypes;
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import ejo;
 
 public abstract class Outline {
 

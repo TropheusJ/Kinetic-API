@@ -1,6 +1,7 @@
 package com.tropheus_jay.kinetic_api;
 
 import com.tropheus_jay.kinetic_api.content.contraptions.base.KineticBlockSettings;
+import com.tropheus_jay.kinetic_api.content.contraptions.relays.elementary.ShaftBlock;
 import net.minecraft.block.Material;
 
 public class AllBlocks {

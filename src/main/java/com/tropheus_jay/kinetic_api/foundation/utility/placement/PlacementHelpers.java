@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.utility.placement;
+package com.tropheus_jay.kinetic_api.foundation.utility.placement;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
