@@ -1,0 +1,17 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "kinetic_api:block/shaft",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "kinetic_api:block/shaft"
+    },
+    "axis=z": {
+      "model": "kinetic_api:block/shaft",
+      "x": 90,
+      "y": 180
+    }
+  }
+}
