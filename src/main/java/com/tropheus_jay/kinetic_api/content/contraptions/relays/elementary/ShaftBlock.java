@@ -1,49 +1,32 @@
 package com.tropheus_jay.kinetic_api.content.contraptions.relays.elementary;
 
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.content.contraptions.relays.encased.EncasedShaftBlock;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.utility.placement.IPlacementHelper;
-import com.simibubi.kinetic_api.foundation.utility.placement.PlacementHelpers;
-import com.simibubi.kinetic_api.foundation.utility.placement.PlacementOffset;
-import com.simibubi.kinetic_api.foundation.utility.placement.util.PoleHelper;
-import com.tropheus_jay.kinetic_api.AllBlocks;
-import com.tropheus_jay.kinetic_api.content.contraptions.base.KineticTileEntity;
-import dcg;
-import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.BannerItem;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
-
-import java.util.function.Predicate;
+import net.minecraft.world.World;
 
 public class ShaftBlock extends AbstractShaftBlock {
+//todo: placementhelpers
+	//private static final int placementHelperId = PlacementHelpers.register(new PlacementHelper());
 
-	private static final int placementHelperId = PlacementHelpers.register(new PlacementHelper());
-
-	public ShaftBlock(Properties properties) {
+	public ShaftBlock(Settings properties) {
 		super(properties);
 	}
-
-	public static boolean isShaft(PistonHandler state) {
+//todo: has
+	/*public static boolean isShaft(BlockState state) {
 		return AllBlocks.SHAFT.has(state);
-	}
-
+	}*/
+/*
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
+	public VoxelShapes getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
+		//todo: AllShapes
 		return AllShapes.SIX_VOXEL_POLE.get(state.c(AXIS));
+		
 	}
-
+*/
 	@Override
 	public float getParticleTargetRadius() {
 		return .25f;
@@ -55,12 +38,12 @@ public class ShaftBlock extends AbstractShaftBlock {
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode world, BlockPos pos, PlayerAbilities player, ItemScatterer hand,
-		dcg ray) {
-		if (player.bt() || !player.eJ())
-			return Difficulty.PASS;
-
-		ItemCooldownManager heldItem = player.b(hand);
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
+		BlockHitResult ray) {
+		if (player.isSneaking() || !player.canModifyBlocks())
+			return ActionResult.PASS;
+		/* todo: encased shafts
+		ItemStack heldItem = player.getStackInHand(hand);
 		for (EncasedShaftBlock encasedShaft : new EncasedShaftBlock[] { AllBlocks.ANDESITE_ENCASED_SHAFT.get(),
 			AllBlocks.BRASS_ENCASED_SHAFT.get() }) {
 
@@ -69,14 +52,14 @@ public class ShaftBlock extends AbstractShaftBlock {
 				continue;
 
 			if (world.v)
-				return Difficulty.SUCCESS;
+				return ActionResult.SUCCESS;
 			
 			AllTriggers.triggerFor(AllTriggers.CASING_SHAFT, player);
 			KineticTileEntity.switchToBlockState(world, pos, encasedShaft.n()
 				.a(AXIS, state.c(AXIS)));
-			return Difficulty.SUCCESS;
-		}
-
+			return ActionResult.SUCCESS;
+		}*/
+/*todo: placementhelpers
 		IPlacementHelper helper = PlacementHelpers.get(placementHelperId);
 		if (helper.getItemPredicate().test(heldItem)) {
 			PlacementOffset offset = helper.getOffset(world, state, pos, ray);
@@ -86,23 +69,24 @@ public class ShaftBlock extends AbstractShaftBlock {
 
 			offset.placeInWorld(world, (BannerItem) heldItem.b(), player, heldItem);
 
-			/*BlockPos newPos = new BlockPos(offset.getPos());
+			//BlockPos newPos = new BlockPos(offset.getPos());
 
-			if (world.isRemote)
-				return ActionResultType.SUCCESS;
+			//if (world.isRemote)
+			//	return ActionResultType.SUCCESS;
 
-			Block block = ((BlockItem) heldItem.getItem()).getBlock();
-			world.setBlockState(newPos, offset.getTransform().apply(block.getDefaultState()));
-			if (!player.isCreative())
-				heldItem.shrink(1);*/
+			//Block block = ((BlockItem) heldItem.getItem()).getBlock();
+			//world.setBlockState(newPos, offset.getTransform().apply(block.getDefaultState()));
+			//if (!player.isCreative())
+			//	heldItem.shrink(1);
 
-			return Difficulty.SUCCESS;
+			//return ActionResult.SUCCESS;
 		}
-
-		return Difficulty.PASS;
+*/
+		return ActionResult.PASS;
 	}
-
-	@MethodsReturnNonnullByDefault
+	//hopefully not important
+	//@MethodsReturnNonnullByDefault
+	/* todo: polehelpers
 	private static class PlacementHelper extends PoleHelper<Direction.Axis> {
 		//used for extending a shaft in its axis, like the piston poles. works with shafts and cogs
 
@@ -123,5 +107,5 @@ public class ShaftBlock extends AbstractShaftBlock {
 		public Predicate<PistonHandler> getStatePredicate() {
 			return AllBlocks.SHAFT::has;
 		}
-	}
+	}*/
 }

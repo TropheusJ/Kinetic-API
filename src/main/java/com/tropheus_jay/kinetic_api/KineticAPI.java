@@ -7,16 +7,21 @@ import com.tropheus_jay.kinetic_api.foundation.utility.WorldAttached;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.minecraft.block.Blocks;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Random;
 
- public class KineticAPI implements ModInitializer {
+import static com.tropheus_jay.kinetic_api.AllBlocks.SHAFT;
+
+public class KineticAPI implements ModInitializer {
 
  	// strings for things
 	 public static final String ID = "kinetic_api";
@@ -31,7 +36,8 @@ import java.util.Random;
 
 	 @Override
 	public void onInitialize() {
-
+		 Registry.register(Registry.ITEM, new Identifier("kinetic_api", "shaft"), new BlockItem(SHAFT, new FabricItemSettings().group(ItemGroup.MISC)));
+		 Registry.register(Registry.BLOCK, new Identifier("kinetic_api", "shaft"), SHAFT);
 		 AllBlocks.init();
 
 		 // item group creation

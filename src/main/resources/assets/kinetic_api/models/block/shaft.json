@@ -2,9 +2,9 @@
     "__comment": "Model generated using MrCrayfish's Model Creator (http://mrcrayfish.com/modelcreator/)",
 	"parent": "block/block",
     "textures": {
-		"particle": "create:block/axis",
-        "0": "create:block/axis",
-        "1": "create:block/axis_top"
+		"particle": "kinetic_api:block/axis",
+        "0": "kinetic_api:block/axis",
+        "1": "kinetic_api:block/axis_top"
     },
     "elements": [
         {

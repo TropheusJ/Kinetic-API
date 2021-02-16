@@ -4,9 +4,9 @@ import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.client.model.data.ModelProperty;
 
 /**
- * This model data instance is passed whenever a model is rendered without
+ * This model data_unused instance is passed whenever a model is rendered without
  * available in-world context. IBakedModel#getModelData can react accordingly
- * and avoid looking for model data itself
+ * and avoid looking for model data_unused itself
  **/
 public enum VirtualEmptyModelData implements IModelData {
 

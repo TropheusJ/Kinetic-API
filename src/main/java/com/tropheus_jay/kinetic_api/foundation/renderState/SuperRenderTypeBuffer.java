@@ -1,14 +1,13 @@
 package com.tropheus_jay.kinetic_api.foundation.renderState;
 
-import java.util.SortedMap;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
-import net.minecraft.client.gl.GlShader;
-import net.minecraft.client.gl.ShaderEffect;
-import net.minecraft.client.input.KeyboardInput;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.chunk.BlockBufferBuilderStorage;
+import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.util.Util;
+
+import java.util.SortedMap;
 
 public class SuperRenderTypeBuffer implements VertexConsumerProvider {
 
@@ -65,31 +64,31 @@ public class SuperRenderTypeBuffer implements VertexConsumerProvider {
 			return Util.make(new Object2ObjectLinkedOpenHashMap<>(), (map) -> {
 				map.put(TexturedRenderLayers.getEntitySolid(), blockBuilders.get(RenderLayer.getSolid()));
 				assign(map, RenderTypes.getOutlineSolid());
-				map.put(TexturedRenderLayers.h(), blockBuilders.a(VertexConsumerProvider.e()));
-				map.put(TexturedRenderLayers.a(), blockBuilders.a(VertexConsumerProvider.d()));
-				map.put(TexturedRenderLayers.j(), blockBuilders.a(VertexConsumerProvider.f())); // FIXME new equivalent of getEntityTranslucent() ?
-				assign(map, TexturedRenderLayers.b());
-				assign(map, TexturedRenderLayers.c());
-				assign(map, TexturedRenderLayers.d());
-				assign(map, TexturedRenderLayers.e());
-				assign(map, TexturedRenderLayers.f());
-				assign(map, VertexConsumerProvider.h());
-				assign(map, VertexConsumerProvider.n());
-				assign(map, VertexConsumerProvider.p());
-				assign(map, VertexConsumerProvider.j());
-				elk.k.forEach((p_228488_1_) -> {
+				map.put(TexturedRenderLayers.getEntityCutout(), blockBuilders.get(RenderLayer.getCutout()));
+				map.put(TexturedRenderLayers.getBannerPatterns(), blockBuilders.get(RenderLayer.getCutoutMipped()));
+				map.put(TexturedRenderLayers.getEntityTranslucentCull(), blockBuilders.get(RenderLayer.getTranslucent())); // FIXME new equivalent of getEntityTranslucent() ?
+				assign(map, TexturedRenderLayers.getShieldPatterns());
+				assign(map, TexturedRenderLayers.getBeds());
+				assign(map, TexturedRenderLayers.getShulkerBoxes());
+				assign(map, TexturedRenderLayers.getSign());
+				assign(map, TexturedRenderLayers.getChest());
+				assign(map, RenderLayer.getTranslucentNoCrumbling());
+				assign(map, RenderLayer.getGlint());
+				assign(map, RenderLayer.getEntityGlint());
+				assign(map, RenderLayer.getWaterMask());
+				ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.forEach((p_228488_1_) -> {
 					assign(map, p_228488_1_);
 				});
 			});
 		}
 			
 
-		private static void assign(Object2ObjectLinkedOpenHashMap<VertexConsumerProvider, GlShader> map, VertexConsumerProvider type) {
-			map.put(type, new GlShader(type.v()));
+		private static void assign(Object2ObjectLinkedOpenHashMap<RenderLayer, BufferBuilder> map, RenderLayer type) {
+			map.put(type, new BufferBuilder(type.getExpectedBufferSize()));
 		}
 
 		protected SuperRenderTypeBufferPhase() {
-			super(new GlShader(256), createEntityBuilders());
+			super(new BufferBuilder(256), createEntityBuilders());
 		}
 
 	}

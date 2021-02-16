@@ -22,13 +22,13 @@ public class ConfigureSequencedGearshiftPacket extends TileEntityConfigurationPa
 
 	@Override
 	protected void readSettings(PacketByteBuf buffer) {
-		instructions = buffer.readCompoundTag().getList("data", NBT.TAG_COMPOUND);
+		instructions = buffer.readCompoundTag().getList("data_unused", NBT.TAG_COMPOUND);
 	}
 
 	@Override
 	protected void writeSettings(PacketByteBuf buffer) {
 		CompoundTag tag = new CompoundTag();
-		tag.put("data", instructions);
+		tag.put("data_unused", instructions);
 		buffer.writeCompoundTag(tag);
 	}
 

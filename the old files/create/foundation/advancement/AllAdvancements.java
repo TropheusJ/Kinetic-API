@@ -477,7 +477,7 @@ public class AllAdvancements implements DataProvider {
 	}
 
 	private static Path getPath(Path pathIn, Advancement advancementIn) {
-		return pathIn.resolve("data/" + advancementIn.getId()
+		return pathIn.resolve("data_unused/" + advancementIn.getId()
 			.getNamespace() + "/advancements/"
 			+ advancementIn.getId()
 				.getPath()

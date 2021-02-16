@@ -42,7 +42,7 @@ public class ColoredVertexModel extends BakedModelWrapper<elg> {
 		if (quads.isEmpty())
 			return quads;
 		
-		// Optifine might've rejigged vertex data
+		// Optifine might've rejigged vertex data_unused
 		Tessellator format = BufferBuilder.buffer;
 		int colorIndex = 0;
 		for (int j = 0; j < format.c().size(); j++) {

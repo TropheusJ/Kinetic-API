@@ -19,7 +19,7 @@ public class ZapperLog {
 	 * 
 	 * For survival mode: does undo have the required blocks
 	 * 
-	 * For creative mode: what data did removed TEs have
+	 * For creative mode: what data_unused did removed TEs have
 	 * 
 	 * When undo: remove added blocks (added -> air) replace replaced blocks (added
 	 * -> before) add removed blocks (air -> before)

@@ -1,16 +1,11 @@
 package com.tropheus_jay.kinetic_api.foundation.utility.outliner;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.timer.Timer;
+import com.tropheus_jay.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.MathHelper;
+
+import java.util.*;
 
 public class Outliner {
 
@@ -21,13 +16,13 @@ public class Outliner {
 	}
 
 	// Facade
-
-	public OutlineParams showValueBox(Object slot, ValueBox box) {
+/* todo: ValueBox
+	public Outline.OutlineParams showValueBox(Object slot, ValueBox box) {
 		outlines.put(slot, new OutlineEntry(box));
 		return box.getParams();
 	}
-
-	public OutlineParams showLine(Object slot, EntityHitResult start, EntityHitResult end) {
+//todo: lots of outline variants
+	public Outline.OutlineParams showLine(Object slot, EntityHitResult start, EntityHitResult end) {
 		if (!outlines.containsKey(slot)) {
 			LineOutline outline = new LineOutline();
 			outlines.put(slot, new OutlineEntry(outline));
@@ -38,7 +33,7 @@ public class Outliner {
 		return entry.outline.getParams();
 	}
 
-	public OutlineParams endChasingLine(Object slot, EntityHitResult start, EntityHitResult end, float chasingProgress) {
+	public Outline.OutlineParams endChasingLine(Object slot, EntityHitResult start, EntityHitResult end, float chasingProgress) {
 		if (!outlines.containsKey(slot)) {
 			EndChasingLineOutline outline = new EndChasingLineOutline();
 			outlines.put(slot, new OutlineEntry(outline));
@@ -50,28 +45,28 @@ public class Outliner {
 		return entry.outline.getParams();
 	}
 
-	public OutlineParams showAABB(Object slot, Timer bb) {
+	public Outline.OutlineParams showAABB(Object slot, Timer bb) {
 		createAABBOutlineIfMissing(slot, bb);
 		ChasingAABBOutline outline = getAndRefreshAABB(slot);
 		outline.prevBB = outline.targetBB = bb;
 		return outline.getParams();
 	}
 
-	public OutlineParams chaseAABB(Object slot, Timer bb) {
+	public Outline.OutlineParams chaseAABB(Object slot, Timer bb) {
 		createAABBOutlineIfMissing(slot, bb);
 		ChasingAABBOutline outline = getAndRefreshAABB(slot);
 		outline.targetBB = bb;
 		return outline.getParams();
 	}
 
-	public OutlineParams showCluster(Object slot, Iterable<BlockPos> selection) {
+	public Outline.OutlineParams showCluster(Object slot, Iterable<BlockPos> selection) {
 		BlockClusterOutline outline = new BlockClusterOutline(selection);
 		OutlineEntry entry = new OutlineEntry(outline);
 		outlines.put(slot, entry);
 		return entry.getOutline()
 			.getParams();
 	}
-
+*/
 	public void keep(Object slot) {
 		if (outlines.containsKey(slot))
 			outlines.get(slot).ticksTillRemoval = 1;
@@ -81,7 +76,7 @@ public class Outliner {
 		outlines.remove(slot);
 	}
 
-	public Optional<OutlineParams> edit(Object slot) {
+	public Optional<Outline.OutlineParams> edit(Object slot) {
 		keep(slot);
 		if (outlines.containsKey(slot))
 			return Optional.of(outlines.get(slot)
@@ -91,7 +86,7 @@ public class Outliner {
 	}
 
 	// Utility
-
+/* todo: ChasingAABBOutline
 	private void createAABBOutlineIfMissing(Object slot, Timer bb) {
 		if (!outlines.containsKey(slot)) {
 			ChasingAABBOutline outline = new ChasingAABBOutline(bb);
@@ -104,7 +99,7 @@ public class Outliner {
 		entry.ticksTillRemoval = 1;
 		return (ChasingAABBOutline) entry.getOutline();
 	}
-
+*/
 	// Maintenance
 
 	public Outliner() {
@@ -126,7 +121,7 @@ public class Outliner {
 		toClear.forEach(outlines::remove);
 	}
 
-	public void renderOutlines(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
+	public void renderOutlines(MatrixStack ms, SuperRenderTypeBuffer buffer) {
 		outlines.forEach((key, entry) -> {
 			Outline outline = entry.getOutline();
 			outline.params.alpha = 1;
@@ -136,8 +131,8 @@ public class Outliner {
 				float fadeticks = OutlineEntry.fadeTicks;
 				float lastAlpha = prevTicks >= 0 ? 1 : 1 + (prevTicks / fadeticks);
 				float currentAlpha = 1 + (entry.ticksTillRemoval / fadeticks);
-				float alpha = afj.g(KeyBinding.B()
-					.ai(), lastAlpha, currentAlpha);
+				float alpha = MathHelper.lerp(MinecraftClient.getInstance()
+					.getTickDelta(), lastAlpha, currentAlpha);
 
 				outline.params.alpha = alpha * alpha * alpha;
 				if (outline.params.alpha < 1 / 8f)

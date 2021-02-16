@@ -2,14 +2,13 @@ package com.tropheus_jay.kinetic_api.foundation.utility.placement;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import dcg;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,35 +32,35 @@ public class PlacementHelpers {
 
 	@Environment(EnvType.CLIENT)
 	public static void tick() {
-		KeyBinding mc = KeyBinding.B();
-		DragonHeadEntityModel world = mc.r;
+		MinecraftClient mc = MinecraftClient.getInstance();
+		ClientWorld world = mc.world;
 
 		if (world == null)
 			return;
 
-		if (!(mc.v instanceof dcg))
+		if (!(mc.crosshairTarget instanceof BlockHitResult))
+			return;
+		
+		BlockHitResult ray = (BlockHitResult) mc.crosshairTarget;
+
+		if (mc.player == null)
 			return;
 
-		dcg ray = (dcg) mc.v;
-
-		if (mc.s == null)
-			return;
-
-		List<IPlacementHelper> filteredForHeldItem = helpers.stream().filter(helper -> Arrays.stream(ItemScatterer.values()).anyMatch(hand -> helper.getItemPredicate().test(mc.s.b(hand)))).collect(Collectors.toList());
+		List<IPlacementHelper> filteredForHeldItem = helpers.stream().filter(helper -> Arrays.stream(Hand.values()).anyMatch(hand -> helper.getItemPredicate().test(mc.player.getStackInHand(hand)))).collect(Collectors.toList());
 		if (filteredForHeldItem.isEmpty())
 			return;
 
-		if (mc.s.bt())//for now, disable all helpers when sneaking TODO add helpers that respect sneaking but still show position
+		if (mc.player.isSneaking())//for now, disable all helpers when sneaking TODO add helpers that respect sneaking but still show position
 			return;
 
-		BlockPos pos = ray.a();
-		PistonHandler state = world.d_(pos);
+		BlockPos pos = ray.getBlockPos();
+		BlockState state = world.getBlockState(pos);
 
 		List<IPlacementHelper> filteredForState = filteredForHeldItem.stream().filter(helper -> helper.getStatePredicate().test(state)).collect(Collectors.toList());
 
 		if (filteredForState.isEmpty())
 			return;
-
+/* todo: placementOffsets
 		for (IPlacementHelper h : filteredForState) {
 			PlacementOffset offset = h.getOffset(world, state, pos, ray);
 
@@ -70,6 +69,6 @@ public class PlacementHelpers {
 				break;
 			}
 
-		}
+		}*/
 	}
 }

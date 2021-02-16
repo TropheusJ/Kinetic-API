@@ -144,7 +144,7 @@ public abstract class FluidTransportBehaviour extends TileEntityBehaviour {
 			if (nbt.contains(face.getName()))
 				interfaces.computeIfAbsent(face, d -> new PipeConnection(d));
 
-		// Invalid data (missing/outdated). Defer init to runtime
+		// Invalid data_unused (missing/outdated). Defer init to runtime
 		if (interfaces.isEmpty()) {
 			interfaces = null;
 			return;

@@ -9,6 +9,7 @@ import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
@@ -16,9 +17,12 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
+
+import java.util.Optional;
 
 public abstract class AbstractShaftBlock extends RotatedPillarKineticBlock implements Waterloggable, IWrenchableWithBracket {
 
@@ -45,9 +49,10 @@ public abstract class AbstractShaftBlock extends RotatedPillarKineticBlock imple
 	@Override
 	@SuppressWarnings("deprecation")
 	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean isMoving) {
-		if (state != newState && !isMoving)
-			removeBracket(world, pos, true).ifPresent(stack -> Block.dropStack(world, pos, stack));
-		super.onStateReplaced(state, world, pos, newState, isMoving);
+		if (state != newState && !isMoving) {
+			//removeBracket(world, pos, true).ifPresent(stack -> Block.dropStack(world, pos, stack)); todo: brackets
+			super.onStateReplaced(state, world, pos, newState, isMoving);
+		}
 	}
 
 	// IRotate:
@@ -93,10 +98,10 @@ public abstract class AbstractShaftBlock extends RotatedPillarKineticBlock imple
 		return super.getPlacementState(context).with(Properties.WATERLOGGED,
 			Boolean.valueOf(ifluidstate.getFluid() == Fluids.WATER));
 	}
-/* todo: brackets
+//todo: brackets
 	@Override
 	public Optional<ItemStack> removeBracket(BlockView world, BlockPos pos, boolean inOnReplacedContext) {
-		BracketedTileEntityBehaviour behaviour = TileEntityBehaviour.get(world, pos, BracketedTileEntityBehaviour.TYPE);
+		/*BracketedTileEntityBehaviour behaviour = TileEntityBehaviour.get(world, pos, BracketedTileEntityBehaviour.TYPE);
 		if (behaviour == null)
 			return Optional.empty();
 		BlockState bracket = behaviour.getBracket();
@@ -104,5 +109,7 @@ public abstract class AbstractShaftBlock extends RotatedPillarKineticBlock imple
 		if (bracket == BellBlock.FACING.n())
 			return Optional.empty();
 		return Optional.of(new ItemCooldownManager(bracket.b()));
-	}*/
+		*/
+		return null; //this is such a horrible idea
+	}
 }

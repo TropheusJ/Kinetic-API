@@ -1,17 +1,4 @@
 package com.tropheus_jay.kinetic_api.content.contraptions.wrench;
-/* todo: future stuff
-import bnx;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalAxisKineticBlock;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalKineticBlock;
-import com.simibubi.kinetic_api.content.contraptions.base.GeneratingKineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.HorizontalAxisKineticBlock;
-import com.simibubi.kinetic_api.content.contraptions.base.HorizontalKineticBlock;
-import KineticTileEntity;
-import RotatedPillarKineticBlock;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.DirectionHelper;
-import com.simibubi.kinetic_api.foundation.utility.VoxelShaper;
-*/
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -27,8 +14,8 @@ public interface IWrenchable {
 
 	default ActionResult onWrenched(BlockState state, ItemUsageContext context) {
 		World world = context.getWorld();
-		BlockState rotated = getRotatedBlockState(state, context.getSide());
-		if (!rotated.canPlaceAt(world, context.getBlockPos()))
+		/*BlockState rotated = getRotatedBlockState(state, context.getSide());
+		if (!rotated.canPlaceAt(world, context.getBlockPos()))*/
 			return ActionResult.PASS;
 	/*	//todo: kineticTileEntity
 		//KineticTileEntity.switchToBlockState(world, context.getBlockPos(), updateAfterWrenched(rotated, context));
@@ -43,8 +30,8 @@ public interface IWrenchable {
 	//	}
 
 		return ActionResult.SUCCESS;
-	}
-*/
+	*/}
+
 	default BlockState updateAfterWrenched(BlockState newState, ItemUsageContext context) {
 		return newState;
 	}

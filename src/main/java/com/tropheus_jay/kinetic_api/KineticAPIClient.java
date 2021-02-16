@@ -1,15 +1,7 @@
 package com.tropheus_jay.kinetic_api;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.tropheus_jay.kinetic_api.foundation.utility.outliner.Outliner;
 import net.fabricmc.api.ClientModInitializer;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.resource.metadata.TextureResourceMetadataReader;
-import net.minecraft.item.HoeItem;
-import net.minecraft.screen.GrindstoneScreenHandler;
-import net.minecraft.util.Identifier;
 
 public class KineticAPIClient implements ClientModInitializer {
 /* todo

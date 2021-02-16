@@ -1,12 +1,19 @@
 package com.tropheus_jay.kinetic_api.foundation.utility.outliner;
 
-import java.util.Optional;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
-import net.minecraft.util.hit.EntityHitResult;
+import com.tropheus_jay.kinetic_api.AllSpecialTextures;
+import com.tropheus_jay.kinetic_api.foundation.renderState.RenderTypes;
+import com.tropheus_jay.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
+import com.tropheus_jay.kinetic_api.foundation.utility.VecHelper;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Matrix3f;
+import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
 
 public abstract class Outline {
 
@@ -17,58 +24,58 @@ public abstract class Outline {
 		params = new OutlineParams();
 	}
 
-	public abstract void render(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer);
-
-	public void renderCuboidLine(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer, EntityHitResult start, EntityHitResult end) {
-		EntityHitResult diff = end.d(start);
-		float hAngle = AngleHelper.deg(afj.d(diff.entity, diff.d));
-		float hDistance = (float) diff.d(1, 0, 1)
-			.f();
-		float vAngle = AngleHelper.deg(afj.d(hDistance, diff.c)) - 90;
-		ms.a();
-		MatrixStacker.of(ms)
+	public abstract void render(MatrixStack ms, SuperRenderTypeBuffer buffer);
+/*
+	public void renderCuboidLine(MatrixStack ms, SuperRenderTypeBuffer buffer, Vec3d start, Vec3d end) {
+		Vec3d diff = end.subtract(start);
+		float hAngle = AngleHelper.deg(MathHelper.atan2(diff.x, diff.z)); //todo: AngleHelper
+		float hDistance = (float) diff.multiply(1, 0, 1)
+			.length();
+		float vAngle = AngleHelper.deg(MathHelper.atan2(hDistance, diff.y)) - 90; //todo: AngleHelper
+		ms.push();
+		MatrixStacker.of(ms) //todo: matrixStacker
 			.translate(start)
 			.rotateY(hAngle).rotateX(vAngle);
-		renderAACuboidLine(ms, buffer, EntityHitResult.a, new EntityHitResult(0, 0, diff.f()));
-		ms.b();
+		renderAACuboidLine(ms, buffer, Vec3d.ZERO, new Vec3d(0, 0, diff.length()));
+		ms.pop();
 	}
-
-	public void renderAACuboidLine(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer, EntityHitResult start, EntityHitResult end) {
+*/
+	public void renderAACuboidLine(MatrixStack ms, SuperRenderTypeBuffer buffer, Vec3d start, Vec3d end) {
 		float lineWidth = params.getLineWidth();
 		if (lineWidth == 0)
 			return;
 		
-		OverlayVertexConsumer builder = buffer.getBuffer(RenderTypes.getOutlineSolid());
+		VertexConsumer builder = buffer.getBuffer(RenderTypes.getOutlineSolid());
 
-		EntityHitResult diff = end.d(start);
-		if (diff.entity + diff.c + diff.d < 0) {
-			EntityHitResult temp = start;
+		Vec3d diff = end.subtract(start);
+		if (diff.x + diff.y + diff.z < 0) {
+			Vec3d temp = start;
 			start = end;
 			end = temp;
-			diff = diff.a(-1);
+			diff = diff.multiply(-1);
 		}
 
-		EntityHitResult extension = diff.d()
-			.a(lineWidth / 2);
-		EntityHitResult plane = VecHelper.axisAlingedPlaneOf(diff);
-		Direction face = Direction.getFacing(diff.entity, diff.c, diff.d);
+		Vec3d extension = diff.normalize()
+			.multiply(lineWidth / 2);
+		Vec3d plane = VecHelper.axisAlingedPlaneOf(diff);
+		Direction face = Direction.getFacing(diff.x, diff.y, diff.z);
 		Axis axis = face.getAxis();
 
-		start = start.d(extension);
-		end = end.e(extension);
-		plane = plane.a(lineWidth / 2);
+		start = start.subtract(extension);
+		end = end.add(extension);
+		plane = plane.multiply(lineWidth / 2);
 
-		EntityHitResult a1 = plane.e(start);
-		EntityHitResult b1 = plane.e(end);
+		Vec3d a1 = plane.add(start);
+		Vec3d b1 = plane.add(end);
 		plane = VecHelper.rotate(plane, -90, axis);
-		EntityHitResult a2 = plane.e(start);
-		EntityHitResult b2 = plane.e(end);
+		Vec3d a2 = plane.add(start);
+		Vec3d b2 = plane.add(end);
 		plane = VecHelper.rotate(plane, -90, axis);
-		EntityHitResult a3 = plane.e(start);
-		EntityHitResult b3 = plane.e(end);
+		Vec3d a3 = plane.add(start);
+		Vec3d b3 = plane.add(end);
 		plane = VecHelper.rotate(plane, -90, axis);
-		EntityHitResult a4 = plane.e(start);
-		EntityHitResult b4 = plane.e(end);
+		Vec3d a4 = plane.add(start);
+		Vec3d b4 = plane.add(end);
 
 		if (params.disableNormals) {
 			face = Direction.UP;
@@ -83,26 +90,26 @@ public abstract class Outline {
 
 		putQuad(ms, builder, b4, b3, b2, b1, face);
 		putQuad(ms, builder, a1, a2, a3, a4, face.getOpposite());
-		EntityHitResult vec = a1.d(a4);
-		face = Direction.getFacing(vec.entity, vec.c, vec.d);
+		Vec3d vec = a1.subtract(a4);
+		face = Direction.getFacing(vec.x, vec.y, vec.z);
 		putQuad(ms, builder, a1, b1, b2, a2, face);
 		vec = VecHelper.rotate(vec, -90, axis);
-		face = Direction.getFacing(vec.entity, vec.c, vec.d);
+		face = Direction.getFacing(vec.x, vec.y, vec.z);
 		putQuad(ms, builder, a2, b2, b3, a3, face);
 		vec = VecHelper.rotate(vec, -90, axis);
-		face = Direction.getFacing(vec.entity, vec.c, vec.d);
+		face = Direction.getFacing(vec.x, vec.y, vec.z);
 		putQuad(ms, builder, a3, b3, b4, a4, face);
 		vec = VecHelper.rotate(vec, -90, axis);
-		face = Direction.getFacing(vec.entity, vec.c, vec.d);
+		face = Direction.getFacing(vec.x, vec.y, vec.z);
 		putQuad(ms, builder, a4, b4, b1, a1, face);
 	}
 
-	public void putQuad(BufferVertexConsumer ms, OverlayVertexConsumer builder, EntityHitResult v1, EntityHitResult v2, EntityHitResult v3, EntityHitResult v4,
+	public void putQuad(MatrixStack ms, VertexConsumer builder, Vec3d v1, Vec3d v2, Vec3d v3, Vec3d v4,
 		Direction normal) {
 		putQuadUV(ms, builder, v1, v2, v3, v4, 0, 0, 1, 1, normal);
 	}
 
-	public void putQuadUV(BufferVertexConsumer ms, OverlayVertexConsumer builder, EntityHitResult v1, EntityHitResult v2, EntityHitResult v3, EntityHitResult v4, float minU,
+	public void putQuadUV(MatrixStack ms, VertexConsumer builder, Vec3d v1, Vec3d v2, Vec3d v3, Vec3d v4, float minU,
 		float minV, float maxU, float maxV, Direction normal) {
 		putVertex(ms, builder, v1, minU, minV, normal);
 		putVertex(ms, builder, v2, maxU, minV, normal);
@@ -110,14 +117,14 @@ public abstract class Outline {
 		putVertex(ms, builder, v4, minU, maxV, normal);
 	}
 
-	protected void putVertex(BufferVertexConsumer ms, OverlayVertexConsumer builder, EntityHitResult pos, float u, float v, Direction normal) {
+	protected void putVertex(MatrixStack ms, VertexConsumer builder, Vec3d pos, float u, float v, Direction normal) {
 		int i = 15 << 20 | 15 << 4;
 		int j = i >> 16 & '\uffff';
 		int k = i & '\uffff';
-		a peek = ms.c();
-		EntityHitResult rgb = params.rgb;
+		MatrixStack.Entry peek = ms.peek(); //todo: double check this is correct. original line is Entry peek = ms.peek();
+		Vec3d rgb = params.rgb;
 		if (transformNormals == null)
-			transformNormals = peek.b();
+			transformNormals = peek.getNormal();
 
 		int xOffset = 0;
 		int yOffset = 0;
@@ -129,13 +136,13 @@ public abstract class Outline {
 			zOffset = normal.getOffsetZ();
 		}
 
-		builder.a(peek.a(), (float) pos.entity, (float) pos.c, (float) pos.d)
-			.a((float) rgb.entity, (float) rgb.c, (float) rgb.d, params.alpha)
-			.a(u, v)
-			.b(ejo.a)
-			.b(j, k)
-			.a(peek.b(), xOffset, yOffset, zOffset)
-			.d();
+		builder.vertex(peek.getModel(), (float) pos.x, (float) pos.y, (float) pos.z)
+			.color((float) rgb.x, (float) rgb.y, (float) rgb.z, params.alpha)
+			.texture(u, v)
+			.overlay(OverlayTexture.DEFAULT_UV)
+			.light(j, k)
+			.normal(peek.getNormal(), xOffset, yOffset, zOffset)
+			.next();
 
 		transformNormals = null;
 	}
@@ -155,9 +162,9 @@ public abstract class Outline {
 		protected boolean disableNormals;
 		protected float alpha;
 		protected int lightMapU, lightMapV;
-		protected EntityHitResult rgb;
+		protected Vec3d rgb;
 		private float lineWidth;
-
+/* todo: colorHelper
 		public OutlineParams() {
 			faceTexture = hightlightedFaceTexture = Optional.empty();
 			alpha = 1;
@@ -175,7 +182,7 @@ public abstract class Outline {
 		public OutlineParams colored(int color) {
 			rgb = ColorHelper.getRGB(color);
 			return this;
-		}
+		}*/
 
 		public OutlineParams lineWidth(float width) {
 			this.lineWidth = width;

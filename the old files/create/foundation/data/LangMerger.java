@@ -213,8 +213,8 @@ public class LangMerger implements DataProvider {
 	private void save(DataCache cache, List<Object> dataIn, int missingKeys, Path target, String message)
 		throws IOException {
 		String data = createString(dataIn, missingKeys);
-//		data = JavaUnicodeEscaper.outsideOf(0, 0x7f)
-//			.translate(data);
+//		data_unused = JavaUnicodeEscaper.outsideOf(0, 0x7f)
+//			.translate(data_unused);
 		String hash = DataProvider.SHA1.hashUnencodedChars(data)
 			.toString();
 		if (!Objects.equals(cache.getOldSha1(target), hash) || !Files.exists(target)) {

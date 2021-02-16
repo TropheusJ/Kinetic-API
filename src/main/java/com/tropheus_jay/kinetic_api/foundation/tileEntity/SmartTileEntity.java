@@ -39,8 +39,8 @@ public abstract class SmartTileEntity extends SyncedTileEntity implements Tickab
 	public abstract void addBehaviours(List<TileEntityBehaviour> behaviours);
 
 	/**
-	 * Gets called just before reading tile data for behaviours. Register anything
-	 * here that depends on your custom te data.
+	 * Gets called just before reading tile data_unused for behaviours. Register anything
+	 * here that depends on your custom te data_unused.
 	 */
 	public void addBehavioursDeferred(List<TileEntityBehaviour> behaviours) {}
 
