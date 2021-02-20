@@ -49,7 +49,7 @@ public abstract class KineticTileEntity extends SmartTileEntity
 		effects = new KineticEffectHandler(this);
 		updateSpeed = true;
 	}
-
+	
 	@Override
 	public void initialize() {
 		if (hasNetwork()) {

@@ -5,6 +5,7 @@ import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.Direction.Axis;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;
 
@@ -124,7 +125,7 @@ public class VecHelper {
 		return ontoVec.multiply(vec.dotProduct(ontoVec) / ontoVec.lengthSquared());
 	}
 
-	//@Nullable todo: this seems VERY important
+	@Nullable
 	public static Vec3d intersectSphere(Vec3d origin, Vec3d lineDirection, Vec3d sphereCenter, double radius) {
 		if (lineDirection.equals(Vec3d.ZERO))
 			return null;

@@ -1,21 +1,19 @@
-package com.simibubi.kinetic_api;
+package com.tropheus_jay.kinetic_api;
 
-import static net.minecraft.util.math.Direction.NORTH;
-import static net.minecraft.util.math.Direction.SOUTH;
-import static net.minecraft.util.math.Direction.UP;
-
-import cdy;
-import java.util.function.BiFunction;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.DeadBushBlock;
+import com.tropheus_jay.kinetic_api.foundation.utility.VoxelShaper;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.FacingBlock;
+import net.minecraft.block.PistonHeadBlock;
+import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.Direction.*;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import com.simibubi.kinetic_api.content.logistics.block.chute.ChuteShapes;
-import com.simibubi.kinetic_api.foundation.utility.VoxelShaper;
-import dco;
-import ddb;
+
+import java.util.function.BiFunction;
+
+import static net.minecraft.util.math.Direction.*;
 
 public class AllShapes {
 
@@ -122,12 +120,12 @@ public class AllShapes {
 	;
 
 	// Internally Shared Shapes
-	private static final VoxelShapes
+	private static final VoxelShape
 
-	PISTON_HEAD = BellBlock.aX.n()
-		.a(DeadBushBlock.SHAPE, UP)
-		.a(cdy.c, true)
-		.j(null, null), PISTON_EXTENDED =
+	PISTON_HEAD = Blocks.PISTON_HEAD.getDefaultState()
+		.with(FacingBlock.FACING, UP)
+		.with(PistonHeadBlock.SHORT, true)
+		.getOutlineShape(null, null), PISTON_EXTENDED =
 			shape(CASING_12PX.get(UP)).add(FOUR_VOXEL_POLE.get(Axis.Y))
 				.build(),
 		SMALL_GEAR_SHAPE = cuboid(2, 6, 2, 14, 10, 14), LARGE_GEAR_SHAPE = cuboid(0, 6, 0, 16, 10, 16),
@@ -140,7 +138,7 @@ public class AllShapes {
 	;
 
 	// Static Block Shapes
-	public static final VoxelShapes
+	public static final VoxelShape
 
 	BASIN_BLOCK_SHAPE = shape(0, 2, 0, 16, 16, 16).erase(2, 2, 2, 14, 16, 14)
 		.add(2, 0, 2, 14, 2, 14)
@@ -155,7 +153,7 @@ public class AllShapes {
 		HEATER_BLOCK_SPECIAL_COLLISION_SHAPE = shape(0, 0, 0, 16, 4, 16).build(),
 		CRUSHING_WHEEL_COLLISION_SHAPE = cuboid(0, 0, 0, 16, 22, 16), SEAT = cuboid(0, 0, 0, 16, 8, 16),
 		SEAT_COLLISION = cuboid(0, 0, 0, 16, 6, 16),
-		MECHANICAL_PROCESSOR_SHAPE = shape(ddb.b()).erase(4, 0, 4, 12, 16, 12)
+		MECHANICAL_PROCESSOR_SHAPE = shape(VoxelShapes.fullCube()).erase(4, 0, 4, 12, 16, 12)
 			.build(),
 		TURNTABLE_SHAPE = shape(1, 4, 1, 15, 8, 15).add(5, 0, 5, 11, 4, 11)
 			.build(),
@@ -208,12 +206,12 @@ public class AllShapes {
 		LOGISTICS_TABLE = shape(TABLE_POLE_SHAPE).add(LOGISTICS_TABLE_SLOPE)
 			.forHorizontal(SOUTH),
 		SCHEMATICS_TABLE = shape(4, 0, 4, 12, 12, 12).add(0, 11, 2, 16, 14, 14)
-			.forDirectional(SOUTH),
-		CHUTE_SLOPE = shape(ChuteShapes.createSlope()).forHorizontal(SOUTH)
+			.forDirectional(SOUTH)//,
+		//CHUTE_SLOPE = shape(ChuteShapes.createSlope()).forHorizontal(SOUTH) todo: chutes
 
 	;
 
-	private static Builder shape(VoxelShapes shape) {
+	private static Builder shape(VoxelShape shape) {
 		return new Builder(shape);
 	}
 
@@ -221,19 +219,19 @@ public class AllShapes {
 		return shape(cuboid(x1, y1, z1, x2, y2, z2));
 	}
 
-	private static VoxelShapes cuboid(double x1, double y1, double z1, double x2, double y2, double z2) {
-		return BeetrootsBlock.a(x1, y1, z1, x2, y2, z2);
+	private static VoxelShape cuboid(double x1, double y1, double z1, double x2, double y2, double z2) {
+		return Block.createCuboidShape(x1, y1, z1, x2, y2, z2);
 	}
 
 	private static class Builder {
-		VoxelShapes shape;
+		VoxelShape shape;
 
-		public Builder(VoxelShapes shape) {
+		public Builder(VoxelShape shape) {
 			this.shape = shape;
 		}
 
-		Builder add(VoxelShapes shape) {
-			this.shape = ddb.a(this.shape, shape);
+		Builder add(VoxelShape shape) {
+			this.shape = VoxelShapes.union(this.shape, shape);
 			return this;
 		}
 
@@ -243,19 +241,19 @@ public class AllShapes {
 
 		Builder erase(double x1, double y1, double z1, double x2, double y2, double z2) {
 			this.shape =
-				ddb.a(shape, cuboid(x1, y1, z1, x2, y2, z2), dco.e);
+				VoxelShapes.combineAndSimplify(shape, cuboid(x1, y1, z1, x2, y2, z2), BooleanBiFunction.ONLY_FIRST);
 			return this;
 		}
 
-		VoxelShapes build() {
+		VoxelShape build() {
 			return shape;
 		}
 
-		VoxelShaper build(BiFunction<VoxelShapes, Direction, VoxelShaper> factory, Direction direction) {
+		VoxelShaper build(BiFunction<VoxelShape, Direction, VoxelShaper> factory, Direction direction) {
 			return factory.apply(shape, direction);
 		}
 
-		VoxelShaper build(BiFunction<VoxelShapes, Axis, VoxelShaper> factory, Axis axis) {
+		VoxelShaper build(BiFunction<VoxelShape, Axis, VoxelShaper> factory, Axis axis) {
 			return factory.apply(shape, axis);
 		}
 

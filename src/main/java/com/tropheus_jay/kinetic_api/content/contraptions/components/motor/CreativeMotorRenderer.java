@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.components.motor;
+package com.tropheus_jay.kinetic_api.content.contraptions.components.motor;
 
 import com.simibubi.kinetic_api.AllBlockPartials;
 import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;

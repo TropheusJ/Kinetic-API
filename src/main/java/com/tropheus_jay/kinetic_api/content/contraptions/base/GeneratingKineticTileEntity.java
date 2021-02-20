@@ -1,23 +1,18 @@
-package com.simibubi.kinetic_api.content.contraptions.base;
+package com.tropheus_jay.kinetic_api.content.contraptions.base;
+
+import com.tropheus_jay.kinetic_api.content.contraptions.KineticNetwork;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.List;
-
-import com.simibubi.kinetic_api.content.contraptions.KineticNetwork;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate.SpeedLevel;
-import com.simibubi.kinetic_api.content.contraptions.goggles.IHaveGoggleInformation;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
 
 public abstract class GeneratingKineticTileEntity extends KineticTileEntity {
 
 	public boolean reActivateSource;
 
-	public GeneratingKineticTileEntity(BellBlockEntity<?> typeIn) {
+	public GeneratingKineticTileEntity(BlockEntityType<?> typeIn) {
 		super(typeIn);
 	}
 
@@ -35,7 +30,7 @@ public abstract class GeneratingKineticTileEntity extends KineticTileEntity {
 	@Override
 	public void setSource(BlockPos source) {
 		super.setSource(source);
-		BeehiveBlockEntity tileEntity = d.c(source);
+		BlockEntity tileEntity = world.getBlockEntity(source);
 		if (!(tileEntity instanceof KineticTileEntity))
 			return;
 		KineticTileEntity sourceTe = (KineticTileEntity) tileEntity;
@@ -44,8 +39,8 @@ public abstract class GeneratingKineticTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		if (reActivateSource) {
 			updateGeneratedRotation();
 			reActivateSource = false;
@@ -58,8 +53,8 @@ public abstract class GeneratingKineticTileEntity extends KineticTileEntity {
 
 		float stressBase = calculateAddedStressCapacity();
 		if (stressBase != 0 && IRotate.StressImpact.isEnabled()) {
-			tooltip.add(new LiteralText(spacing).append(Lang.translate("gui.goggles.generator_stats")));
-			tooltip.add(new LiteralText(spacing).append(Lang.translate("tooltip.capacityProvided").formatted(Formatting.GRAY)));
+			//tooltip.add(new LiteralText(spacing).append(Lang.translate("gui.goggles.generator_stats"))); todo: lang
+			//tooltip.add(new LiteralText(spacing).append(Lang.translate("tooltip.capacityProvided").formatted(Formatting.GRAY)));
 
 			float speed = getTheoreticalSpeed();
 			if (speed != getGeneratedSpeed() && speed != 0)
@@ -72,8 +67,8 @@ public abstract class GeneratingKineticTileEntity extends KineticTileEntity {
 			// String stressString = spacing + "%s" + Lang.translate("generic.unit.stress").getUnformattedComponentText() + " %s";
 			// tooltip.add(new StringTextComponent(String.format(stressString, IHaveGoggleInformation.format(stressBase), Lang.translate("gui.goggles.base_value").getUnformattedComponentText())));
 			// tooltip.add(new StringTextComponent(String.format(stressString, IHaveGoggleInformation.format(stressTotal), Lang.translate("gui.goggles.at_current_speed").getUnformattedComponentText())));
-			tooltip.add(componentSpacing.copy().append(new LiteralText(" " + IHaveGoggleInformation.format(stressTotal))
-				.append(Lang.translate("generic.unit.stress")).append(" ").formatted(Formatting.AQUA)).append(Lang.translate("gui.goggles.at_current_speed").formatted(Formatting.DARK_GRAY)));
+			//tooltip.add(componentSpacing.copy().append(new LiteralText(" " + IHaveGoggleInformation.format(stressTotal))
+			//	.append(Lang.translate("generic.unit.stress")).append(" ").formatted(Formatting.AQUA)).append(Lang.translate("gui.goggles.at_current_speed").formatted(Formatting.DARK_GRAY)));
 
 			added = true;
 		}
@@ -85,13 +80,13 @@ public abstract class GeneratingKineticTileEntity extends KineticTileEntity {
 		float speed = getGeneratedSpeed();
 		float prevSpeed = this.speed;
 
-		if (d.v)
+		if (world.isClient)
 			return;
 
 		if (prevSpeed != speed) {
 			if (!hasSource()) {
-				SpeedLevel levelBefore = SpeedLevel.of(this.speed);
-				SpeedLevel levelafter = SpeedLevel.of(speed);
+				IRotate.SpeedLevel levelBefore = IRotate.SpeedLevel.of(this.speed);
+				IRotate.SpeedLevel levelafter = IRotate.SpeedLevel.of(speed);
 				if (levelBefore != levelafter)
 					effects.queueRotationIndicators();
 			}
@@ -139,7 +134,7 @@ public abstract class GeneratingKineticTileEntity extends KineticTileEntity {
 			// Staying below Overpowered speed
 			if (Math.abs(prevSpeed) >= Math.abs(speed)) {
 				if (Math.signum(prevSpeed) != Math.signum(speed))
-					d.b(e, true);
+					world.breakBlock(pos, true);
 				return;
 			}
 
@@ -159,6 +154,6 @@ public abstract class GeneratingKineticTileEntity extends KineticTileEntity {
 	}
 
 	public Long createNetworkId() {
-		return e.asLong();
+		return pos.asLong();
 	}
 }

@@ -1,53 +1,54 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour;
+package com.tropheus_jay.kinetic_api.foundation.tileEntity.behaviour;
 
 import java.util.function.Function;
+
+import com.tropheus_jay.kinetic_api.foundation.utility.BlockHelper;
+import com.tropheus_jay.kinetic_api.foundation.utility.VecHelper;
+import net.minecraft.block.Material;
 import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferVertexConsumer;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import org.apache.commons.lang3.tuple.Pair;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
 
 public abstract class ValueBoxTransform {
 
 	protected float scale = getScale();
 
-	protected abstract EntityHitResult getLocalOffset(PistonHandler state);
+	protected abstract Vec3d getLocalOffset(BlockState state);
 
-	protected abstract void rotate(PistonHandler state, BufferVertexConsumer ms);
+	protected abstract void rotate(BlockState state, MatrixStack ms);
 
-	public boolean testHit(PistonHandler state, EntityHitResult localHit) {
-		EntityHitResult offset = getLocalOffset(state);
+	public boolean testHit(BlockState state, Vec3d localHit) {
+		Vec3d offset = getLocalOffset(state);
 		if (offset == null)
 			return false;
-		return localHit.f(offset) < scale / 2;
+		return localHit.distanceTo(offset) < scale / 2;
 	}
 
-	public void transform(PistonHandler state, BufferVertexConsumer ms) {
-		EntityHitResult position = getLocalOffset(state);
+	public void transform(BlockState state, MatrixStack ms) {
+		Vec3d position = getLocalOffset(state);
 		if (position == null)
 			return;
-		ms.a(position.entity, position.c, position.d);
+		ms.translate(position.x, position.y, position.z);
 		rotate(state, ms);
-		ms.a(scale, scale, scale);
+		ms.scale(scale, scale, scale);
 	}
 
-	public boolean shouldRender(PistonHandler state) {
-		return state.c() != FluidState.CODEC && getLocalOffset(state) != null;
+	public boolean shouldRender(BlockState state) {
+		return state.getMaterial() != Material.AIR && getLocalOffset(state) != null;
 	}
 
-	protected EntityHitResult rotateHorizontally(PistonHandler state, EntityHitResult vec) {
+	protected Vec3d rotateHorizontally(BlockState state, Vec3d vec) {
 		float yRot = 0;
-		if (BlockHelper.hasBlockStateProperty(state, BambooLeaves.M))
-			yRot = AngleHelper.horizontalAngle(state.c(BambooLeaves.M));
-		if (BlockHelper.hasBlockStateProperty(state, BambooLeaves.O))
-			yRot = AngleHelper.horizontalAngle(state.c(BambooLeaves.O));
+		if (BlockHelper.hasBlockStateProperty(state, Properties.FACING))
+			yRot = AngleHelper.horizontalAngle(state.get(Properties.FACING));
+		if (BlockHelper.hasBlockStateProperty(state, Properties.HORIZONTAL_FACING))
+			yRot = AngleHelper.horizontalAngle(state.get(Properties.HORIZONTAL_FACING));
 		return VecHelper.rotateCentered(vec, yRot, Axis.Y);
 	}
 
@@ -75,8 +76,8 @@ public abstract class ValueBoxTransform {
 			return Pair.of(factory.apply(true), factory.apply(false));
 		}
 
-		public boolean testHit(PistonHandler state, EntityHitResult localHit) {
-			EntityHitResult offset = getLocalOffset(state);
+		public boolean testHit(BlockState state, Vec3d localHit) {
+			Vec3d offset = getLocalOffset(state);
 			if (offset == null)
 				return false;
 			return localHit.f(offset) < scale / 3.5f;
@@ -94,17 +95,17 @@ public abstract class ValueBoxTransform {
 		}
 
 		@Override
-		protected EntityHitResult getLocalOffset(PistonHandler state) {
-			EntityHitResult location = getSouthLocation();
+		protected Vec3d getLocalOffset(BlockState state) {
+			Vec3d location = getSouthLocation();
 			location = VecHelper.rotateCentered(location, AngleHelper.horizontalAngle(getSide()), Axis.Y);
 			location = VecHelper.rotateCentered(location, AngleHelper.verticalAngle(getSide()), Axis.Z);
 			return location;
 		}
 
-		protected abstract EntityHitResult getSouthLocation();
+		protected abstract Vec3d getSouthLocation();
 
 		@Override
-		protected void rotate(PistonHandler state, BufferVertexConsumer ms) {
+		protected void rotate(BlockState state, MatrixStack ms) {
 			float yRot = AngleHelper.horizontalAngle(getSide()) + 180;
 			float xRot = getSide() == Direction.UP ? 90 : getSide() == Direction.DOWN ? 270 : 0;
 			MatrixStacker.of(ms)
@@ -113,16 +114,16 @@ public abstract class ValueBoxTransform {
 		}
 
 		@Override
-		public boolean shouldRender(PistonHandler state) {
+		public boolean shouldRender(BlockState state) {
 			return super.shouldRender(state) && isSideActive(state, getSide());
 		}
 
 		@Override
-		public boolean testHit(PistonHandler state, EntityHitResult localHit) {
+		public boolean testHit(BlockState state, Vec3d localHit) {
 			return isSideActive(state, getSide()) && super.testHit(state, localHit);
 		}
 
-		protected boolean isSideActive(PistonHandler state, Direction direction) {
+		protected boolean isSideActive(BlockState state, Direction direction) {
 			return true;
 		}
 

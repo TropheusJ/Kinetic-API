@@ -7,10 +7,12 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 
-public class KineticBlock extends Block implements IRotate {
+public abstract class KineticBlock extends Block implements IRotate {
 
 	//protected static final Palette color = Palette.Red; todo: tooltips(?)
 
@@ -18,7 +20,7 @@ public class KineticBlock extends Block implements IRotate {
 		super(properties);
 	}
 	//oh god these are forge things not minecraft things
-	/*todo: is this even needed?
+	/*todo
 	@Override
 	public ToolType getHarvestTool(BlockState state) {
 		return null;
@@ -36,7 +38,6 @@ public class KineticBlock extends Block implements IRotate {
 	public boolean isToolEffective(BlockState state, ToolType tool) {
 		return tool == ToolType.AXE || tool == ToolType.PICKAXE;
 	}
-todo: possibly redundant/unused
 
 	@Override
 	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, PistonHandler oldState, boolean isMoving) {
@@ -57,25 +58,24 @@ todo: possibly redundant/unused
 	public Direction.Axis getRotationAxis(BlockState state) {
 		return null;
 	}
-/*
-	@Override
+	// pretty sure these are forge things. hopefully the fact that they override is only needed on forge.
+	//@Override
 	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
-	@Override
-	public abstract BlockEntity createTileEntity(BlockState state, MobSpawnerLogic world);
-*/
-	// TODO 1.16 is this the right replacement for updateNeighbors?
 	//@Override
-	/*todo: why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error why does this error
+	public abstract BlockEntity createTileEntity(BlockState state, BlockView world);
+
+	// TODO 1.16 is this the right replacement for updateNeighbors?
+	
+	//@Override
 	@Deprecated
 	public void getStateForNeighborUpdate(BlockState stateIn, WorldAccess worldIn, BlockPos pos, int flags, int count) {
-		super.getStateForNeighborUpdate(stateIn, worldIn, pos, flags, count);
+		//super.getStateForNeighborUpdate(stateIn, worldIn, pos, flags, count); returns nothing in forge, lets see if it's actually needed
 		if (worldIn.isClient())
 			return;
-todo: kineticTileEntity
-
+		
 		BlockEntity tileEntity = worldIn.getBlockEntity(pos);
 		if (!(tileEntity instanceof KineticTileEntity))
 			return;
@@ -86,7 +86,7 @@ todo: kineticTileEntity
 		kte.clearKineticInformation();
 		kte.updateSpeed = true;
 	}
-*/
+
 	@Override
 	public void onPlaced(World worldIn, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
 		if (worldIn.isClient)

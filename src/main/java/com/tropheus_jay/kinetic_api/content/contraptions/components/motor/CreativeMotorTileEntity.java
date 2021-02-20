@@ -1,32 +1,28 @@
-package com.simibubi.kinetic_api.content.contraptions.components.motor;
+package com.tropheus_jay.kinetic_api.content.contraptions.components.motor;
+
+import com.tropheus_jay.kinetic_api.AllBlocks;
+import com.tropheus_jay.kinetic_api.content.contraptions.base.GeneratingKineticTileEntity;
+import com.tropheus_jay.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
+import net.minecraft.block.entity.BlockEntityType;
 
 import java.util.List;
-import net.minecraft.block.entity.BellBlockEntity;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.base.GeneratingKineticTileEntity;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.CenteredSideValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour.StepContext;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
 
 public class CreativeMotorTileEntity extends GeneratingKineticTileEntity {
 
 	public static final int DEFAULT_SPEED = 16;
 	protected ScrollValueBehaviour generatedSpeed;
 
-	public CreativeMotorTileEntity(BellBlockEntity<? extends CreativeMotorTileEntity> type) {
+	public CreativeMotorTileEntity(BlockEntityType<? extends CreativeMotorTileEntity> type) {
 		super(type);
 	}
-
+	
 	@Override
 	public void addBehaviours(List<TileEntityBehaviour> behaviours) {
 		super.addBehaviours(behaviours);
-		Integer max = AllConfigs.SERVER.kinetics.maxMotorSpeed.get();
+		Integer max = 256; //AllConfigs.SERVER.kinetics.maxMotorSpeed.get(); todo: configs
 
 		CenteredSideValueBoxTransform slot =
-			new CenteredSideValueBoxTransform((motor, side) -> motor.c(CreativeMotorBlock.FACING) == side.getOpposite());
+			new CenteredSideValueBoxTransform((motor, side) -> motor.get(CreativeMotorBlock.FACING) == side.getOpposite());
 
 		generatedSpeed = new ScrollValueBehaviour(Lang.translate("generic.speed"), this, slot);
 		generatedSpeed.between(-max, max);
@@ -47,9 +43,9 @@ public class CreativeMotorTileEntity extends GeneratingKineticTileEntity {
 
 	@Override
 	public float getGeneratedSpeed() {
-		if (!AllBlocks.CREATIVE_MOTOR.has(p()))
+		if (!AllBlocks.CREATIVE_MOTOR.has(getCachedState()))
 			return 0;
-		return convertToDirection(generatedSpeed.getValue(), p().c(CreativeMotorBlock.FACING));
+		return convertToDirection(generatedSpeed.getValue(), getCachedState().get(CreativeMotorBlock.FACING));
 	}
 
 	public static int step(StepContext context) {

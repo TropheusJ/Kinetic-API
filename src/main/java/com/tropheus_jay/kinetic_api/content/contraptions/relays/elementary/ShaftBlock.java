@@ -1,11 +1,16 @@
 package com.tropheus_jay.kinetic_api.content.contraptions.relays.elementary;
 
+import com.tropheus_jay.kinetic_api.AllShapes;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public class ShaftBlock extends AbstractShaftBlock {
@@ -15,18 +20,23 @@ public class ShaftBlock extends AbstractShaftBlock {
 	public ShaftBlock(Settings properties) {
 		super(properties);
 	}
+	
+	@Override
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
+		return null;
+	}
 //todo: has
 	/*public static boolean isShaft(BlockState state) {
 		return AllBlocks.SHAFT.has(state);
 	}*/
-/*
+
 	@Override
-	public VoxelShapes getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
 		//todo: AllShapes
-		return AllShapes.SIX_VOXEL_POLE.get(state.c(AXIS));
+		return AllShapes.SIX_VOXEL_POLE.get(state.get(AXIS));
 		
 	}
-*/
+
 	@Override
 	public float getParticleTargetRadius() {
 		return .25f;

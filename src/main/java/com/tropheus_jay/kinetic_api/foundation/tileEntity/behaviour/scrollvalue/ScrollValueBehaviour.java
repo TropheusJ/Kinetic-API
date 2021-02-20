@@ -1,24 +1,22 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue;
+package com.tropheus_jay.kinetic_api.foundation.tileEntity.behaviour.scrollvalue;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+import com.tropheus_jay.kinetic_api.foundation.behaviour.BehaviourType;
+import com.tropheus_jay.kinetic_api.foundation.tileEntity.SmartTileEntity;
+import com.tropheus_jay.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
 import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.Text;
-import net.minecraft.util.hit.EntityHitResult;
-import afj;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
+import net.minecraft.util.math.Vec3d;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class ScrollValueBehaviour extends TileEntityBehaviour {
 
 	public static BehaviourType<ScrollValueBehaviour> TYPE = new BehaviourType<>();
 
 	ValueBoxTransform slotPositioning;
-	EntityHitResult textShift;
+	Vec3d textShift;
 
 	int min = 0;
 	int max = 1;
@@ -42,7 +40,7 @@ public class ScrollValueBehaviour extends TileEntityBehaviour {
 		};
 		clientCallback = i -> {
 		};
-		textShift = EntityHitResult.a;
+		textShift = Vec3d.ZERO;
 		formatter = i -> Integer.toString(i);
 		step = (c) -> 1;
 		value = 0;
@@ -102,7 +100,7 @@ public class ScrollValueBehaviour extends TileEntityBehaviour {
 		return this;
 	}
 
-	public ScrollValueBehaviour moveText(EntityHitResult shift) {
+	public ScrollValueBehaviour moveText(Vec3d shift) {
 		textShift = shift;
 		return this;
 	}
@@ -159,9 +157,9 @@ public class ScrollValueBehaviour extends TileEntityBehaviour {
 		return TYPE;
 	}
 
-	public boolean testHit(EntityHitResult hit) {
+	public boolean testHit(Vec3d hit) {
 		PistonHandler state = tileEntity.p();
-		EntityHitResult localHit = hit.d(EntityHitResult.b(tileEntity.o()));
+		Vec3d localHit = hit.d(Vec3d.b(tileEntity.o()));
 		return slotPositioning.testHit(state, localHit);
 	}
 

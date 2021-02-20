@@ -5,6 +5,7 @@ import com.tropheus_jay.kinetic_api.content.contraptions.wrench.IWrenchableWithB
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Waterloggable;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -41,10 +42,10 @@ public abstract class AbstractShaftBlock extends RotatedPillarKineticBlock imple
 		return PistonBehavior.NORMAL;
 	}
 
-	/*@Override todo: KILL ME ALREADY
+	@Override
 	public BlockEntity createTileEntity(BlockState state, BlockView world) {
-		return AllTileEntities.SIMPLE_KINETIC.kinetic_api();
-	}*/
+		return null; //AllTileEntities.SIMPLE_KINETIC.create(); todo
+	}
 
 	@Override
 	@SuppressWarnings("deprecation")

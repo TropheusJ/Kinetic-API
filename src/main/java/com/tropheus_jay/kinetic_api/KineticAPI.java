@@ -3,12 +3,13 @@ package com.tropheus_jay.kinetic_api;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.tropheus_jay.kinetic_api.content.contraptions.TorquePropagator;
+import com.tropheus_jay.kinetic_api.content.contraptions.components.motor.CreativeMotorTileEntity;
 import com.tropheus_jay.kinetic_api.foundation.utility.WorldAttached;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
-import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -31,28 +32,29 @@ public class KineticAPI implements ModInitializer {
 	 // non-string things that also do things
 	 public static TorquePropagator torquePropagator = new TorquePropagator();
 	 public static Logger logger = LogManager.getLogger();
-
-
-
+	 public static BlockEntityType<CreativeMotorTileEntity> CREATIVE_MOTOR;
+	 
 	 @Override
 	public void onInitialize() {
-		 Registry.register(Registry.ITEM, new Identifier("kinetic_api", "shaft"), new BlockItem(SHAFT, new FabricItemSettings().group(ItemGroup.MISC)));
-		 Registry.register(Registry.BLOCK, new Identifier("kinetic_api", "shaft"), SHAFT);
+		 // debugging stuff
+		 final ItemGroup CREATE = FabricItemGroupBuilder.build(new Identifier(ID, "group"), () -> new ItemStack(SHAFT));
+	 	
+		 Registry.register(Registry.ITEM, new Identifier(ID, "shaft"), new BlockItem(SHAFT, new FabricItemSettings().group(CREATE)));
+		 CREATIVE_MOTOR = Registry.register(Registry.BLOCK_ENTITY_TYPE, ID + ":creative_motor", BlockEntityType.Builder.create(CreativeMotorTileEntity::new, AllBlocks.CREATIVE_MOTOR).build(null));
 		 AllBlocks.init();
-
-		 // item group creation
-		final ItemGroup CREATE = FabricItemGroupBuilder.build(new Identifier(ID, "group"), () -> new ItemStack(Blocks.DIRT)); //todo: fix block
-		 // ???
+		 
+		 
+		 
 		 Gson GSON = new GsonBuilder().setPrettyPrinting()
 				.disableHtmlEscaping()
 				.create();
-/*
-		 ServerSchematicLoader schematicReceiver;
-		 RedstoneLinkNetworkHandler redstoneLinkNetworkHandler;
+
+		 //ServerSchematicLoader schematicReceiver;
+		 //RedstoneLinkNetworkHandler redstoneLinkNetworkHandler;
 		 TorquePropagator torquePropagator;
-		 ServerLagger lagger;
-		 ChunkUtil chunkUtil;
-		 *///todo: implement other stuff, then fix this
+		 //ServerLagger lagger;
+		 //ChunkUtil chunkUtil;
+		 //todo: implement other stuff, then fix this
 		 Random random;
 
 /*		//final NonNullLazyValue<CreateRegistrate> registrate = CreateRegistrate.lazy(ID);
@@ -129,6 +131,7 @@ todo: pretty sure these are events. time to learn mixin.
 		 //todo: redstone links
 		 //todo: this might work like this? needs testing.
 		 // ok it doesnt
+		 // i might have fixed this and forgotten, no idea
 		 ServerWorldEvents.LOAD.register((server, world) -> {
 			 //WorldAccess world = event.getWorld();
 			 //KineticAPI.redstoneLinkNetworkHandler.onLoadWorld(world);
