@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.particle;
+package com.simibubi.create.content.contraptions.particle;
 
 import com.mojang.serialization.Codec;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.particle.ItemPickupParticle;
-import net.minecraft.client.particle.ItemPickupParticle.b;
-import net.minecraft.client.particle.LargeFireSmokeParticle;
+import net.minecraft.client.particle.ParticleFactory;
+import net.minecraft.client.particle.ParticleManager;
+import net.minecraft.client.particle.ParticleManager.SpriteAwareFactory;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleEffect.Factory;
 import net.minecraft.particle.ParticleType;
@@ -28,17 +28,17 @@ public interface ICustomParticleDataWithSprite<T extends ParticleEffect> extends
 	
 	@Override
 	@Environment(EnvType.CLIENT)
-	default LargeFireSmokeParticle<T> getFactory() {
+	default ParticleFactory<T> getFactory() {
 		throw new IllegalAccessError("This particle type uses a metaFactory!");
 	}
 	
 	@Environment(EnvType.CLIENT)
-	public b<T> getMetaFactory();
+	public SpriteAwareFactory<T> getMetaFactory();
 	
 	@Override
 	@Environment(EnvType.CLIENT)
-	public default void register(ParticleType<T> type, ItemPickupParticle particles) {
-		particles.a(type, getMetaFactory());
+	public default void register(ParticleType<T> type, ParticleManager particles) {
+		particles.registerFactory(type, getMetaFactory());
 	}
 	
 }

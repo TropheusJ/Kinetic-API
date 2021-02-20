@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.components.crusher;
+package com.simibubi.create.content.contraptions.components.crusher;
 
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.entity.damage.DamageRecord;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.foundation.utility.Iterate;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.timer.Timer;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LootingLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -14,10 +14,10 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 @EventBusSubscriber
 public class CrushingWheelTileEntity extends KineticTileEntity {
 
-	public static DamageRecord damageSource = new DamageRecord("kinetic_api.crush").l()
-			.r();
+	public static DamageSource damageSource = new DamageSource("create.crush").setBypassesArmor()
+			.setScaledWithDifficulty();
 
-	public CrushingWheelTileEntity(BellBlockEntity<? extends CrushingWheelTileEntity> type) {
+	public CrushingWheelTileEntity(BlockEntityType<? extends CrushingWheelTileEntity> type) {
 		super(type);
 		setLazyTickRate(20);
 	}
@@ -30,13 +30,13 @@ public class CrushingWheelTileEntity extends KineticTileEntity {
 
 	public void fixControllers() {
 		for (Direction d : Iterate.directions)
-			((CrushingWheelBlock) p().b()).updateControllers(p(), v(), o(),
+			((CrushingWheelBlock) getCachedState().getBlock()).updateControllers(getCachedState(), getWorld(), getPos(),
 					d);
 	}
 
 	@Override
-	public Timer getRenderBoundingBox() {
-		return new Timer(e).g(1);
+	public Box makeRenderBoundingBox() {
+		return new Box(pos).expand(1);
 	}
 
 	@Override
@@ -56,7 +56,7 @@ public class CrushingWheelTileEntity extends KineticTileEntity {
 	public static void crushingTeleportsEntities(LivingDeathEvent event) {
 		if (event.getSource() != damageSource)
 			return;
-		event.getEntity().o(event.getEntity().cC(), Math.floor(event.getEntity().cD()) - .5f, event.getEntity().cG());
+		event.getEntity().setPos(event.getEntity().getX(), Math.floor(event.getEntity().getY()) - .5f, event.getEntity().getZ());
 	}
 
 }

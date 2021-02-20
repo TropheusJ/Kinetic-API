@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt;
+package com.simibubi.create.foundation.tileEntity.behaviour.belt;
 
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
 
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
 
 /**
  * Behaviour for TileEntities which can process items on belts or depots beneath
@@ -40,10 +40,10 @@ public class BeltProcessingBehaviour extends TileEntityBehaviour {
 		return this;
 	}
 
-	public static boolean isBlocked(MobSpawnerLogic world, BlockPos processingSpace) {
-		return !world.d_(processingSpace.up())
-			.k(world, processingSpace.up())
-			.b();
+	public static boolean isBlocked(BlockView world, BlockPos processingSpace) {
+		return !world.getBlockState(processingSpace.up())
+			.getCollisionShape(world, processingSpace.up())
+			.isEmpty();
 	}
 
 	@Override

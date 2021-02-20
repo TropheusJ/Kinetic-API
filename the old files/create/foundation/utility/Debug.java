@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -17,21 +17,21 @@ public class Debug {
 
 	@Deprecated
 	public static void debugChat(Text message) {
-		if (KeyBinding.B().s != null)
-			KeyBinding.B().s.a(message, false);
+		if (MinecraftClient.getInstance().player != null)
+			MinecraftClient.getInstance().player.sendMessage(message, false);
 	}
 
 	@Deprecated
 	public static void debugChatAndShowStack(Text message, int depth) {
-		if (KeyBinding.B().s != null)
-			KeyBinding.B().s
-					.a(message.copy().append("@").append(debugStack(depth)), false);
+		if (MinecraftClient.getInstance().player != null)
+			MinecraftClient.getInstance().player
+					.sendMessage(message.copy().append("@").append(debugStack(depth)), false);
 	}
 
 	@Deprecated
 	public static void debugMessage(Text message) {
-		if (KeyBinding.B().s != null)
-			KeyBinding.B().s.a(message, true);
+		if (MinecraftClient.getInstance().player != null)
+			MinecraftClient.getInstance().player.sendMessage(message, true);
 	}
 
 	@Deprecated

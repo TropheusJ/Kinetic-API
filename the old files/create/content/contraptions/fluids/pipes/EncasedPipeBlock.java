@@ -1,144 +1,146 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.pipes;
+package com.simibubi.create.content.contraptions.fluids.pipes;
 
-import static net.minecraft.block.enums.BambooLeaves.H;
-import static net.minecraft.block.enums.BambooLeaves.J;
-import static net.minecraft.block.enums.BambooLeaves.I;
-import static net.minecraft.block.enums.BambooLeaves.K;
-import static net.minecraft.block.enums.BambooLeaves.G;
-import static net.minecraft.block.enums.BambooLeaves.L;
+import static net.minecraft.state.properties.BlockStateProperties.DOWN;
+import static net.minecraft.state.properties.BlockStateProperties.EAST;
+import static net.minecraft.state.properties.BlockStateProperties.NORTH;
+import static net.minecraft.state.properties.BlockStateProperties.SOUTH;
+import static net.minecraft.state.properties.BlockStateProperties.UP;
+import static net.minecraft.state.properties.BlockStateProperties.WEST;
 
-import bnx;
 import java.util.Map;
 import java.util.Random;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidPropagator;
-import com.simibubi.kinetic_api.content.contraptions.wrench.IWrenchable;
-import com.simibubi.kinetic_api.content.schematics.ISpecialBlockItemRequirement;
-import com.simibubi.kinetic_api.content.schematics.ItemRequirement;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.NyliumBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.fluids.FluidPropagator;
+import com.simibubi.create.content.contraptions.wrench.IWrenchable;
+import com.simibubi.create.content.schematics.ISpecialBlockItemRequirement;
+import com.simibubi.create.content.schematics.ItemRequirement;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ConnectingBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.server.network.DebugInfoSender;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
-import net.minecraft.world.gen.StructureAccessor;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.TickPriority;
+import net.minecraft.world.World;
 
-public class EncasedPipeBlock extends BeetrootsBlock implements IWrenchable, ISpecialBlockItemRequirement {
+public class EncasedPipeBlock extends Block implements IWrenchable, ISpecialBlockItemRequirement {
 
-	public static final Map<Direction, BedPart> FACING_TO_PROPERTY_MAP = NyliumBlock.g;
+	public static final Map<Direction, BooleanProperty> FACING_TO_PROPERTY_MAP = ConnectingBlock.FACING_PROPERTIES;
 
-	public EncasedPipeBlock(c p_i48339_1_) {
+	public EncasedPipeBlock(Settings p_i48339_1_) {
 		super(p_i48339_1_);
-		j(n().a(I, false)
-			.a(K, false)
-			.a(H, false)
-			.a(G, false)
-			.a(L, false)
-			.a(J, false));
+		setDefaultState(getDefaultState().with(NORTH, false)
+			.with(SOUTH, false)
+			.with(DOWN, false)
+			.with(UP, false)
+			.with(WEST, false)
+			.with(EAST, false));
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(I, J, K, L, G, H);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(NORTH, EAST, SOUTH, WEST, UP, DOWN);
+		super.appendProperties(builder);
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode world, BlockPos pos, PistonHandler newState, boolean isMoving) {
-		boolean blockTypeChanged = state.b() != newState.b();
-		if (blockTypeChanged && !world.v)
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean isMoving) {
+		boolean blockTypeChanged = state.getBlock() != newState.getBlock();
+		if (blockTypeChanged && !world.isClient)
 			FluidPropagator.propagateChangedPipe(world, pos, state);
 		if (state.hasTileEntity() && (blockTypeChanged || !newState.hasTileEntity()))
-			world.o(pos);
+			world.removeBlockEntity(pos);
 	}
 
 	@Override
-	public void b(PistonHandler state, GameMode world, BlockPos pos, PistonHandler oldState, boolean isMoving) {
-		if (!world.v && state != oldState)
-			world.I()
-				.a(pos, this, 1, StructureAccessor.c);
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean isMoving) {
+		if (!world.isClient && state != oldState)
+			world.getBlockTickScheduler()
+				.schedule(pos, this, 1, TickPriority.HIGH);
 	}
 
 	@Override
-	public ItemCooldownManager getPickBlock(PistonHandler state, Box target, MobSpawnerLogic world, BlockPos pos,
-		PlayerAbilities player) {
+	public ItemStack getPickBlock(BlockState state, HitResult target, BlockView world, BlockPos pos,
+		PlayerEntity player) {
 		return AllBlocks.FLUID_PIPE.asStack();
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode world, BlockPos pos, BeetrootsBlock otherBlock, BlockPos neighborPos,
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block otherBlock, BlockPos neighborPos,
 		boolean isMoving) {
-		DebugInfoSender.a(world, pos);
+		DebugInfoSender.sendNeighborUpdate(world, pos);
 		Direction d = FluidPropagator.validateNeighbourChange(state, world, pos, otherBlock, neighborPos, isMoving);
 		if (d == null)
 			return;
-		if (!state.c(FACING_TO_PROPERTY_MAP.get(d)))
+		if (!state.get(FACING_TO_PROPERTY_MAP.get(d)))
 			return;
-		world.I()
-			.a(pos, this, 1, StructureAccessor.c);
+		world.getBlockTickScheduler()
+			.schedule(pos, this, 1, TickPriority.HIGH);
 	}
 
 	@Override
-	public void a(PistonHandler state, ServerWorld world, BlockPos pos, Random r) {
+	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random r) {
 		FluidPropagator.propagateChangedPipe(world, pos, state);
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.ENCASED_FLUID_PIPE.create();
 	}
 
 	@Override
-	public Difficulty onWrenched(PistonHandler state, bnx context) {
-		GameMode world = context.p();
-		BlockPos pos = context.a();
+	public ActionResult onWrenched(BlockState state, ItemUsageContext context) {
+		World world = context.getWorld();
+		BlockPos pos = context.getBlockPos();
 
-		if (world.v)
-			return Difficulty.SUCCESS;
+		if (world.isClient)
+			return ActionResult.SUCCESS;
 
-		context.p()
-			.syncWorldEvent(2001, context.a(), BeetrootsBlock.i(state));
-		PistonHandler equivalentPipe = transferSixWayProperties(state, AllBlocks.FLUID_PIPE.getDefaultState());
+		context.getWorld()
+			.syncWorldEvent(2001, context.getBlockPos(), Block.getRawIdFromState(state));
+		BlockState equivalentPipe = transferSixWayProperties(state, AllBlocks.FLUID_PIPE.getDefaultState());
 
 		Direction firstFound = Direction.UP;
 		for (Direction d : Iterate.directions)
-			if (state.c(FACING_TO_PROPERTY_MAP.get(d))) {
+			if (state.get(FACING_TO_PROPERTY_MAP.get(d))) {
 				firstFound = d;
 				break;
 			}
 
-		world.a(pos, AllBlocks.FLUID_PIPE.get()
+		world.setBlockState(pos, AllBlocks.FLUID_PIPE.get()
 			.updateBlockState(equivalentPipe, firstFound, null, world, pos));
-		return Difficulty.SUCCESS;
+		return ActionResult.SUCCESS;
 	}
 
-	public static PistonHandler transferSixWayProperties(PistonHandler from, PistonHandler to) {
+	public static BlockState transferSixWayProperties(BlockState from, BlockState to) {
 		for (Direction d : Iterate.directions) {
-			BedPart property = FACING_TO_PROPERTY_MAP.get(d);
-			to = to.a(property, from.c(property));
+			BooleanProperty property = FACING_TO_PROPERTY_MAP.get(d);
+			to = to.with(property, from.get(property));
 		}
 		return to;
 	}
 	
 	@Override
-	public ItemRequirement getRequiredItems(PistonHandler state) {
+	public ItemRequirement getRequiredItems(BlockState state) {
 		return ItemRequirement.of(AllBlocks.FLUID_PIPE.getDefaultState());
 	}
 

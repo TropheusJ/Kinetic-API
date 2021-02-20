@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.foundation.block.connected;
+package com.simibubi.create.foundation.block.connected;
 
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShifter.CTType;
-import com.simibubi.kinetic_api.foundation.block.connected.ConnectedTextureBehaviour.CTContext;
-import com.simibubi.kinetic_api.foundation.block.render.SpriteShiftEntry;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
+import com.simibubi.create.foundation.block.connected.CTSpriteShifter.CTType;
+import com.simibubi.create.foundation.block.connected.ConnectedTextureBehaviour.CTContext;
+import com.simibubi.create.foundation.block.render.SpriteShiftEntry;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
 
 public abstract class CTSpriteShiftEntry extends SpriteShiftEntry {
 
@@ -15,13 +15,13 @@ public abstract class CTSpriteShiftEntry extends SpriteShiftEntry {
 
 	public float getTargetU(float localU, int index) {
 		float uOffset = (index % textureSheetSize);
-		return getTarget().a(
+		return getTarget().getFrameU(
 			(SuperByteBuffer.getUnInterpolatedU(getOriginal(), localU) + (uOffset * 16)) / ((float) textureSheetSize));
 	}
 
 	public float getTargetV(float localV, int index) {
 		float vOffset = (index / textureSheetSize);
-		return getTarget().b(
+		return getTarget().getFrameV(
 			(SuperByteBuffer.getUnInterpolatedV(getOriginal(), localV) + (vOffset * 16)) / ((float) textureSheetSize));
 	}
 

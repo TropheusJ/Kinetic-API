@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors.dispenser;
+package com.simibubi.create.content.contraptions.components.actors.dispenser;
 
 import net.minecraft.util.math.Position;
 

@@ -1,59 +1,54 @@
-package com.simibubi.kinetic_api.content.logistics.block.funnel;
+package com.simibubi.create.content.logistics.block.funnel;
 
-import com.simibubi.kinetic_api.content.logistics.block.chute.ChuteTileEntity;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.item.BannerItem;
-import net.minecraft.potion.PotionUtil;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.WallMountLocation;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.Event.Result;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
-public class FunnelItem extends BannerItem {
+public class FunnelItem extends BlockItem {
 
-	public FunnelItem(BeetrootsBlock p_i48527_1_, a p_i48527_2_) {
+	public FunnelItem(Block p_i48527_1_, Settings p_i48527_2_) {
 		super(p_i48527_1_, p_i48527_2_);
 	}
 
 	@SubscribeEvent
 	public static void funnelItemAlwaysPlacesWhenUsed(PlayerInteractEvent.RightClickBlock event) {
 		if (event.getItemStack()
-			.b() instanceof FunnelItem)
+			.getItem() instanceof FunnelItem)
 			event.setUseBlock(Result.DENY);
 	}
 
 	@Override
-	protected PistonHandler c(PotionUtil ctx) {
-		GameMode world = ctx.p();
-		BlockPos pos = ctx.a();
-		PistonHandler state = super.c(ctx);
+	protected BlockState getPlacementState(ItemPlacementContext ctx) {
+		World world = ctx.getWorld();
+		BlockPos pos = ctx.getBlockPos();
+		BlockState state = super.getPlacementState(ctx);
 		if (state == null)
 			return state;
-		if (!(state.b() instanceof FunnelBlock))
+		if (!(state.getBlock() instanceof FunnelBlock))
 			return state;
-		Direction direction = state.c(FunnelBlock.SHAPE);
-		if (!direction.getAxis()
-			.isHorizontal()) {
-			BeehiveBlockEntity tileEntity = world.c(pos.offset(direction.getOpposite()));
-			if (tileEntity instanceof ChuteTileEntity && ((ChuteTileEntity) tileEntity).getItemMotion() > 0)
-				state = state.a(FunnelBlock.SHAPE, direction.getOpposite());
+		if (state.get(FunnelBlock.FACE) != WallMountLocation.WALL)
 			return state;
-		}
 
-		FunnelBlock block = (FunnelBlock) e();
-		BeetrootsBlock beltFunnelBlock = block.getEquivalentBeltFunnel(world, pos, state)
-			.b();
-		PistonHandler equivalentBeltFunnel = beltFunnelBlock.a(ctx)
-			.a(BeltFunnelBlock.aq, direction);
+		Direction direction = state.get(FunnelBlock.FACING);
+		FunnelBlock block = (FunnelBlock) getBlock();
+		Block beltFunnelBlock = block.getEquivalentBeltFunnel(world, pos, state)
+			.getBlock();
+		BlockState equivalentBeltFunnel = beltFunnelBlock.getPlacementState(ctx)
+			.with(BeltFunnelBlock.FACING, direction);
 		if (BeltFunnelBlock.isOnValidBelt(equivalentBeltFunnel, world, pos)) {
-			AllTriggers.triggerFor(AllTriggers.BELT_FUNNEL, ctx.n());
+			AllTriggers.triggerFor(AllTriggers.BELT_FUNNEL, ctx.getPlayer());
 			return equivalentBeltFunnel;
 		}
 

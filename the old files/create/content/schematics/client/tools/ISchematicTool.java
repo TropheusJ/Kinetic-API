@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.content.schematics.client.tools;
+package com.simibubi.create.content.schematics.client.tools;
 
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
 
 public interface ISchematicTool {
 
@@ -12,8 +12,8 @@ public interface ISchematicTool {
 	public boolean handleRightClick();
 	public boolean handleMouseWheel(double delta);
 	
-	public void renderTool(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer);
-	public void renderOverlay(BufferVertexConsumer ms, BackgroundRenderer buffer);
-	public void renderOnSchematic(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer);
+	public void renderTool(MatrixStack ms, SuperRenderTypeBuffer buffer);
+	public void renderOverlay(MatrixStack ms, VertexConsumerProvider buffer);
+	public void renderOnSchematic(MatrixStack ms, SuperRenderTypeBuffer buffer);
 	
 }

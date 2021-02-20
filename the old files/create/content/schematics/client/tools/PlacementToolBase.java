@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.content.schematics.client.tools;
+package com.simibubi.create.content.schematics.client.tools;
 
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
 
 public abstract class PlacementToolBase extends SchematicToolBase {
 
@@ -17,12 +17,12 @@ public abstract class PlacementToolBase extends SchematicToolBase {
 	}
 
 	@Override
-	public void renderTool(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
+	public void renderTool(MatrixStack ms, SuperRenderTypeBuffer buffer) {
 		super.renderTool(ms, buffer);
 	}
 
 	@Override
-	public void renderOverlay(BufferVertexConsumer ms, BackgroundRenderer buffer) {
+	public void renderOverlay(MatrixStack ms, VertexConsumerProvider buffer) {
 		super.renderOverlay(ms, buffer);
 	}
 

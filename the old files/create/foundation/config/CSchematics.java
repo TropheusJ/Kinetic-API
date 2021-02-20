@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.config;
+package com.simibubi.create.foundation.config;
 
 public class CSchematics extends ConfigBase {
 

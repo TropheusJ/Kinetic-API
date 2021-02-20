@@ -1,27 +1,28 @@
-package com.simibubi.kinetic_api.compat.jei.category;
+package com.simibubi.create.compat.jei.category;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import net.minecraft.block.BellBlock;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.recipe.SpecialRecipeSerializer;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.foundation.gui.GuiGameElement;
 
-public class FanSmokingCategory extends ProcessingViaFanCategory<SpecialRecipeSerializer> {
+import net.minecraft.block.Blocks;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.Items;
+import net.minecraft.recipe.SmokingRecipe;
+
+public class FanSmokingCategory extends ProcessingViaFanCategory<SmokingRecipe> {
 
 	public FanSmokingCategory() {
-		super(doubleItemIcon(AllItems.PROPELLER.get(), AliasedBlockItem.nz));
+		super(doubleItemIcon(AllItems.PROPELLER.get(), Items.BLAZE_POWDER));
 	}
 
 	@Override
-	public Class<? extends SpecialRecipeSerializer> getRecipeClass() {
-		return SpecialRecipeSerializer.class;
+	public Class<? extends SmokingRecipe> getRecipeClass() {
+		return SmokingRecipe.class;
 	}
 
 	@Override
-	public void renderAttachedBlock(BufferVertexConsumer matrixStack) {
+	public void renderAttachedBlock(MatrixStack matrixStack) {
 
-		GuiGameElement.of(BellBlock.bN.n())
+		GuiGameElement.of(Blocks.FIRE.getDefaultState())
 				.scale(24)
 				.atLocal(0, 0, 2)
 				.render(matrixStack);

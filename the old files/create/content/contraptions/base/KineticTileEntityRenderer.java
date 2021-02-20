@@ -1,22 +1,24 @@
-package com.simibubi.kinetic_api.content.contraptions.base;
+package com.simibubi.create.content.contraptions.base;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.content.contraptions.KineticDebugger;
-import com.simibubi.kinetic_api.content.contraptions.relays.elementary.CogWheelBlock;
-import com.simibubi.kinetic_api.foundation.tileEntity.renderer.SafeTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBufferCache.Compartment;
-import ebv;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.CreateClient;
+import com.simibubi.create.content.contraptions.KineticDebugger;
+import com.simibubi.create.content.contraptions.relays.elementary.CogWheelBlock;
+import com.simibubi.create.foundation.render.Compartment;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.render.backend.FastRenderDispatcher;
+import com.simibubi.create.foundation.tileEntity.renderer.SafeTileEntityRenderer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.ColorHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.chunk.BlockBufferBuilderStorage;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
@@ -27,29 +29,31 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 @EventBusSubscriber(value = Dist.CLIENT)
 public class KineticTileEntityRenderer extends SafeTileEntityRenderer<KineticTileEntity> {
 
-	public static final Compartment<PistonHandler> KINETIC_TILE = new Compartment<>();
+	public static final Compartment<BlockState> KINETIC_TILE = new Compartment<>();
 	public static boolean rainbowMode = false;
 
-	public KineticTileEntityRenderer(ebv dispatcher) {
+	public KineticTileEntityRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(KineticTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(KineticTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
-		for (VertexConsumerProvider type : VertexConsumerProvider.u())
-			if (BlockBufferBuilderStorage.canRenderInLayer(te.p(), type))
+		if (FastRenderDispatcher.available(te.getWorld())) return;
+
+		for (RenderLayer type : RenderLayer.getBlockLayers())
+			if (RenderLayers.canRenderInLayer(te.getCachedState(), type))
 				renderRotatingBuffer(te, getRotatedModel(te), ms, buffer.getBuffer(type), light);
 	}
 
-	public static void renderRotatingKineticBlock(KineticTileEntity te, PistonHandler renderedState, BufferVertexConsumer ms,
-		OverlayVertexConsumer buffer, int light) {
+	public static void renderRotatingKineticBlock(KineticTileEntity te, BlockState renderedState, MatrixStack ms,
+		VertexConsumer buffer, int light) {
 		SuperByteBuffer superByteBuffer = CreateClient.bufferCache.renderBlockIn(KINETIC_TILE, renderedState);
 		renderRotatingBuffer(te, superByteBuffer, ms, buffer, light);
 	}
 
-	public static void renderRotatingBuffer(KineticTileEntity te, SuperByteBuffer superBuffer, BufferVertexConsumer ms,
-		OverlayVertexConsumer buffer, int light) {
+	public static void renderRotatingBuffer(KineticTileEntity te, SuperByteBuffer superBuffer, MatrixStack ms,
+		VertexConsumer buffer, int light) {
 		standardKineticRotationTransform(superBuffer, te, light).renderInto(ms, buffer);
 	}
 
@@ -62,9 +66,9 @@ public class KineticTileEntityRenderer extends SafeTileEntityRenderer<KineticTil
 
 	public static SuperByteBuffer standardKineticRotationTransform(SuperByteBuffer buffer, KineticTileEntity te,
 		int light) {
-		final BlockPos pos = te.o();
-		Axis axis = ((IRotate) te.p()
-			.b()).getRotationAxis(te.p());
+		final BlockPos pos = te.getPos();
+		Axis axis = ((IRotate) te.getCachedState()
+			.getBlock()).getRotationAxis(te.getCachedState());
 		return kineticRotationTransform(buffer, te, axis, getAngleForTe(te, pos, axis), light);
 	}
 
@@ -92,7 +96,7 @@ public class KineticTileEntityRenderer extends SafeTileEntityRenderer<KineticTil
 	}
 
 	protected static float getRotationOffsetForPosition(KineticTileEntity te, final BlockPos pos, final Axis axis) {
-		float offset = CogWheelBlock.isLargeCog(te.p()) ? 11.25f : 0;
+		float offset = CogWheelBlock.isLargeCog(te.getCachedState()) ? 11.25f : 0;
 		double d = (((axis == Axis.X) ? 0 : pos.getX()) + ((axis == Axis.Y) ? 0 : pos.getY())
 			+ ((axis == Axis.Z) ? 0 : pos.getZ())) % 2;
 		if (d == 0) {
@@ -101,18 +105,18 @@ public class KineticTileEntityRenderer extends SafeTileEntityRenderer<KineticTil
 		return offset;
 	}
 
-	public static PistonHandler shaft(Axis axis) {
+	public static BlockState shaft(Axis axis) {
 		return AllBlocks.SHAFT.getDefaultState()
-			.a(BambooLeaves.F, axis);
+			.with(Properties.AXIS, axis);
 	}
 
 	public static Axis getRotationAxisOf(KineticTileEntity te) {
-		return ((IRotate) te.p()
-			.b()).getRotationAxis(te.p());
+		return ((IRotate) te.getCachedState()
+			.getBlock()).getRotationAxis(te.getCachedState());
 	}
 
-	protected PistonHandler getRenderedBlockState(KineticTileEntity te) {
-		return te.p();
+	protected BlockState getRenderedBlockState(KineticTileEntity te) {
+		return te.getCachedState();
 	}
 
 	protected SuperByteBuffer getRotatedModel(KineticTileEntity te) {

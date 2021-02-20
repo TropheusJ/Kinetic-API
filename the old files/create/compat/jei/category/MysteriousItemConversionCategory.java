@@ -1,19 +1,19 @@
-package com.simibubi.kinetic_api.compat.jei.category;
+package com.simibubi.create.compat.jei.category;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.compat.jei.ConversionRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingOutput;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.compat.jei.ConversionRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingOutput;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.gui.ingredient.IGuiItemStackGroup;
 import mezz.jei.api.ingredients.IIngredients;
-import net.minecraft.client.render.BufferVertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
 
 public class MysteriousItemConversionCategory extends CreateRecipeCategory<ConversionRecipe> {
 
@@ -36,7 +36,7 @@ public class MysteriousItemConversionCategory extends CreateRecipeCategory<Conve
 
 	@Override
 	public void setIngredients(ConversionRecipe recipe, IIngredients ingredients) {
-		ingredients.setInputIngredients(recipe.a());
+		ingredients.setInputIngredients(recipe.getPreviewInputs());
 		ingredients.setOutputs(VanillaTypes.ITEM, recipe.getRollableResultsAsItemStacks());
 	}
 
@@ -45,13 +45,13 @@ public class MysteriousItemConversionCategory extends CreateRecipeCategory<Conve
 		IGuiItemStackGroup itemStacks = recipeLayout.getItemStacks();
 		List<ProcessingOutput> results = recipe.getRollableResults();
 		itemStacks.init(0, true, 26, 16);
-		itemStacks.set(0, Arrays.asList(recipe.a().get(0).a()));
+		itemStacks.set(0, Arrays.asList(recipe.getPreviewInputs().get(0).getMatchingStacksClient()));
 		itemStacks.init(1, false, 131, 16);
 		itemStacks.set(1, results.get(0).getStack());
 	}
 
 	@Override
-	public void draw(ConversionRecipe recipe, BufferVertexConsumer matrixStack, double mouseX, double mouseY) {
+	public void draw(ConversionRecipe recipe, MatrixStack matrixStack, double mouseX, double mouseY) {
 		AllGuiTextures.JEI_SLOT.draw(matrixStack, 26, 16);
 		AllGuiTextures.JEI_SLOT.draw(matrixStack, 131, 16);
 		AllGuiTextures.JEI_LONG_ARROW.draw(matrixStack, 52, 20);

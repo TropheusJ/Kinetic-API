@@ -1,15 +1,16 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.AllTags;
-import com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.AllTags;
+import com.simibubi.create.content.palettes.AllPaletteBlocks;
 import com.tterrag.registrate.util.entry.ItemEntry;
-import net.minecraft.block.BellBlock;
+
+import net.minecraft.block.Blocks;
 import net.minecraft.data.DataGenerator;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.HoeItem;
-import net.minecraft.tag.EntityTypeTags;
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
+import net.minecraft.tag.ItemTags;
 import net.minecraftforge.common.crafting.conditions.NotCondition;
 import net.minecraftforge.common.crafting.conditions.TagEmptyCondition;
 
@@ -17,30 +18,30 @@ public class MillingRecipeGen extends ProcessingRecipeGen {
 
 	GeneratedRecipe
 
-	GRANITE = create(() -> BellBlock.POWERED, b -> b.duration(200)
-		.output(BellBlock.D)),
+	GRANITE = create(() -> Blocks.GRANITE, b -> b.duration(200)
+		.output(Blocks.RED_SAND)),
 
 		WOOL = create("wool", b -> b.duration(100)
-			.require(EntityTypeTags.field_15507)
-			.output(AliasedBlockItem.kS)),
+			.require(ItemTags.WOOL)
+			.output(Items.STRING)),
 
-		CLAY = create(() -> BellBlock.cG, b -> b.duration(50)
-			.output(AliasedBlockItem.lZ, 3)
-			.output(.5f, AliasedBlockItem.lZ)),
+		CLAY = create(() -> Blocks.CLAY, b -> b.duration(50)
+			.output(Items.CLAY_BALL, 3)
+			.output(.5f, Items.CLAY_BALL)),
 
-		TERRACOTTA = create(() -> BellBlock.gR, b -> b.duration(200)
-			.output(BellBlock.D)),
-		ANDESITE = create(() -> BellBlock.BELL_LIP_SHAPE, b -> b.duration(200)
-			.output(BellBlock.m)),
-		COBBLESTONE = create(() -> BellBlock.m, b -> b.duration(250)
-			.output(BellBlock.E)),
-		GRAVEL = create(() -> BellBlock.E, b -> b.duration(250)
-			.output(AliasedBlockItem.lw)),
-		SAND = create(() -> BellBlock.C, b -> b.duration(150)
+		TERRACOTTA = create(() -> Blocks.TERRACOTTA, b -> b.duration(200)
+			.output(Blocks.RED_SAND)),
+		ANDESITE = create(() -> Blocks.ANDESITE, b -> b.duration(200)
+			.output(Blocks.COBBLESTONE)),
+		COBBLESTONE = create(() -> Blocks.COBBLESTONE, b -> b.duration(250)
+			.output(Blocks.GRAVEL)),
+		GRAVEL = create(() -> Blocks.GRAVEL, b -> b.duration(250)
+			.output(Items.FLINT)),
+		SAND = create(() -> Blocks.SAND, b -> b.duration(150)
 			.output(AllPaletteBlocks.LIMESAND.get())),
-		SANDSTONE = create(() -> BellBlock.at, b -> b.duration(150)
-			.output(BellBlock.C)),
-		DIORITE = create(() -> BellBlock.EAST_WEST_SHAPE, b -> b.duration(200)
+		SANDSTONE = create(() -> Blocks.SANDSTONE, b -> b.duration(150)
+			.output(Blocks.SAND)),
+		DIORITE = create(() -> Blocks.DIORITE, b -> b.duration(200)
 			.output(AllPaletteBlocks.LIMESAND.get())),
 
 		COPPER_ORE = metalOre("copper", AllItems.CRUSHED_COPPER, 350),
@@ -58,144 +59,144 @@ public class MillingRecipeGen extends ProcessingRecipeGen {
 		URANIUM_ORE = metalOre("uranium", AllItems.CRUSHED_URANIUM, 400),
 		NICKEL_ORE = metalOre("nickel", AllItems.CRUSHED_NICKEL, 350),
 
-		WHEAT = create(() -> AliasedBlockItem.kW, b -> b.duration(150)
+		WHEAT = create(() -> Items.WHEAT, b -> b.duration(150)
 			.output(AllItems.WHEAT_FLOUR.get())
 			.output(.25f, AllItems.WHEAT_FLOUR.get(), 2)
-			.output(.25f, AliasedBlockItem.kV)),
+			.output(.25f, Items.WHEAT_SEEDS)),
 
-		BONE = create(() -> AliasedBlockItem.mL, b -> b.duration(100)
-			.output(AliasedBlockItem.mK, 3)
-			.output(.25f, AliasedBlockItem.mu, 1)
-			.output(.25f, AliasedBlockItem.mK, 3)),
+		BONE = create(() -> Items.BONE, b -> b.duration(100)
+			.output(Items.BONE_MEAL, 3)
+			.output(.25f, Items.WHITE_DYE, 1)
+			.output(.25f, Items.BONE_MEAL, 3)),
 
-		CACTUS = create(() -> BellBlock.cF, b -> b.duration(50)
-			.output(AliasedBlockItem.mH, 2)
-			.output(.1f, AliasedBlockItem.mH, 1)
+		CACTUS = create(() -> Blocks.CACTUS, b -> b.duration(50)
+			.output(Items.GREEN_DYE, 2)
+			.output(.1f, Items.GREEN_DYE, 1)
 			.whenModMissing("quark")),
 
-		BONE_MEAL = create(() -> AliasedBlockItem.mK, b -> b.duration(70)
-			.output(AliasedBlockItem.mu, 2)
-			.output(.1f, AliasedBlockItem.mC, 1)),
+		BONE_MEAL = create(() -> Items.BONE_MEAL, b -> b.duration(70)
+			.output(Items.WHITE_DYE, 2)
+			.output(.1f, Items.LIGHT_GRAY_DYE, 1)),
 
-		COCOA_BEANS = create(() -> AliasedBlockItem.ms, b -> b.duration(70)
-			.output(AliasedBlockItem.mG, 2)
-			.output(.1f, AliasedBlockItem.mG, 1)),
+		COCOA_BEANS = create(() -> Items.COCOA_BEANS, b -> b.duration(70)
+			.output(Items.BROWN_DYE, 2)
+			.output(.1f, Items.BROWN_DYE, 1)),
 
-		SADDLE = create(() -> AliasedBlockItem.lO, b -> b.duration(200)
-			.output(AliasedBlockItem.lS, 2)
-			.output(.5f, AliasedBlockItem.lS, 2)),
+		SADDLE = create(() -> Items.SADDLE, b -> b.duration(200)
+			.output(Items.LEATHER, 2)
+			.output(.5f, Items.LEATHER, 2)),
 
-		SUGAR_CANE = create(() -> AliasedBlockItem.bD, b -> b.duration(50)
-			.output(AliasedBlockItem.mM, 2)
-			.output(.1f, AliasedBlockItem.mM)),
+		SUGAR_CANE = create(() -> Items.SUGAR_CANE, b -> b.duration(50)
+			.output(Items.SUGAR, 2)
+			.output(.1f, Items.SUGAR)),
 
-		INK_SAC = create(() -> AliasedBlockItem.mr, b -> b.duration(100)
-			.output(AliasedBlockItem.mJ, 2)
-			.output(.1f, AliasedBlockItem.mB)),
+		INK_SAC = create(() -> Items.INK_SAC, b -> b.duration(100)
+			.output(Items.BLACK_DYE, 2)
+			.output(.1f, Items.GRAY_DYE)),
 
-		CHARCOAL = create(() -> AliasedBlockItem.kf, b -> b.duration(100)
-			.output(AliasedBlockItem.mJ, 1)
-			.output(.1f, AliasedBlockItem.mB, 2)),
+		CHARCOAL = create(() -> Items.CHARCOAL, b -> b.duration(100)
+			.output(Items.BLACK_DYE, 1)
+			.output(.1f, Items.GRAY_DYE, 2)),
 
-		COAL = create(() -> AliasedBlockItem.ke, b -> b.duration(100)
-			.output(AliasedBlockItem.mJ, 2)
-			.output(.1f, AliasedBlockItem.mB, 1)),
+		COAL = create(() -> Items.COAL, b -> b.duration(100)
+			.output(Items.BLACK_DYE, 2)
+			.output(.1f, Items.GRAY_DYE, 1)),
 
-		LAPIS_LAZULI = create(() -> AliasedBlockItem.mt, b -> b.duration(100)
-			.output(AliasedBlockItem.mF, 2)
-			.output(.1f, AliasedBlockItem.mF)),
+		LAPIS_LAZULI = create(() -> Items.LAPIS_LAZULI, b -> b.duration(100)
+			.output(Items.BLUE_DYE, 2)
+			.output(.1f, Items.BLUE_DYE)),
 
-		AZURE_BLUET = create(() -> BellBlock.bt, b -> b.duration(50)
-			.output(AliasedBlockItem.mC, 2)
-			.output(.1f, AliasedBlockItem.mu, 2)),
+		AZURE_BLUET = create(() -> Blocks.AZURE_BLUET, b -> b.duration(50)
+			.output(Items.LIGHT_GRAY_DYE, 2)
+			.output(.1f, Items.WHITE_DYE, 2)),
 
-		BLUE_ORCHID = create(() -> BellBlock.br, b -> b.duration(50)
-			.output(AliasedBlockItem.mx, 2)
-			.output(.05f, AliasedBlockItem.mC, 1)),
+		BLUE_ORCHID = create(() -> Blocks.BLUE_ORCHID, b -> b.duration(50)
+			.output(Items.LIGHT_BLUE_DYE, 2)
+			.output(.05f, Items.LIGHT_GRAY_DYE, 1)),
 
-		FERN = create(() -> BellBlock.aS, b -> b.duration(50)
-			.output(AliasedBlockItem.mH)
-			.output(.1f, AliasedBlockItem.kV)),
+		FERN = create(() -> Blocks.FERN, b -> b.duration(50)
+			.output(Items.GREEN_DYE)
+			.output(.1f, Items.WHEAT_SEEDS)),
 
-		LARGE_FERN = create(() -> BellBlock.gZ, b -> b.duration(50)
-			.output(AliasedBlockItem.mH, 2)
-			.output(.5f, AliasedBlockItem.mH)
-			.output(.1f, AliasedBlockItem.kV)),
+		LARGE_FERN = create(() -> Blocks.LARGE_FERN, b -> b.duration(50)
+			.output(Items.GREEN_DYE, 2)
+			.output(.5f, Items.GREEN_DYE)
+			.output(.1f, Items.WHEAT_SEEDS)),
 
-		LILAC = create(() -> BellBlock.gV, b -> b.duration(100)
-			.output(AliasedBlockItem.mw, 3)
-			.output(.25f, AliasedBlockItem.mw)
-			.output(.25f, AliasedBlockItem.mE)),
+		LILAC = create(() -> Blocks.LILAC, b -> b.duration(100)
+			.output(Items.MAGENTA_DYE, 3)
+			.output(.25f, Items.MAGENTA_DYE)
+			.output(.25f, Items.PURPLE_DYE)),
 
-		PEONY = create(() -> BellBlock.gX, b -> b.duration(100)
-			.output(AliasedBlockItem.mA, 3)
-			.output(.25f, AliasedBlockItem.mw)
-			.output(.25f, AliasedBlockItem.mA)),
+		PEONY = create(() -> Blocks.PEONY, b -> b.duration(100)
+			.output(Items.PINK_DYE, 3)
+			.output(.25f, Items.MAGENTA_DYE)
+			.output(.25f, Items.PINK_DYE)),
 
-		ALLIUM = create(() -> BellBlock.bs, b -> b.duration(50)
-			.output(AliasedBlockItem.mw, 2)
-			.output(.1f, AliasedBlockItem.mE, 2)
-			.output(.1f, AliasedBlockItem.mA)),
+		ALLIUM = create(() -> Blocks.ALLIUM, b -> b.duration(50)
+			.output(Items.MAGENTA_DYE, 2)
+			.output(.1f, Items.PURPLE_DYE, 2)
+			.output(.1f, Items.PINK_DYE)),
 
-		LILY_OF_THE_VALLEY = create(() -> BellBlock.bB, b -> b.duration(50)
-			.output(AliasedBlockItem.mu, 2)
-			.output(.1f, AliasedBlockItem.mz)
-			.output(.1f, AliasedBlockItem.mu)),
+		LILY_OF_THE_VALLEY = create(() -> Blocks.LILY_OF_THE_VALLEY, b -> b.duration(50)
+			.output(Items.WHITE_DYE, 2)
+			.output(.1f, Items.LIME_DYE)
+			.output(.1f, Items.WHITE_DYE)),
 
-		ROSE_BUSH = create(() -> BellBlock.gW, b -> b.duration(50)
-			.output(AliasedBlockItem.mI, 3)
-			.output(.05f, AliasedBlockItem.mH, 2)
-			.output(.25f, AliasedBlockItem.mI, 2)),
+		ROSE_BUSH = create(() -> Blocks.ROSE_BUSH, b -> b.duration(50)
+			.output(Items.RED_DYE, 3)
+			.output(.05f, Items.GREEN_DYE, 2)
+			.output(.25f, Items.RED_DYE, 2)),
 
-		SUNFLOWER = create(() -> BellBlock.gU, b -> b.duration(100)
-			.output(AliasedBlockItem.my, 3)
-			.output(.25f, AliasedBlockItem.mv)
-			.output(.25f, AliasedBlockItem.my)),
+		SUNFLOWER = create(() -> Blocks.SUNFLOWER, b -> b.duration(100)
+			.output(Items.YELLOW_DYE, 3)
+			.output(.25f, Items.ORANGE_DYE)
+			.output(.25f, Items.YELLOW_DYE)),
 
-		OXEYE_DAISY = create(() -> BellBlock.by, b -> b.duration(50)
-			.output(AliasedBlockItem.mC, 2)
-			.output(.2f, AliasedBlockItem.mu)
-			.output(.05f, AliasedBlockItem.my)),
+		OXEYE_DAISY = create(() -> Blocks.OXEYE_DAISY, b -> b.duration(50)
+			.output(Items.LIGHT_GRAY_DYE, 2)
+			.output(.2f, Items.WHITE_DYE)
+			.output(.05f, Items.YELLOW_DYE)),
 
-		POPPY = create(() -> BellBlock.bq, b -> b.duration(50)
-			.output(AliasedBlockItem.mI, 2)
-			.output(.05f, AliasedBlockItem.mH)),
+		POPPY = create(() -> Blocks.POPPY, b -> b.duration(50)
+			.output(Items.RED_DYE, 2)
+			.output(.05f, Items.GREEN_DYE)),
 
-		DANDELION = create(() -> BellBlock.bp, b -> b.duration(50)
-			.output(AliasedBlockItem.my, 2)
-			.output(.05f, AliasedBlockItem.my)),
+		DANDELION = create(() -> Blocks.DANDELION, b -> b.duration(50)
+			.output(Items.YELLOW_DYE, 2)
+			.output(.05f, Items.YELLOW_DYE)),
 
-		CORNFLOWER = create(() -> BellBlock.bz, b -> b.duration(50)
-			.output(AliasedBlockItem.mF, 2)),
+		CORNFLOWER = create(() -> Blocks.CORNFLOWER, b -> b.duration(50)
+			.output(Items.BLUE_DYE, 2)),
 
-		WITHER_ROSE = create(() -> BellBlock.bA, b -> b.duration(50)
-			.output(AliasedBlockItem.mJ, 2)
-			.output(.1f, AliasedBlockItem.mJ)),
+		WITHER_ROSE = create(() -> Blocks.WITHER_ROSE, b -> b.duration(50)
+			.output(Items.BLACK_DYE, 2)
+			.output(.1f, Items.BLACK_DYE)),
 
-		ORANGE_TULIP = create(() -> BellBlock.bv, b -> b.duration(50)
-			.output(AliasedBlockItem.mv, 2)
-			.output(.1f, AliasedBlockItem.mz)),
+		ORANGE_TULIP = create(() -> Blocks.ORANGE_TULIP, b -> b.duration(50)
+			.output(Items.ORANGE_DYE, 2)
+			.output(.1f, Items.LIME_DYE)),
 
-		RED_TULIP = create(() -> BellBlock.bu, b -> b.duration(50)
-			.output(AliasedBlockItem.mI, 2)
-			.output(.1f, AliasedBlockItem.mz)),
+		RED_TULIP = create(() -> Blocks.RED_TULIP, b -> b.duration(50)
+			.output(Items.RED_DYE, 2)
+			.output(.1f, Items.LIME_DYE)),
 
-		WHITE_TULIP = create(() -> BellBlock.bw, b -> b.duration(50)
-			.output(AliasedBlockItem.mu, 2)
-			.output(.1f, AliasedBlockItem.mz)),
+		WHITE_TULIP = create(() -> Blocks.WHITE_TULIP, b -> b.duration(50)
+			.output(Items.WHITE_DYE, 2)
+			.output(.1f, Items.LIME_DYE)),
 
-		PINK_TULIP = create(() -> BellBlock.bx, b -> b.duration(50)
-			.output(AliasedBlockItem.mA, 2)
-			.output(.1f, AliasedBlockItem.mz)),
+		PINK_TULIP = create(() -> Blocks.PINK_TULIP, b -> b.duration(50)
+			.output(Items.PINK_DYE, 2)
+			.output(.1f, Items.LIME_DYE)),
 
-		TALL_GRASS = create(() -> BellBlock.gY, b -> b.duration(100)
-			.output(.5f, AliasedBlockItem.kV)),
-		GRASS = create(() -> BellBlock.aR, b -> b.duration(50)
-			.output(.25f, AliasedBlockItem.kV))
+		TALL_GRASS = create(() -> Blocks.TALL_GRASS, b -> b.duration(100)
+			.output(.5f, Items.WHEAT_SEEDS)),
+		GRASS = create(() -> Blocks.GRASS, b -> b.duration(50)
+			.output(.25f, Items.WHEAT_SEEDS))
 
 	;
 
-	protected GeneratedRecipe metalOre(String name, ItemEntry<? extends HoeItem> crushed, int duration) {
+	protected GeneratedRecipe metalOre(String name, ItemEntry<? extends Item> crushed, int duration) {
 		return create(name + "_ore", b -> b.duration(duration)
 			.withCondition(new NotCondition(new TagEmptyCondition("forge", "ores/" + name)))
 			.require(AllTags.forgeItemTag("ores/" + name))

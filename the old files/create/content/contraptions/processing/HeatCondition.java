@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock;
-import com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock;
+import com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
+import com.simibubi.create.foundation.utility.Lang;
 
 public enum HeatCondition {
 

@@ -1,43 +1,44 @@
-package com.simibubi.kinetic_api.foundation.item;
+package com.simibubi.create.foundation.item;
 
-import static com.simibubi.kinetic_api.foundation.item.TooltipHelper.cutStringTextComponent;
-import static com.simibubi.kinetic_api.foundation.item.TooltipHelper.cutTextComponent;
-import static net.minecraft.util.Formatting.AQUA;
-import static net.minecraft.util.Formatting.BLUE;
-import static net.minecraft.util.Formatting.DARK_GRAY;
-import static net.minecraft.util.Formatting.DARK_GREEN;
-import static net.minecraft.util.Formatting.DARK_PURPLE;
-import static net.minecraft.util.Formatting.DARK_RED;
-import static net.minecraft.util.Formatting.GOLD;
-import static net.minecraft.util.Formatting.GRAY;
-import static net.minecraft.util.Formatting.GREEN;
-import static net.minecraft.util.Formatting.ITALIC;
-import static net.minecraft.util.Formatting.LIGHT_PURPLE;
-import static net.minecraft.util.Formatting.RED;
-import static net.minecraft.util.Formatting.STRIKETHROUGH;
-import static net.minecraft.util.Formatting.WHITE;
-import static net.minecraft.util.Formatting.YELLOW;
+import static com.simibubi.create.foundation.item.TooltipHelper.cutStringTextComponent;
+import static com.simibubi.create.foundation.item.TooltipHelper.cutTextComponent;
+import static net.minecraft.util.text.TextFormatting.AQUA;
+import static net.minecraft.util.text.TextFormatting.BLUE;
+import static net.minecraft.util.text.TextFormatting.DARK_GRAY;
+import static net.minecraft.util.text.TextFormatting.DARK_GREEN;
+import static net.minecraft.util.text.TextFormatting.DARK_PURPLE;
+import static net.minecraft.util.text.TextFormatting.DARK_RED;
+import static net.minecraft.util.text.TextFormatting.GOLD;
+import static net.minecraft.util.text.TextFormatting.GRAY;
+import static net.minecraft.util.text.TextFormatting.GREEN;
+import static net.minecraft.util.text.TextFormatting.ITALIC;
+import static net.minecraft.util.text.TextFormatting.LIGHT_PURPLE;
+import static net.minecraft.util.text.TextFormatting.RED;
+import static net.minecraft.util.text.TextFormatting.STRIKETHROUGH;
+import static net.minecraft.util.text.TextFormatting.WHITE;
+import static net.minecraft.util.text.TextFormatting.YELLOW;
 
-import aqc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate.SpeedLevel;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate.StressImpact;
-import com.simibubi.kinetic_api.content.contraptions.components.fan.EncasedFanBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.flywheel.engine.EngineBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.flywheel.engine.FurnaceEngineBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.waterwheel.WaterWheelBlock;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.config.CKinetics;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.client.gui.screen.PresetsScreen;
-import net.minecraft.client.options.KeyBinding;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.content.contraptions.base.IRotate;
+import com.simibubi.create.content.contraptions.base.IRotate.SpeedLevel;
+import com.simibubi.create.content.contraptions.base.IRotate.StressImpact;
+import com.simibubi.create.content.contraptions.components.fan.EncasedFanBlock;
+import com.simibubi.create.content.contraptions.components.flywheel.engine.EngineBlock;
+import com.simibubi.create.content.contraptions.components.flywheel.engine.FurnaceEngineBlock;
+import com.simibubi.create.content.contraptions.components.waterwheel.WaterWheelBlock;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.config.CKinetics;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.Block;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -89,7 +90,7 @@ public class ItemDescription {
 		return this;
 	}
 
-	public ItemDescription withKineticStats(BeetrootsBlock block) {
+	public ItemDescription withKineticStats(Block block) {
 
 		boolean isEngine = block instanceof EngineBlock;
 		CKinetics config = AllConfigs.SERVER.kinetics;
@@ -103,8 +104,8 @@ public class ItemDescription {
 			.get() > 0 && StressImpact.isEnabled();
 		boolean hasStressCapacity = capacities.containsKey(id) && StressImpact.isEnabled();
 		boolean hasGlasses =
-			AllItems.GOGGLES.get() == KeyBinding.B().s.b(aqc.f)
-				.b();
+			AllItems.GOGGLES.get() == MinecraftClient.getInstance().player.getEquippedStack(EquipmentSlot.HEAD)
+				.getItem();
 
 		Text rpmUnit = Lang.translate("generic.unit.rpm");
 		if (hasSpeedRequirement) {
@@ -255,12 +256,12 @@ public class ItemDescription {
 	}
 
 	public List<Text> addInformation(List<Text> tooltip) {
-		if (PresetsScreen.y()) {
+		if (Screen.hasShiftDown()) {
 			tooltip.addAll(linesOnShift);
 			return tooltip;
 		}
 
-		if (PresetsScreen.x()) {
+		if (Screen.hasControlDown()) {
 			tooltip.addAll(linesOnCtrl);
 			return tooltip;
 		}
@@ -281,7 +282,7 @@ public class ItemDescription {
 		return linesOnShift;
 	}
 
-	private MutableText generatorSpeed(BeetrootsBlock block, Text unitRPM) {
+	private MutableText generatorSpeed(Block block, Text unitRPM) {
 		String value = "";
 
 		if (block instanceof WaterWheelBlock) {

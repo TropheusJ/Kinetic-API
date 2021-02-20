@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.fluid;
+package com.simibubi.create.foundation.fluid;
 
 import java.util.function.Consumer;
 

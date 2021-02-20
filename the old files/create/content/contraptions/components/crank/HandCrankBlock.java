@@ -1,42 +1,42 @@
-package com.simibubi.kinetic_api.content.contraptions.components.crank;
+package com.simibubi.create.content.contraptions.components.crank;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalKineticBlock;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import dcg;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.DirectionalKineticBlock;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.config.AllConfigs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.RedstoneLampBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockRenderType;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class HandCrankBlock extends DirectionalKineticBlock implements ITE<HandCrankTileEntity> {
 
-	public HandCrankBlock(c properties) {
+	public HandCrankBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
-		return AllShapes.CRANK.get(state.c(FACING));
+	public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
+		return AllShapes.CRANK.get(state.get(FACING));
 	}
 	
 	@Environment(EnvType.CLIENT)
@@ -49,72 +49,72 @@ public class HandCrankBlock extends DirectionalKineticBlock implements ITE<HandC
 	}
 
 	@Override
-	public RedstoneLampBlock b(PistonHandler state) {
-		return RedstoneLampBlock.b;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.ENTITYBLOCK_ANIMATED;
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode worldIn, BlockPos pos, PlayerAbilities player, ItemScatterer handIn,
-		dcg hit) {
-		boolean handEmpty = player.b(handIn)
-			.a();
+	public ActionResult onUse(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn,
+		BlockHitResult hit) {
+		boolean handEmpty = player.getStackInHand(handIn)
+			.isEmpty();
 
-		if (!handEmpty && player.bt())
-			return Difficulty.PASS;
+		if (!handEmpty && player.isSneaking())
+			return ActionResult.PASS;
 
-		withTileEntityDo(worldIn, pos, te -> te.turn(player.bt()));
-		player.t(getRotationSpeed() * AllConfigs.SERVER.kinetics.crankHungerMultiplier.getF());
-		return Difficulty.SUCCESS;
+		withTileEntityDo(worldIn, pos, te -> te.turn(player.isSneaking()));
+		player.addExhaustion(getRotationSpeed() * AllConfigs.SERVER.kinetics.crankHungerMultiplier.getF());
+		return ActionResult.SUCCESS;
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
+	public BlockState getPlacementState(ItemPlacementContext context) {
 		Direction preferred = getPreferredFacing(context);
-		if (preferred == null || (context.n() != null && context.n()
-			.bt()))
-			return n().a(FACING, context.j());
-		return n().a(FACING, preferred.getOpposite());
+		if (preferred == null || (context.getPlayer() != null && context.getPlayer()
+			.isSneaking()))
+			return getDefaultState().with(FACING, context.getSide());
+		return getDefaultState().with(FACING, preferred.getOpposite());
 	}
 
 	@Override
-	public boolean a(PistonHandler state, ItemConvertible worldIn, BlockPos pos) {
-		Direction facing = state.c(FACING)
+	public boolean canPlaceAt(BlockState state, WorldView worldIn, BlockPos pos) {
+		Direction facing = state.get(FACING)
 			.getOpposite();
 		BlockPos neighbourPos = pos.offset(facing);
-		PistonHandler neighbour = worldIn.d_(neighbourPos);
-		return !neighbour.k(worldIn, neighbourPos)
-			.b();
+		BlockState neighbour = worldIn.getBlockState(neighbourPos);
+		return !neighbour.getCollisionShape(worldIn, neighbourPos)
+			.isEmpty();
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, BeetrootsBlock blockIn, BlockPos fromPos,
+	public void neighborUpdate(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos,
 		boolean isMoving) {
-		if (worldIn.v)
+		if (worldIn.isClient)
 			return;
 
-		Direction blockFacing = state.c(FACING);
+		Direction blockFacing = state.get(FACING);
 		if (fromPos.equals(pos.offset(blockFacing.getOpposite()))) {
-			if (!a(state, worldIn, pos)) {
-				worldIn.b(pos, true);
+			if (!canPlaceAt(state, worldIn, pos)) {
+				worldIn.breakBlock(pos, true);
 				return;
 			}
 		}
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.HAND_CRANK.create();
 	}
 
 	@Override
-	public boolean hasShaftTowards(ItemConvertible world, BlockPos pos, PistonHandler state, Direction face) {
-		return face == state.c(FACING)
+	public boolean hasShaftTowards(WorldView world, BlockPos pos, BlockState state, Direction face) {
+		return face == state.get(FACING)
 			.getOpposite();
 	}
 
 	@Override
-	public Axis getRotationAxis(PistonHandler state) {
-		return state.c(FACING)
+	public Axis getRotationAxis(BlockState state) {
+		return state.get(FACING)
 			.getAxis();
 	}
 

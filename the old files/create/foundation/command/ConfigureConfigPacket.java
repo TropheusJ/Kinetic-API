@@ -1,18 +1,19 @@
-package com.simibubi.kinetic_api.foundation.command;
+package com.simibubi.create.foundation.command;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.apache.logging.log4j.LogManager;
 
-import com.simibubi.kinetic_api.content.contraptions.goggles.GoggleConfigScreen;
-import com.simibubi.kinetic_api.foundation.command.ConfigureConfigPacket.Actions;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.gui.ScreenOpener;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
+import com.simibubi.create.content.contraptions.goggles.GoggleConfigScreen;
+import com.simibubi.create.foundation.command.ConfigureConfigPacket.Actions;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.gui.ScreenOpener;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
+import com.simibubi.create.foundation.render.backend.FastRenderDispatcher;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -44,7 +45,7 @@ public class ConfigureConfigPacket extends SimplePacketBase {
 	@Override
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
 		ctx.get()
-			.enqueueWork(() -> DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
+			.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
 				try {
 					Actions.valueOf(option)
 						.performAction(value);
@@ -63,6 +64,7 @@ public class ConfigureConfigPacket extends SimplePacketBase {
 		overlayScreen(() -> Actions::overlayScreen),
 		fixLighting(() -> Actions::experimentalLighting),
 		overlayReset(() -> Actions::overlayReset),
+		experimentalRendering(() -> Actions::experimentalRendering),
 
 		;
 
@@ -81,6 +83,14 @@ public class ConfigureConfigPacket extends SimplePacketBase {
 		private static void rainbowDebug(String value) {
 			AllConfigs.CLIENT.rainbowDebug.set(Boolean.parseBoolean(value));
 		}
+
+		@Environment(EnvType.CLIENT)
+		private static void experimentalRendering(String value) {
+			if (!"".equals(value)) {
+				AllConfigs.CLIENT.experimentalRendering.set(Boolean.parseBoolean(value));
+			}
+			FastRenderDispatcher.refresh();
+		}
 		
 		@Environment(EnvType.CLIENT)
 		private static void overlayReset(String value) {
@@ -96,7 +106,7 @@ public class ConfigureConfigPacket extends SimplePacketBase {
 		@Environment(EnvType.CLIENT)
 		private static void experimentalLighting(String value) {
 			ForgeConfig.CLIENT.experimentalForgeLightPipelineEnabled.set(true);
-			KeyBinding.B().translationKey.disable();
+			MinecraftClient.getInstance().worldRenderer.reload();
 		}
 	}
 }

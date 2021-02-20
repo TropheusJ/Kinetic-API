@@ -1,13 +1,13 @@
-package com.simibubi.kinetic_api.foundation.gui.widgets;
+package com.simibubi.create.foundation.gui.widgets;
 
 import java.util.LinkedList;
 import java.util.List;
-import net.minecraft.client.gui.widget.OptionSliderWidget;
-import net.minecraft.client.render.BufferVertexConsumer;
+import net.minecraft.client.gui.widget.AbstractButtonWidget;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 
-public abstract class AbstractSimiWidget extends OptionSliderWidget {
+public abstract class AbstractSimiWidget extends AbstractButtonWidget {
 
 	protected List<Text> toolTip;
 	
@@ -21,7 +21,7 @@ public abstract class AbstractSimiWidget extends OptionSliderWidget {
 	}
 	
 	@Override
-	public void b(BufferVertexConsumer matrixStack, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
+	public void renderButton(MatrixStack matrixStack, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
 	}
 
 }

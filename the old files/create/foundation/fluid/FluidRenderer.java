@@ -1,25 +1,25 @@
-package com.simibubi.kinetic_api.foundation.fluid;
+package com.simibubi.create.foundation.fluid;
 
 import java.util.function.Function;
-import afj;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import cut;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.BufferVertexConsumer.a;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.texture.MipmapHelper;
-import net.minecraft.screen.GrindstoneScreenHandler;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.MatrixStack.Entry;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraftforge.fluids.FluidAttributes;
 import net.minecraftforge.fluids.FluidStack;
@@ -27,16 +27,16 @@ import net.minecraftforge.fluids.FluidStack;
 public class FluidRenderer {
 
 	public static void renderFluidStream(FluidStack fluidStack, Direction direction, float radius, float progress,
-		boolean inbound, BackgroundRenderer buffer, BufferVertexConsumer ms, int light) {
-		cut fluid = fluidStack.getFluid();
+		boolean inbound, VertexConsumerProvider buffer, MatrixStack ms, int light) {
+		Fluid fluid = fluidStack.getFluid();
 		FluidAttributes fluidAttributes = fluid.getAttributes();
-		Function<Identifier, MipmapHelper> spriteAtlas = KeyBinding.B()
-			.a(GrindstoneScreenHandler.result);
-		MipmapHelper flowTexture = spriteAtlas.apply(fluidAttributes.getFlowingTexture(fluidStack));
-		MipmapHelper stillTexture = spriteAtlas.apply(fluidAttributes.getStillTexture(fluidStack));
+		Function<Identifier, Sprite> spriteAtlas = MinecraftClient.getInstance()
+			.getSpriteAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE);
+		Sprite flowTexture = spriteAtlas.apply(fluidAttributes.getFlowingTexture(fluidStack));
+		Sprite stillTexture = spriteAtlas.apply(fluidAttributes.getStillTexture(fluidStack));
 
 		int color = fluidAttributes.getColor(fluidStack);
-		OverlayVertexConsumer builder = buffer.getBuffer(VertexConsumerProvider.f());
+		VertexConsumer builder = buffer.getBuffer(RenderLayer.getTranslucent());
 		MatrixStacker msr = MatrixStacker.of(ms);
 		int blockLightIn = (light >> 4) & 0xf;
 		int luminosity = Math.max(blockLightIn, fluidAttributes.getLuminosity(fluidStack));
@@ -45,25 +45,25 @@ public class FluidRenderer {
 		if (inbound)
 			direction = direction.getOpposite();
 
-		ms.a();
+		ms.push();
 		msr.centre()
 			.rotateY(AngleHelper.horizontalAngle(direction))
 			.rotateX(direction == Direction.UP ? 0 : direction == Direction.DOWN ? 180 : 90)
 			.unCentre();
-		ms.a(.5, 0, .5);
+		ms.translate(.5, 0, .5);
 
 		float h = (float) (radius);
 		float hMin = (float) (-radius);
 		float hMax = (float) (radius);
 		float y = inbound ? 0 : .5f;
 		float yMin = y;
-		float yMax = y + afj.a(progress * .5f - 1e-6f, 0, 1);
+		float yMax = y + MathHelper.clamp(progress * .5f - 1e-6f, 0, 1);
 
 		for (int i = 0; i < 4; i++) {
-			ms.a();
+			ms.push();
 			renderTiledHorizontalFace(h, Direction.SOUTH, hMin, yMin, hMax, yMax, builder, ms, light, color,
 				flowTexture);
-			ms.b();
+			ms.pop();
 			msr.rotateY(90);
 		}
 
@@ -71,28 +71,28 @@ public class FluidRenderer {
 			renderTiledVerticalFace(yMax, Direction.UP, hMin, hMin, hMax, hMax, builder, ms, light, color,
 				stillTexture);
 
-		ms.b();
+		ms.pop();
 
 	}
 
 	public static void renderTiledFluidBB(FluidStack fluidStack, float xMin, float yMin, float zMin, float xMax,
-		float yMax, float zMax, BackgroundRenderer buffer, BufferVertexConsumer ms, int light, boolean renderBottom) {
-		cut fluid = fluidStack.getFluid();
+		float yMax, float zMax, VertexConsumerProvider buffer, MatrixStack ms, int light, boolean renderBottom) {
+		Fluid fluid = fluidStack.getFluid();
 		FluidAttributes fluidAttributes = fluid.getAttributes();
-		MipmapHelper fluidTexture = KeyBinding.B()
-			.a(GrindstoneScreenHandler.result)
+		Sprite fluidTexture = MinecraftClient.getInstance()
+			.getSpriteAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE)
 			.apply(fluidAttributes.getStillTexture(fluidStack));
 
 		int color = fluidAttributes.getColor(fluidStack);
-		OverlayVertexConsumer builder = buffer.getBuffer(VertexConsumerProvider.f());
+		VertexConsumer builder = buffer.getBuffer(RenderLayer.getTranslucent());
 		MatrixStacker msr = MatrixStacker.of(ms);
-		EntityHitResult center = new EntityHitResult(xMin + (xMax - xMin) / 2, yMin + (yMax - yMin) / 2, zMin + (zMax - zMin) / 2);
+		Vec3d center = new Vec3d(xMin + (xMax - xMin) / 2, yMin + (yMax - yMin) / 2, zMin + (zMax - zMin) / 2);
 
 		int blockLightIn = (light >> 4) & 0xf;
 		int luminosity = Math.max(blockLightIn, fluidAttributes.getLuminosity(fluidStack));
 		light = (light & 0xf00000) | luminosity << 4;
 
-		ms.a();
+		ms.push();
 		if (fluidStack.getFluid()
 			.getAttributes()
 			.isLighterThanAir())
@@ -107,7 +107,7 @@ public class FluidRenderer {
 
 			if (side.getAxis()
 				.isHorizontal()) {
-				ms.a();
+				ms.push();
 
 				if (side.getDirection() == AxisDirection.NEGATIVE)
 					msr.translate(center)
@@ -119,7 +119,7 @@ public class FluidRenderer {
 				renderTiledHorizontalFace(X ? xMax : zMax, side, X ? zMin : xMin, yMin, X ? zMax : xMax, yMax, builder,
 					ms, light, darkColor, fluidTexture);
 
-				ms.b();
+				ms.pop();
 				continue;
 			}
 
@@ -127,12 +127,12 @@ public class FluidRenderer {
 				light, color, fluidTexture);
 		}
 
-		ms.b();
+		ms.pop();
 
 	}
 
 	private static void renderTiledVerticalFace(float y, Direction face, float xMin, float zMin, float xMax, float zMax,
-		OverlayVertexConsumer builder, BufferVertexConsumer ms, int light, int color, MipmapHelper texture) {
+		VertexConsumer builder, MatrixStack ms, int light, int color, Sprite texture) {
 		float x2 = 0;
 		float z2 = 0;
 		for (float x1 = xMin; x1 < xMax; x1 = x2) {
@@ -140,10 +140,10 @@ public class FluidRenderer {
 			for (float z1 = zMin; z1 < zMax; z1 = z2) {
 				z2 = Math.min((int) (z1 + 1), zMax);
 
-				float u1 = texture.a(local(x1) * 16);
-				float v1 = texture.b(local(z1) * 16);
-				float u2 = texture.a(x2 == xMax ? local(x2) * 16 : 16);
-				float v2 = texture.b(z2 == zMax ? local(z2) * 16 : 16);
+				float u1 = texture.getFrameU(local(x1) * 16);
+				float v1 = texture.getFrameV(local(z1) * 16);
+				float u2 = texture.getFrameU(x2 == xMax ? local(x2) * 16 : 16);
+				float v2 = texture.getFrameV(z2 == zMax ? local(z2) * 16 : 16);
 
 				putVertex(builder, ms, x1, y, z2, color, u1, v2, face, light);
 				putVertex(builder, ms, x2, y, z2, color, u2, v2, face, light);
@@ -154,7 +154,7 @@ public class FluidRenderer {
 	}
 
 	private static void renderTiledHorizontalFace(float h, Direction face, float hMin, float yMin, float hMax,
-		float yMax, OverlayVertexConsumer builder, BufferVertexConsumer ms, int light, int color, MipmapHelper texture) {
+		float yMax, VertexConsumer builder, MatrixStack ms, int light, int color, Sprite texture) {
 		boolean X = face.getAxis() == Axis.X;
 
 		float h2 = 0;
@@ -165,11 +165,11 @@ public class FluidRenderer {
 			for (float y1 = yMin; y1 < yMax; y1 = y2) {
 				y2 = Math.min((int) (y1 + 1), yMax);
 
-				int multiplier = texture.f() == 32 ? 8 : 16;
-				float u1 = texture.a(local(h1) * multiplier);
-				float v1 = texture.b(local(y1) * multiplier);
-				float u2 = texture.a(h2 == hMax ? local(h2) * multiplier : multiplier);
-				float v2 = texture.b(y2 == yMax ? local(y2) * multiplier : multiplier);
+				int multiplier = texture.getWidth() == 32 ? 8 : 16;
+				float u1 = texture.getFrameU(local(h1) * multiplier);
+				float v1 = texture.getFrameV(local(y1) * multiplier);
+				float u2 = texture.getFrameU(h2 == hMax ? local(h2) * multiplier : multiplier);
+				float v2 = texture.getFrameV(y2 == yMax ? local(y2) * multiplier : multiplier);
 
 				float x1 = X ? h : h1;
 				float x2 = X ? h : h2;
@@ -190,23 +190,23 @@ public class FluidRenderer {
 		return f - ((int) f);
 	}
 
-	private static void putVertex(OverlayVertexConsumer builder, BufferVertexConsumer ms, float x, float y, float z, int color, float u,
+	private static void putVertex(VertexConsumer builder, MatrixStack ms, float x, float y, float z, int color, float u,
 		float v, Direction face, int light) {
 
 		Vec3i n = face.getVector();
-		a peek = ms.c();
+		Entry peek = ms.peek();
 		int ff = 0xff;
 		int a = color >> 24 & ff;
 		int r = color >> 16 & ff;
 		int g = color >> 8 & ff;
 		int b = color & ff;
 
-		builder.a(peek.a(), x, y, z)
-			.a(r, g, b, a)
-			.a(u, v)
-			.a(light)
-			.b(n.getX(), n.getY(), n.getZ())
-			.d();
+		builder.vertex(peek.getModel(), x, y, z)
+			.color(r, g, b, a)
+			.texture(u, v)
+			.light(light)
+			.normal(n.getX(), n.getY(), n.getZ())
+			.next();
 	}
 
 }

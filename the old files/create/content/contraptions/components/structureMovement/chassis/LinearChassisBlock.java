@@ -1,92 +1,94 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.chassis;
+package com.simibubi.create.content.contraptions.components.structureMovement.chassis;
 
-import bqx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllSpriteShifts;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShiftEntry;
-import com.simibubi.kinetic_api.foundation.block.connected.ConnectedTextureBehaviour;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.potion.PotionUtil;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllSpriteShifts;
+import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
+import com.simibubi.create.foundation.block.connected.ConnectedTextureBehaviour;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.world.BlockRenderView;
 
 public class LinearChassisBlock extends AbstractChassisBlock {
 
-	public static final BedPart STICKY_TOP = BedPart.a("sticky_top");
-	public static final BedPart STICKY_BOTTOM = BedPart.a("sticky_bottom");
+	public static final BooleanProperty STICKY_TOP = BooleanProperty.of("sticky_top");
+	public static final BooleanProperty STICKY_BOTTOM = BooleanProperty.of("sticky_bottom");
 
-	public LinearChassisBlock(c properties) {
+	public LinearChassisBlock(Settings properties) {
 		super(properties);
-		j(n().a(STICKY_TOP, false)
-			.a(STICKY_BOTTOM, false));
+		setDefaultState(getDefaultState().with(STICKY_TOP, false)
+			.with(STICKY_BOTTOM, false));
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(STICKY_TOP, STICKY_BOTTOM);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(STICKY_TOP, STICKY_BOTTOM);
+		super.appendProperties(builder);
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		BlockPos placedOnPos = context.a()
-			.offset(context.j()
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		BlockPos placedOnPos = context.getBlockPos()
+			.offset(context.getSide()
 				.getOpposite());
-		PistonHandler blockState = context.p()
-			.d_(placedOnPos);
+		BlockState blockState = context.getWorld()
+			.getBlockState(placedOnPos);
 
-		if (context.n() == null || !context.n()
-			.bt()) {
+		if (context.getPlayer() == null || !context.getPlayer()
+			.isSneaking()) {
 			if (isChassis(blockState))
-				return n().a(e, blockState.c(e));
-			return n().a(e, context.d()
+				return getDefaultState().with(AXIS, blockState.get(AXIS));
+			return getDefaultState().with(AXIS, context.getPlayerLookDirection()
 				.getAxis());
 		}
-		return super.a(context);
+		return super.getPlacementState(context);
 	}
 
 	@Override
-	public BedPart getGlueableSide(PistonHandler state, Direction face) {
-		if (face.getAxis() != state.c(e))
+	public BooleanProperty getGlueableSide(BlockState state, Direction face) {
+		if (face.getAxis() != state.get(AXIS))
 			return null;
 		return face.getDirection() == AxisDirection.POSITIVE ? STICKY_TOP : STICKY_BOTTOM;
 	}
 
-	public static boolean isChassis(PistonHandler state) {
+	public static boolean isChassis(BlockState state) {
 		return AllBlocks.LINEAR_CHASSIS.has(state) || AllBlocks.SECONDARY_LINEAR_CHASSIS.has(state);
 	}
 
-	public static boolean sameKind(PistonHandler state1, PistonHandler state2) {
-		return state1.b() == state2.b();
+	public static boolean sameKind(BlockState state1, BlockState state2) {
+		return state1.getBlock() == state2.getBlock();
 	}
 
 	public static class ChassisCTBehaviour extends ConnectedTextureBehaviour {
 
 		@Override
-		public CTSpriteShiftEntry get(PistonHandler state, Direction direction) {
-			BeetrootsBlock block = state.b();
-			BedPart glueableSide = ((LinearChassisBlock) block).getGlueableSide(state, direction);
+		public CTSpriteShiftEntry get(BlockState state, Direction direction) {
+			Block block = state.getBlock();
+			BooleanProperty glueableSide = ((LinearChassisBlock) block).getGlueableSide(state, direction);
 			if (glueableSide == null)
 				return null;
-			return state.c(glueableSide) ? AllSpriteShifts.CHASSIS_STICKY : AllSpriteShifts.CHASSIS;
+			return state.get(glueableSide) ? AllSpriteShifts.CHASSIS_STICKY : AllSpriteShifts.CHASSIS;
 		}
 
 		@Override
-		public boolean reverseUVs(PistonHandler state, Direction face) {
-			Axis axis = state.c(e);
+		public boolean reverseUVs(BlockState state, Direction face) {
+			Axis axis = state.get(AXIS);
 			if (axis.isHorizontal() && (face.getDirection() == AxisDirection.POSITIVE))
 				return true;
 			return super.reverseUVs(state, face);
 		}
 
 		@Override
-		public boolean connectsTo(PistonHandler state, PistonHandler other, bqx reader, BlockPos pos,
+		public boolean connectsTo(BlockState state, BlockState other, BlockRenderView reader, BlockPos pos,
 			BlockPos otherPos, Direction face) {
-			return sameKind(state, other) && state.c(e) == other.c(e);
+			return sameKind(state, other) && state.get(AXIS) == other.get(AXIS);
 		}
 
 	}

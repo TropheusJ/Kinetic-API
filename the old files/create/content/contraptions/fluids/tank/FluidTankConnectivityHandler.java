@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.tank;
+package com.simibubi.create.content.contraptions.fluids.tank;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,17 +14,18 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.simibubi.kinetic_api.content.contraptions.fluids.tank.CreativeFluidTankTileEntity.CreativeSmartFluidTank;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.content.contraptions.fluids.tank.CreativeFluidTankTileEntity.CreativeSmartFluidTank;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
@@ -38,10 +39,10 @@ public class FluidTankConnectivityHandler {
 		TankSearchCache cache = new TankSearchCache();
 		List<FluidTankTileEntity> frontier = new ArrayList<>();
 		frontier.add(te);
-		formTanks(te.u(), te.v(), cache, frontier);
+		formTanks(te.getType(), te.getWorld(), cache, frontier);
 	}
 
-	private static void formTanks(BellBlockEntity<?> type, MobSpawnerLogic world, TankSearchCache cache,
+	private static void formTanks(BlockEntityType<?> type, BlockView world, TankSearchCache cache,
 		List<FluidTankTileEntity> frontier) {
 		PriorityQueue<Pair<Integer, FluidTankTileEntity>> creationQueue = makeCreationQueue();
 		Set<BlockPos> visited = new HashSet<>();
@@ -49,7 +50,7 @@ public class FluidTankConnectivityHandler {
 		int minX = Integer.MAX_VALUE;
 		int minZ = Integer.MAX_VALUE;
 		for (FluidTankTileEntity fluidTankTileEntity : frontier) {
-			BlockPos pos = fluidTankTileEntity.o();
+			BlockPos pos = fluidTankTileEntity.getPos();
 			minX = Math.min(pos.getX(), minX);
 			minZ = Math.min(pos.getZ(), minZ);
 		}
@@ -58,7 +59,7 @@ public class FluidTankConnectivityHandler {
 
 		while (!frontier.isEmpty()) {
 			FluidTankTileEntity tank = frontier.remove(0);
-			BlockPos tankPos = tank.o();
+			BlockPos tankPos = tank.getPos();
 			if (visited.contains(tankPos))
 				continue;
 
@@ -79,7 +80,7 @@ public class FluidTankConnectivityHandler {
 				FluidTankTileEntity nextTank = tankAt(type, world, next);
 				if (nextTank == null)
 					continue;
-				if (nextTank.q())
+				if (nextTank.isRemoved())
 					continue;
 				frontier.add(nextTank);
 			}
@@ -90,9 +91,9 @@ public class FluidTankConnectivityHandler {
 		while (!creationQueue.isEmpty()) {
 			Pair<Integer, FluidTankTileEntity> next = creationQueue.poll();
 			FluidTankTileEntity toCreate = next.getValue();
-			if (visited.contains(toCreate.o()))
+			if (visited.contains(toCreate.getPos()))
 				continue;
-			visited.add(toCreate.o());
+			visited.add(toCreate.getPos());
 			tryToFormNewTank(toCreate, cache, false);
 		}
 
@@ -128,17 +129,17 @@ public class FluidTankConnectivityHandler {
 			te.width = bestWidth;
 			te.height = bestAmount / bestWidth / bestWidth;
 
-			PistonHandler state = te.p();
+			BlockState state = te.getCachedState();
 			if (FluidTankBlock.isTank(state)) {
-				state = state.a(FluidTankBlock.BOTTOM, true);
-				state = state.a(FluidTankBlock.TOP, te.height == 1);
-				te.v()
-					.a(te.o(), state, 22);
+				state = state.with(FluidTankBlock.BOTTOM, true);
+				state = state.with(FluidTankBlock.TOP, te.height == 1);
+				te.getWorld()
+					.setBlockState(te.getPos(), state, 22);
 			}
 
 			te.setWindows(te.window);
 			te.onFluidStackChanged(te.tankInventory.getFluid());
-			te.X_();
+			te.markDirty();
 		}
 
 		return bestAmount;
@@ -148,9 +149,9 @@ public class FluidTankConnectivityHandler {
 		boolean simulate) {
 		int amount = 0;
 		int height = 0;
-		BellBlockEntity<?> type = te.u();
-		GameMode world = te.v();
-		BlockPos origin = te.o();
+		BlockEntityType<?> type = te.getType();
+		World world = te.getWorld();
+		BlockPos origin = te.getPos();
 		LazyOptional<IFluidHandler> capability = te.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY);
 		FluidTank teTank = (FluidTank) capability.orElse(null);
 		FluidStack fluid = capability.map(ifh -> ifh.getFluidInTank(0))
@@ -172,7 +173,7 @@ public class FluidTankConnectivityHandler {
 					if (otherWidth > width)
 						break Search;
 
-					BlockPos controllerPos = controller.o();
+					BlockPos controllerPos = controller.getPos();
 					if (!controllerPos.equals(origin)) {
 						if (controllerPos.getX() < origin.getX())
 							break Search;
@@ -224,12 +225,12 @@ public class FluidTankConnectivityHandler {
 					tank.updateConnectivity = false;
 					cache.put(pos, te);
 
-					PistonHandler state = world.d_(pos);
+					BlockState state = world.getBlockState(pos);
 					if (!FluidTankBlock.isTank(state))
 						continue;
-					state = state.a(FluidTankBlock.BOTTOM, yOffset == 0);
-					state = state.a(FluidTankBlock.TOP, yOffset == height - 1);
-					world.a(pos, state, 22);
+					state = state.with(FluidTankBlock.BOTTOM, yOffset == 0);
+					state = state.with(FluidTankBlock.TOP, yOffset == height - 1);
+					world.setBlockState(pos, state, 22);
 				}
 			}
 		}
@@ -252,13 +253,13 @@ public class FluidTankConnectivityHandler {
 		if (width == 1 && height == 1)
 			return;
 
-		GameMode world = te.v();
-		BlockPos origin = te.o();
+		World world = te.getWorld();
+		BlockPos origin = te.getPos();
 		List<FluidTankTileEntity> frontier = new ArrayList<>();
 		FluidStack toDistribute = te.tankInventory.getFluid()
 			.copy();
 		int maxCapacity = FluidTankTileEntity.getCapacityMultiplier();
-		if (!toDistribute.isEmpty() && !te.q())
+		if (!toDistribute.isEmpty() && !te.isRemoved())
 			toDistribute.shrink(maxCapacity);
 		te.applyFluidTankSize(1);
 
@@ -267,7 +268,7 @@ public class FluidTankConnectivityHandler {
 				for (int zOffset = 0; zOffset < width; zOffset++) {
 
 					BlockPos pos = origin.add(xOffset, yOffset, zOffset);
-					FluidTankTileEntity tankAt = tankAt(te.u(), world, pos);
+					FluidTankTileEntity tankAt = tankAt(te.getType(), world, pos);
 					if (tankAt == null)
 						continue;
 					if (!tankAt.getController()
@@ -302,7 +303,7 @@ public class FluidTankConnectivityHandler {
 
 		te.fluidCapability.invalidate();
 		if (tryReconnect)
-			formTanks(te.u(), world, cache == null ? new TankSearchCache() : cache, frontier);
+			formTanks(te.getType(), world, cache == null ? new TankSearchCache() : cache, frontier);
 	}
 
 	private static PriorityQueue<Pair<Integer, FluidTankTileEntity>> makeCreationQueue() {
@@ -315,16 +316,16 @@ public class FluidTankConnectivityHandler {
 	}
 
 	@Nullable
-	public static FluidTankTileEntity tankAt(BellBlockEntity<?> type, MobSpawnerLogic world, BlockPos pos) {
-		BeehiveBlockEntity te = world.c(pos);
-		if (te instanceof FluidTankTileEntity && te.u() == type)
+	public static FluidTankTileEntity tankAt(BlockEntityType<?> type, BlockView world, BlockPos pos) {
+		BlockEntity te = world.getBlockEntity(pos);
+		if (te instanceof FluidTankTileEntity && te.getType() == type)
 			return (FluidTankTileEntity) te;
 		return null;
 	}
 
 	@Nullable
-	public static FluidTankTileEntity anyTankAt(MobSpawnerLogic world, BlockPos pos) {
-		BeehiveBlockEntity te = world.c(pos);
+	public static FluidTankTileEntity anyTankAt(BlockView world, BlockPos pos) {
+		BlockEntity te = world.getBlockEntity(pos);
 		if (te instanceof FluidTankTileEntity)
 			return (FluidTankTileEntity) te;
 		return null;
@@ -349,7 +350,7 @@ public class FluidTankConnectivityHandler {
 			return controllerMap.containsKey(pos);
 		}
 
-		Optional<FluidTankTileEntity> getOrCache(BellBlockEntity<?> type, MobSpawnerLogic world, BlockPos pos) {
+		Optional<FluidTankTileEntity> getOrCache(BlockEntityType<?> type, BlockView world, BlockPos pos) {
 			if (hasVisited(pos))
 				return controllerMap.get(pos);
 			FluidTankTileEntity tankAt = tankAt(type, world, pos);
@@ -368,9 +369,9 @@ public class FluidTankConnectivityHandler {
 
 	}
 
-	public static boolean isConnected(MobSpawnerLogic world, BlockPos tankPos, BlockPos otherTankPos) {
-		BeehiveBlockEntity te1 = world.c(tankPos);
-		BeehiveBlockEntity te2 = world.c(otherTankPos);
+	public static boolean isConnected(BlockView world, BlockPos tankPos, BlockPos otherTankPos) {
+		BlockEntity te1 = world.getBlockEntity(tankPos);
+		BlockEntity te2 = world.getBlockEntity(otherTankPos);
 		if (!(te1 instanceof FluidTankTileEntity) || !(te2 instanceof FluidTankTileEntity))
 			return false;
 		return ((FluidTankTileEntity) te1).getController()

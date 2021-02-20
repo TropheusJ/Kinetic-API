@@ -1,65 +1,67 @@
-package com.simibubi.kinetic_api.foundation.block.render;
+package com.simibubi.create.foundation.block.render;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import bqx;
-import com.simibubi.kinetic_api.foundation.block.IBlockVertexColor;
-import elg;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.gl.VertexBuffer;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.SpriteTexturedVertexConsumer;
-import net.minecraft.client.render.Tessellator;
+
+import com.simibubi.create.foundation.block.IBlockVertexColor;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormatElement;
+import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 import net.minecraftforge.client.model.BakedModelWrapper;
 import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.client.model.data.ModelDataMap;
 import net.minecraftforge.client.model.data.ModelProperty;
 
-public class ColoredVertexModel extends BakedModelWrapper<elg> {
+public class ColoredVertexModel extends BakedModelWrapper<BakedModel> {
 
 	private IBlockVertexColor color;
 	private static ModelProperty<BlockPos> POSITION_PROPERTY = new ModelProperty<>();
 
-	public ColoredVertexModel(elg originalModel, IBlockVertexColor color) {
+	public ColoredVertexModel(BakedModel originalModel, IBlockVertexColor color) {
 		super(originalModel);
 		this.color = color;
 	}
 
 	@Override
-	public IModelData getModelData(bqx world, BlockPos pos, PistonHandler state, IModelData tileData) {
+	public IModelData getModelData(BlockRenderView world, BlockPos pos, BlockState state, IModelData tileData) {
 		return new ModelDataMap.Builder().withInitial(POSITION_PROPERTY, pos).build();
 	}
 
 	@Override
-	public List<SpriteTexturedVertexConsumer> getQuads(PistonHandler state, Direction side, Random rand, IModelData extraData) {
-		List<SpriteTexturedVertexConsumer> quads = new ArrayList<>(super.getQuads(state, side, rand, extraData));
+	public List<BakedQuad> getQuads(BlockState state, Direction side, Random rand, IModelData extraData) {
+		List<BakedQuad> quads = new ArrayList<>(super.getQuads(state, side, rand, extraData));
 		if (!extraData.hasProperty(POSITION_PROPERTY))
 			return quads;
 		if (quads.isEmpty())
 			return quads;
 		
-		// Optifine might've rejigged vertex data_unused
-		Tessellator format = BufferBuilder.buffer;
+		// Optifine might've rejigged vertex data
+		VertexFormat format = VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL;
 		int colorIndex = 0;
-		for (int j = 0; j < format.c().size(); j++) {
-			VertexBuffer e = format.c().get(j);
-			if (e.b() == VertexBuffer.b.c)
+		for (int j = 0; j < format.getElements().size(); j++) {
+			VertexFormatElement e = format.getElements().get(j);
+			if (e.getType() == VertexFormatElement.Type.COLOR)
 				colorIndex = j;
 		}
 		int colorOffset = format.getOffset(colorIndex) / 4; 
 		BlockPos data = extraData.getData(POSITION_PROPERTY);
 		
 		for (int i = 0; i < quads.size(); i++) {
-			SpriteTexturedVertexConsumer quad = quads.get(i);
-			SpriteTexturedVertexConsumer newQuad = new SpriteTexturedVertexConsumer(Arrays.copyOf(quad.b(), quad.b().length),
-					quad.d(), quad.e(), quad.a(), quad.f());
-			int[] vertexData = newQuad.b();
+			BakedQuad quad = quads.get(i);
+			BakedQuad newQuad = new BakedQuad(Arrays.copyOf(quad.getVertexData(), quad.getVertexData().length),
+					quad.getColorIndex(), quad.getFace(), quad.a(), quad.hasShade());
+			int[] vertexData = newQuad.getVertexData();
 
-			for (int vertex = 0; vertex < vertexData.length; vertex += format.a()) {
+			for (int vertex = 0; vertex < vertexData.length; vertex += format.getVertexSizeInteger()) {
 				float x = Float.intBitsToFloat(vertexData[vertex]);
 				float y = Float.intBitsToFloat(vertexData[vertex + 1]);
 				float z = Float.intBitsToFloat(vertexData[vertex + 2]);

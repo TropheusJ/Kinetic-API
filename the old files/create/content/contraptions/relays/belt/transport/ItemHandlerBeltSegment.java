@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.belt.transport;
+package com.simibubi.create.content.contraptions.relays.belt.transport;
 
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 
 public class ItemHandlerBeltSegment implements IItemHandler {
@@ -19,15 +19,15 @@ public class ItemHandlerBeltSegment implements IItemHandler {
 	}
 
 	@Override
-	public ItemCooldownManager getStackInSlot(int slot) {
+	public ItemStack getStackInSlot(int slot) {
 		TransportedItemStack stackAtOffset = this.beltInventory.getStackAtOffset(offset);
 		if (stackAtOffset == null)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		return stackAtOffset.stack;
 	}
 
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
 		if (this.beltInventory.canInsertAt(offset)) {
 			if (!simulate) {
 				TransportedItemStack newStack = new TransportedItemStack(stack);
@@ -35,24 +35,24 @@ public class ItemHandlerBeltSegment implements IItemHandler {
 				newStack.beltPosition = offset + .5f + (beltInventory.beltMovementPositive ? -1 : 1) / 16f;
 				newStack.prevBeltPosition = newStack.beltPosition;
 				this.beltInventory.addItem(newStack);
-				this.beltInventory.belt.X_();
+				this.beltInventory.belt.markDirty();
 				this.beltInventory.belt.sendData();
 			}
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		}
 		return stack;
 	}
 
 	@Override
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
+	public ItemStack extractItem(int slot, int amount, boolean simulate) {
 		TransportedItemStack transported = this.beltInventory.getStackAtOffset(offset);
 		if (transported == null)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 
-		amount = Math.min(amount, transported.stack.E());
-		ItemCooldownManager extracted = simulate ? transported.stack.i().a(amount) : transported.stack.a(amount);
+		amount = Math.min(amount, transported.stack.getCount());
+		ItemStack extracted = simulate ? transported.stack.copy().split(amount) : transported.stack.split(amount);
 		if (!simulate) {
-			this.beltInventory.belt.X_();
+			this.beltInventory.belt.markDirty();
 			this.beltInventory.belt.sendData();
 		}
 		return extracted;
@@ -60,11 +60,11 @@ public class ItemHandlerBeltSegment implements IItemHandler {
 
 	@Override
 	public int getSlotLimit(int slot) {
-		return Math.min(getStackInSlot(slot).c(), 64);
+		return Math.min(getStackInSlot(slot).getMaxCount(), 64);
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		return true;
 	}
 

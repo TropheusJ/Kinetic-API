@@ -1,23 +1,24 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.terrainzapper;
+package com.simibubi.create.content.curiosities.zapper.terrainzapper;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllSpecialTextures;
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import dcg;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.particle.FishingParticle;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllSpecialTextures;
+import com.simibubi.create.CreateClient;
+import com.simibubi.create.foundation.utility.NBTHelper;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult.Type;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.BlockView.a;
-import net.minecraft.world.BlockView.b;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.RaycastContext.FluidHandling;
+import net.minecraft.world.RaycastContext.ShapeType;
 
 public class WorldshaperRenderHandler {
 
@@ -38,14 +39,14 @@ public class WorldshaperRenderHandler {
 	}
 
 	protected static void gatherSelectedBlocks() {
-		FishingParticle player = KeyBinding.B().s;
-		ItemCooldownManager heldMain = player.dC();
-		ItemCooldownManager heldOff = player.dD();
+		ClientPlayerEntity player = MinecraftClient.getInstance().player;
+		ItemStack heldMain = player.getMainHandStack();
+		ItemStack heldOff = player.getOffHandStack();
 		boolean zapperInMain = AllItems.WORLDSHAPER.isIn(heldMain);
 		boolean zapperInOff = AllItems.WORLDSHAPER.isIn(heldOff);
 
 		if (zapperInMain) {
-			CompoundTag tag = heldMain.p();
+			CompoundTag tag = heldMain.getOrCreateTag();
 			if (!tag.contains("_Swap") || !zapperInOff) {
 				createBrushOutline(tag, player, heldMain);
 				return;
@@ -53,7 +54,7 @@ public class WorldshaperRenderHandler {
 		}
 
 		if (zapperInOff) {
-			CompoundTag tag = heldOff.p();
+			CompoundTag tag = heldOff.getOrCreateTag();
 			createBrushOutline(tag, player, heldOff);
 			return;
 		}
@@ -61,7 +62,7 @@ public class WorldshaperRenderHandler {
 		renderedPosition = null;
 	}
 
-	public static void createBrushOutline(CompoundTag tag, FishingParticle player, ItemCooldownManager zapper) {
+	public static void createBrushOutline(CompoundTag tag, ClientPlayerEntity player, ItemStack zapper) {
 		if (!tag.contains("BrushParams")) {
 			renderedPosition = null;
 			return;
@@ -74,19 +75,19 @@ public class WorldshaperRenderHandler {
 		brush.set(params.getX(), params.getY(), params.getZ());
 		renderedShape = brush.getIncludedPositions();
 
-		EntityHitResult start = player.cz()
-			.b(0, player.cd(), 0);
-		EntityHitResult range = player.bg()
-			.a(128);
-		dcg raytrace = player.l
-			.a(new BlockView(start, start.e(range), a.b, b.a, player));
-		if (raytrace == null || raytrace.c() == net.minecraft.util.math.Box.a.a) {
+		Vec3d start = player.getPos()
+			.add(0, player.getStandingEyeHeight(), 0);
+		Vec3d range = player.getRotationVector()
+			.multiply(128);
+		BlockHitResult raytrace = player.world
+			.raycast(new RaycastContext(start, start.add(range), ShapeType.OUTLINE, FluidHandling.NONE, player));
+		if (raytrace == null || raytrace.getType() == Type.MISS) {
 			renderedPosition = null;
 			return;
 		}
 
-		BlockPos pos = raytrace.a();
-		renderedPosition = pos.add(brush.getOffset(player.bg(), raytrace.b(), placement));
+		BlockPos pos = raytrace.getBlockPos();
+		renderedPosition = pos.add(brush.getOffset(player.getRotationVector(), raytrace.getSide(), placement));
 	}
 
 }

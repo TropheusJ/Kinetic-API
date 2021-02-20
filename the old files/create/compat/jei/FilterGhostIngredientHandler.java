@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.compat.jei;
+package com.simibubi.create.compat.jei;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,18 +7,18 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.apache.logging.log4j.LogManager;
 
-import com.simibubi.kinetic_api.content.logistics.item.filter.AbstractFilterContainer;
-import com.simibubi.kinetic_api.content.logistics.item.filter.AbstractFilterScreen;
-import com.simibubi.kinetic_api.content.logistics.item.filter.AttributeFilterScreen;
-import com.simibubi.kinetic_api.content.logistics.item.filter.FilterScreenPacket;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
+import com.simibubi.create.content.logistics.item.filter.AbstractFilterContainer;
+import com.simibubi.create.content.logistics.item.filter.AbstractFilterScreen;
+import com.simibubi.create.content.logistics.item.filter.AttributeFilterScreen;
+import com.simibubi.create.content.logistics.item.filter.FilterScreenPacket;
+import com.simibubi.create.foundation.networking.AllPackets;
 
 import mcp.MethodsReturnNonnullByDefault;
 import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
-import net.minecraft.client.render.item.ItemModels;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.client.util.Rect2i;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.screen.ShulkerBoxScreenHandler;
+import net.minecraft.screen.slot.Slot;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
@@ -29,8 +29,8 @@ public class FilterGhostIngredientHandler<T extends AbstractFilterContainer> imp
 		List<Target<I>> targets = new ArrayList<>();
 		boolean isAttributeFilter = gui instanceof AttributeFilterScreen;
 
-		if (ingredient instanceof ItemCooldownManager) {
-			for (int i = 36; i < gui.i().hunger.size(); i++) {
+		if (ingredient instanceof ItemStack) {
+			for (int i = 36; i < gui.getScreenHandler().slots.size(); i++) {
 				targets.add(new FilterGhostTarget<>(gui, i - 36, isAttributeFilter));
 
 				//Only accept items in 1st slot. 2nd is used for functionality, don't wanna override that one
@@ -52,7 +52,7 @@ public class FilterGhostIngredientHandler<T extends AbstractFilterContainer> imp
 
 	private static class FilterGhostTarget<I, T extends AbstractFilterContainer> implements Target<I> {
 
-		private final ItemModels area;
+		private final Rect2i area;
 		private final AbstractFilterScreen<T> gui;
 		private final int slotIndex;
 		private final boolean isAttributeFilter;
@@ -62,25 +62,25 @@ public class FilterGhostIngredientHandler<T extends AbstractFilterContainer> imp
 			this.gui = gui;
 			this.slotIndex = slotIndex;
 			this.isAttributeFilter = isAttributeFilter;
-			ShulkerBoxScreenHandler slot = gui.i().hunger.get(slotIndex + 36);
-			this.area = new ItemModels(
-					gui.getGuiLeft() + slot.e,
-					gui.getGuiTop() + slot.f,
+			Slot slot = gui.getScreenHandler().slots.get(slotIndex + 36);
+			this.area = new Rect2i(
+					gui.getGuiLeft() + slot.x,
+					gui.getGuiTop() + slot.y,
 					16,
 					16);
 		}
 
 		@Override
-		public ItemModels getArea() {
+		public Rect2i getArea() {
 			return area;
 		}
 
 		@Override
 		public void accept(I ingredient) {
-			ItemCooldownManager stack = ((ItemCooldownManager) ingredient).i();
+			ItemStack stack = ((ItemStack) ingredient).copy();
 			LogManager.getLogger().info(stack);
-			stack.e(1);
-			gui.i().filterInventory.setStackInSlot(slotIndex, stack);
+			stack.setCount(1);
+			gui.getScreenHandler().filterInventory.setStackInSlot(slotIndex, stack);
 
 			if (isAttributeFilter) return;
 

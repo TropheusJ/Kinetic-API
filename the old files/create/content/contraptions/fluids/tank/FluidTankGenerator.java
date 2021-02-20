@@ -1,12 +1,13 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.tank;
+package com.simibubi.create.content.contraptions.fluids.tank;
 
-import com.simibubi.kinetic_api.content.contraptions.fluids.tank.FluidTankBlock.Shape;
-import com.simibubi.kinetic_api.foundation.data.AssetLookup;
-import com.simibubi.kinetic_api.foundation.data.SpecialBlockStateGen;
+import com.simibubi.create.content.contraptions.fluids.tank.FluidTankBlock.Shape;
+import com.simibubi.create.foundation.data.AssetLookup;
+import com.simibubi.create.foundation.data.SpecialBlockStateGen;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraftforge.client.model.generators.ModelFile;
 
 public class FluidTankGenerator extends SpecialBlockStateGen {
@@ -22,21 +23,21 @@ public class FluidTankGenerator extends SpecialBlockStateGen {
 	}
 
 	@Override
-	protected int getXRotation(PistonHandler state) {
+	protected int getXRotation(BlockState state) {
 		return 0;
 	}
 
 	@Override
-	protected int getYRotation(PistonHandler state) {
+	protected int getYRotation(BlockState state) {
 		return 0;
 	}
 
 	@Override
-	public <T extends BeetrootsBlock> ModelFile getModel(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov,
-		PistonHandler state) {
-		Boolean top = state.c(FluidTankBlock.TOP);
-		Boolean bottom = state.c(FluidTankBlock.BOTTOM);
-		Shape shape = state.c(FluidTankBlock.SHAPE);
+	public <T extends Block> ModelFile getModel(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov,
+		BlockState state) {
+		Boolean top = state.get(FluidTankBlock.TOP);
+		Boolean bottom = state.get(FluidTankBlock.BOTTOM);
+		Shape shape = state.get(FluidTankBlock.SHAPE);
 
 		String shapeName = "middle";
 		if (top && bottom)
@@ -46,7 +47,7 @@ public class FluidTankGenerator extends SpecialBlockStateGen {
 		else if (bottom)
 			shapeName = "bottom";
 
-		String modelName = shapeName + (shape == Shape.PLAIN ? "" : "_" + shape.a());
+		String modelName = shapeName + (shape == Shape.PLAIN ? "" : "_" + shape.asString());
 
 		if (!prefix.isEmpty())
 			return prov.models()

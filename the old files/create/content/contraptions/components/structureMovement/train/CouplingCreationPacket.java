@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train;
+package com.simibubi.create.content.contraptions.components.structureMovement.train;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
@@ -12,9 +12,9 @@ public class CouplingCreationPacket extends SimplePacketBase {
 
 	int id1, id2;
 
-	public CouplingCreationPacket(ScheduleBuilder cart1, ScheduleBuilder cart2) {
-		id1 = cart1.X();
-		id2 = cart2.X();
+	public CouplingCreationPacket(AbstractMinecartEntity cart1, AbstractMinecartEntity cart2) {
+		id1 = cart1.getEntityId();
+		id2 = cart2.getEntityId();
 	}
 
 	public CouplingCreationPacket(PacketByteBuf buffer) {
@@ -35,7 +35,7 @@ public class CouplingCreationPacket extends SimplePacketBase {
 				ServerPlayerEntity sender = context.get()
 					.getSender();
 				if (sender != null)
-					CouplingHandler.tryToCoupleCarts(sender, sender.l, id1, id2);
+					CouplingHandler.tryToCoupleCarts(sender, sender.world, id1, id2);
 			});
 		context.get()
 			.setPacketHandled(true);

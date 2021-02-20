@@ -1,23 +1,25 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import afj;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.AbstractFurnaceBlock;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.fluid.EmptyFluid;
+
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.AirBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.explosion.ExplosionBehavior;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameRules;
 
 public abstract class BlockBreakingKineticTileEntity extends KineticTileEntity {
 
@@ -27,7 +29,7 @@ public abstract class BlockBreakingKineticTileEntity extends KineticTileEntity {
 	protected int breakerId = -NEXT_BREAKER_ID.incrementAndGet();
 	protected BlockPos breakingPos;
 
-	public BlockBreakingKineticTileEntity(BellBlockEntity<?> typeIn) {
+	public BlockBreakingKineticTileEntity(BlockEntityType<?> typeIn) {
 		super(typeIn);
 	}
 
@@ -65,7 +67,7 @@ public abstract class BlockBreakingKineticTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		destroyProgress = compound.getInt("Progress");
 		ticksUntilNextProgress = compound.getInt("NextTick");
 		if (compound.contains("Breaking"))
@@ -74,17 +76,17 @@ public abstract class BlockBreakingKineticTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	public void al_() {
-		if (!d.v && destroyProgress != 0)
-			d.a(breakerId, breakingPos, -1);
-		super.al_();
+	public void markRemoved() {
+		if (!world.isClient && destroyProgress != 0)
+			world.setBlockBreakingInfo(breakerId, breakingPos, -1);
+		super.markRemoved();
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 
-		if (d.v)
+		if (world.isClient)
 			return;
 		if (!shouldRun())
 			return;
@@ -98,59 +100,59 @@ public abstract class BlockBreakingKineticTileEntity extends KineticTileEntity {
 		if (ticksUntilNextProgress-- > 0)
 			return;
 
-		PistonHandler stateToBreak = d.d_(breakingPos);
-		float blockHardness = stateToBreak.h(d, breakingPos);
+		BlockState stateToBreak = world.getBlockState(breakingPos);
+		float blockHardness = stateToBreak.getHardness(world, breakingPos);
 
 		if (!canBreak(stateToBreak, blockHardness)) {
 			if (destroyProgress != 0) {
 				destroyProgress = 0;
-				d.a(breakerId, breakingPos, -1);
+				world.setBlockBreakingInfo(breakerId, breakingPos, -1);
 			}
 			return;
 		}
 
 		float breakSpeed = getBreakSpeed();
-		destroyProgress += afj.a((int) (breakSpeed / blockHardness), 1, 10 - destroyProgress);
+		destroyProgress += MathHelper.clamp((int) (breakSpeed / blockHardness), 1, 10 - destroyProgress);
 
 		if (destroyProgress >= 10) {
 			onBlockBroken(stateToBreak);
 			destroyProgress = 0;
 			ticksUntilNextProgress = -1;
-			d.a(breakerId, breakingPos, -1);
+			world.setBlockBreakingInfo(breakerId, breakingPos, -1);
 			return;
 		}
 
 		ticksUntilNextProgress = (int) (blockHardness / breakSpeed);
-		d.a(breakerId, breakingPos, (int) destroyProgress);
+		world.setBlockBreakingInfo(breakerId, breakingPos, (int) destroyProgress);
 	}
 
-	public boolean canBreak(PistonHandler stateToBreak, float blockHardness) {
+	public boolean canBreak(BlockState stateToBreak, float blockHardness) {
 		return isBreakable(stateToBreak, blockHardness);
 	}
 
-	public static boolean isBreakable(PistonHandler stateToBreak, float blockHardness) {
-		return !(stateToBreak.c().a() || stateToBreak.b() instanceof AbstractFurnaceBlock
+	public static boolean isBreakable(BlockState stateToBreak, float blockHardness) {
+		return !(stateToBreak.getMaterial().isLiquid() || stateToBreak.getBlock() instanceof AirBlock
 				|| blockHardness == -1);
 	}
 
-	public void onBlockBroken(PistonHandler stateToBreak) {
-		EmptyFluid FluidState = d.b(breakingPos);
-		d.syncWorldEvent(2001, breakingPos, BeetrootsBlock.i(stateToBreak));
-		BeehiveBlockEntity tileentity = stateToBreak.hasTileEntity() ? d.c(breakingPos) : null;
-		EntityHitResult vec = VecHelper.offsetRandomly(VecHelper.getCenterOf(breakingPos), d.t, .125f);
+	public void onBlockBroken(BlockState stateToBreak) {
+		FluidState FluidState = world.getFluidState(breakingPos);
+		world.syncWorldEvent(2001, breakingPos, Block.getRawIdFromState(stateToBreak));
+		BlockEntity tileentity = stateToBreak.hasTileEntity() ? world.getBlockEntity(breakingPos) : null;
+		Vec3d vec = VecHelper.offsetRandomly(VecHelper.getCenterOf(breakingPos), world.random, .125f);
 
-		BeetrootsBlock.a(stateToBreak, (ServerWorld) d, breakingPos, tileentity).forEach((stack) -> {
-			if (!stack.a() && d.U().b(ExplosionBehavior.f)
-					&& !d.restoringBlockSnapshots) {
-				PaintingEntity itementity = new PaintingEntity(d, vec.entity, vec.c, vec.d, stack);
-				itementity.m();
-				itementity.f(EntityHitResult.a);
-				d.c(itementity);
+		Block.getDroppedStacks(stateToBreak, (ServerWorld) world, breakingPos, tileentity).forEach((stack) -> {
+			if (!stack.isEmpty() && world.getGameRules().getBoolean(GameRules.DO_TILE_DROPS)
+					&& !world.restoringBlockSnapshots) {
+				ItemEntity itementity = new ItemEntity(world, vec.x, vec.y, vec.z, stack);
+				itementity.setToDefaultPickupDelay();
+				itementity.setVelocity(Vec3d.ZERO);
+				world.spawnEntity(itementity);
 			}
 		});
-		if (d instanceof ServerWorld)
-			stateToBreak.a((ServerWorld) d, breakingPos, ItemCooldownManager.tick);
-		d.a(breakingPos, FluidState.g(), 3);
+		if (world instanceof ServerWorld)
+			stateToBreak.onStacksDropped((ServerWorld) world, breakingPos, ItemStack.EMPTY);
+		world.setBlockState(breakingPos, FluidState.getBlockState(), 3);
 	}
 
 	protected float getBreakSpeed() {

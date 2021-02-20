@@ -1,12 +1,14 @@
-package com.simibubi.kinetic_api.foundation.config;
+package com.simibubi.create.foundation.config;
 
 import java.util.HashMap;
 import java.util.Map;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.util.Identifier;
-import com.simibubi.kinetic_api.Create;
+
+import com.simibubi.create.Create;
 import com.tterrag.registrate.builders.BlockBuilder;
 import com.tterrag.registrate.util.nullness.NonNullUnaryOperator;
+
+import net.minecraft.block.Block;
+import net.minecraft.util.Identifier;
 
 public class StressConfigDefaults {
 
@@ -20,18 +22,18 @@ public class StressConfigDefaults {
 	static Map<Identifier, Double> registeredDefaultImpacts = new HashMap<>();
 	static Map<Identifier, Double> registeredDefaultCapacities = new HashMap<>();
 
-	public static <B extends BeetrootsBlock, P> NonNullUnaryOperator<BlockBuilder<B, P>> setNoImpact() {
+	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> setNoImpact() {
 		return setImpact(0);
 	}
 	
-	public static <B extends BeetrootsBlock, P> NonNullUnaryOperator<BlockBuilder<B, P>> setImpact(double impact) {
+	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> setImpact(double impact) {
 		return b -> {
 			registeredDefaultImpacts.put(Create.asResource(b.getName()), impact);
 			return b;
 		};
 	}
 	
-	public static <B extends BeetrootsBlock, P> NonNullUnaryOperator<BlockBuilder<B, P>> setCapacity(double capacity) {
+	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> setCapacity(double capacity) {
 		return b -> {
 			registeredDefaultCapacities.put(Create.asResource(b.getName()), capacity);
 			return b;

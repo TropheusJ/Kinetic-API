@@ -1,15 +1,16 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.AllTags;
-import com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.AllTags;
+import com.simibubi.create.content.palettes.AllPaletteBlocks;
 import com.tterrag.registrate.util.entry.ItemEntry;
-import net.minecraft.block.BellBlock;
+
+import net.minecraft.block.Blocks;
 import net.minecraft.data.DataGenerator;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.HoeItem;
-import net.minecraft.tag.EntityTypeTags;
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
+import net.minecraft.tag.ItemTags;
 import net.minecraftforge.common.crafting.conditions.NotCondition;
 import net.minecraftforge.common.crafting.conditions.TagEmptyCondition;
 
@@ -17,23 +18,23 @@ public class CrushingRecipeGen extends ProcessingRecipeGen {
 
 	GeneratedRecipe
 
-	BLAZE_ROD = create(() -> AliasedBlockItem.nr, b -> b.duration(100)
-		.output(AliasedBlockItem.nz, 3)
-		.output(.25f, AliasedBlockItem.nz, 3)),
+	BLAZE_ROD = create(() -> Items.BLAZE_ROD, b -> b.duration(100)
+		.output(Items.BLAZE_POWDER, 3)
+		.output(.25f, Items.BLAZE_POWDER, 3)),
 
-		PRISMARINE_CRYSTALS = create(() -> AliasedBlockItem.pw, b -> b.duration(150)
-			.output(1f, AliasedBlockItem.ps, 1)
-			.output(.5f, AliasedBlockItem.ps, 2)
-			.output(.1f, AliasedBlockItem.mk, 2)),
+		PRISMARINE_CRYSTALS = create(() -> Items.PRISMARINE_CRYSTALS, b -> b.duration(150)
+			.output(1f, Items.QUARTZ, 1)
+			.output(.5f, Items.QUARTZ, 2)
+			.output(.1f, Items.GLOWSTONE_DUST, 2)),
 
-		OBSIDIAN = create(() -> BellBlock.bK, b -> b.duration(500)
+		OBSIDIAN = create(() -> Blocks.OBSIDIAN, b -> b.duration(500)
 			.output(AllItems.POWDERED_OBSIDIAN.get())
-			.output(.75f, BellBlock.bK)),
+			.output(.75f, Blocks.OBSIDIAN)),
 
 		WOOL = create("wool", b -> b.duration(100)
-			.require(EntityTypeTags.field_15507)
-			.output(AliasedBlockItem.kS, 2)
-			.output(.5f, AliasedBlockItem.kS)),
+			.require(ItemTags.WOOL)
+			.output(Items.STRING, 2)
+			.output(.5f, Items.STRING)),
 
 		COPPER_BLOCK = create("copper_block", b -> b.duration(400)
 			.require(I.copperBlock())
@@ -62,90 +63,90 @@ public class CrushingRecipeGen extends ProcessingRecipeGen {
 		URANIUM_ORE = metalOre("uranium", AllItems.CRUSHED_URANIUM, 400),
 		NICKEL_ORE = metalOre("nickel", AllItems.CRUSHED_NICKEL, 350),
 
-		NETHER_QUARTZ_ORE = create(() -> BellBlock.fx, b -> b.duration(350)
-			.output(AliasedBlockItem.ps, 2)
-			.output(.5f, AliasedBlockItem.ps, 4)
-			.output(.125f, BellBlock.cL)),
+		NETHER_QUARTZ_ORE = create(() -> Blocks.NETHER_QUARTZ_ORE, b -> b.duration(350)
+			.output(Items.QUARTZ, 2)
+			.output(.5f, Items.QUARTZ, 4)
+			.output(.125f, Blocks.NETHERRACK)),
 
-		REDSTONE_ORE = create(() -> BellBlock.cy, b -> b.duration(300)
-			.output(AliasedBlockItem.lP, 8)
-			.output(.25f, AliasedBlockItem.lP, 6)
-			.output(.125f, BellBlock.m)),
+		REDSTONE_ORE = create(() -> Blocks.REDSTONE_ORE, b -> b.duration(300)
+			.output(Items.REDSTONE, 8)
+			.output(.25f, Items.REDSTONE, 6)
+			.output(.125f, Blocks.COBBLESTONE)),
 
-		LAPIS_ORE = create(() -> BellBlock.aq, b -> b.duration(300)
-			.output(AliasedBlockItem.mt, 12)
-			.output(.25f, AliasedBlockItem.mt, 8)
-			.output(.125f, BellBlock.m)),
+		LAPIS_ORE = create(() -> Blocks.LAPIS_ORE, b -> b.duration(300)
+			.output(Items.LAPIS_LAZULI, 12)
+			.output(.25f, Items.LAPIS_LAZULI, 8)
+			.output(.125f, Blocks.COBBLESTONE)),
 
-		COAL_ORE = create(() -> BellBlock.H, b -> b.duration(300)
-			.output(AliasedBlockItem.ke, 2)
-			.output(.5f, AliasedBlockItem.ke, 2)
-			.output(.125f, BellBlock.m)),
+		COAL_ORE = create(() -> Blocks.COAL_ORE, b -> b.duration(300)
+			.output(Items.COAL, 2)
+			.output(.5f, Items.COAL, 2)
+			.output(.125f, Blocks.COBBLESTONE)),
 
-		EMERALD_ORE = create(() -> BellBlock.ej, b -> b.duration(500)
-			.output(AliasedBlockItem.oV, 2)
-			.output(.25f, AliasedBlockItem.oV, 1)
-			.output(.125f, BellBlock.m)),
+		EMERALD_ORE = create(() -> Blocks.EMERALD_ORE, b -> b.duration(500)
+			.output(Items.EMERALD, 2)
+			.output(.25f, Items.EMERALD, 1)
+			.output(.125f, Blocks.COBBLESTONE)),
 
-		DIAMOND_ORE = create(() -> BellBlock.bT, b -> b.duration(500)
-			.output(AliasedBlockItem.kg, 2)
-			.output(.25f, AliasedBlockItem.kg, 1)
-			.output(.125f, BellBlock.m)),
+		DIAMOND_ORE = create(() -> Blocks.DIAMOND_ORE, b -> b.duration(500)
+			.output(Items.DIAMOND, 2)
+			.output(.25f, Items.DIAMOND, 1)
+			.output(.125f, Blocks.COBBLESTONE)),
 
 		NETHER_WART = create("nether_wart_block", b -> b.duration(150)
-			.require(BellBlock.iK)
-			.output(.25f, AliasedBlockItem.nu, 1)),
+			.require(Blocks.NETHER_WART_BLOCK)
+			.output(.25f, Items.NETHER_WART, 1)),
 
-		GLOWSTONE = create(() -> BellBlock.cS, b -> b.duration(150)
-			.output(AliasedBlockItem.mk, 3)
-			.output(.5f, AliasedBlockItem.mk)),
+		GLOWSTONE = create(() -> Blocks.GLOWSTONE, b -> b.duration(150)
+			.output(Items.GLOWSTONE_DUST, 3)
+			.output(.5f, Items.GLOWSTONE_DUST)),
 
-		LEATHER_HORSE_ARMOR = create(() -> AliasedBlockItem.pG, b -> b.duration(200)
-			.output(AliasedBlockItem.lS, 2)
-			.output(.5f, AliasedBlockItem.lS, 2)),
+		LEATHER_HORSE_ARMOR = create(() -> Items.LEATHER_HORSE_ARMOR, b -> b.duration(200)
+			.output(Items.LEATHER, 2)
+			.output(.5f, Items.LEATHER, 2)),
 
-		IRON_HORSE_ARMOR = create(() -> AliasedBlockItem.pD, b -> b.duration(200)
-			.output(AliasedBlockItem.kh, 2)
-			.output(.5f, AliasedBlockItem.lS, 1)
-			.output(.5f, AliasedBlockItem.kh, 1)
-			.output(.25f, AliasedBlockItem.kS, 2)
-			.output(.25f, AliasedBlockItem.qw, 4)),
+		IRON_HORSE_ARMOR = create(() -> Items.IRON_HORSE_ARMOR, b -> b.duration(200)
+			.output(Items.IRON_INGOT, 2)
+			.output(.5f, Items.LEATHER, 1)
+			.output(.5f, Items.IRON_INGOT, 1)
+			.output(.25f, Items.STRING, 2)
+			.output(.25f, Items.IRON_NUGGET, 4)),
 
-		GOLDEN_HORSE_ARMOR = create(() -> AliasedBlockItem.pE, b -> b.duration(200)
-			.output(AliasedBlockItem.ki, 2)
-			.output(.5f, AliasedBlockItem.lS, 2)
-			.output(.5f, AliasedBlockItem.ki, 2)
-			.output(.25f, AliasedBlockItem.kS, 2)
-			.output(.25f, AliasedBlockItem.nt, 8)),
+		GOLDEN_HORSE_ARMOR = create(() -> Items.GOLDEN_HORSE_ARMOR, b -> b.duration(200)
+			.output(Items.GOLD_INGOT, 2)
+			.output(.5f, Items.LEATHER, 2)
+			.output(.5f, Items.GOLD_INGOT, 2)
+			.output(.25f, Items.STRING, 2)
+			.output(.25f, Items.GOLD_NUGGET, 8)),
 
-		DIAMOND_HORSE_ARMOR = create(() -> AliasedBlockItem.pF, b -> b.duration(200)
-			.output(AliasedBlockItem.kg, 1)
-			.output(.5f, AliasedBlockItem.lS, 2)
-			.output(.1f, AliasedBlockItem.kg, 3)
-			.output(.25f, AliasedBlockItem.kS, 2)),
+		DIAMOND_HORSE_ARMOR = create(() -> Items.DIAMOND_HORSE_ARMOR, b -> b.duration(200)
+			.output(Items.DIAMOND, 1)
+			.output(.5f, Items.LEATHER, 2)
+			.output(.1f, Items.DIAMOND, 3)
+			.output(.25f, Items.STRING, 2)),
 
-		GRAVEL = create(() -> BellBlock.E, b -> b.duration(250)
-			.output(BellBlock.C)
-			.output(.1f, AliasedBlockItem.lw)
-			.output(.05f, AliasedBlockItem.lZ)),
+		GRAVEL = create(() -> Blocks.GRAVEL, b -> b.duration(250)
+			.output(Blocks.SAND)
+			.output(.1f, Items.FLINT)
+			.output(.05f, Items.CLAY_BALL)),
 
-		SAND = create(() -> BellBlock.C, b -> b.duration(150)
+		SAND = create(() -> Blocks.SAND, b -> b.duration(150)
 			.output(AllPaletteBlocks.LIMESAND.get())
-			.output(.1f, AliasedBlockItem.mK)),
+			.output(.1f, Items.BONE_MEAL)),
 
-		NETHERRACK = create(() -> BellBlock.cL, b -> b.duration(250)
+		NETHERRACK = create(() -> Blocks.NETHERRACK, b -> b.duration(250)
 			.output(AllItems.CINDER_FLOUR.get())
 			.output(.5f, AllItems.CINDER_FLOUR.get()))
 
 	;
 
-	protected GeneratedRecipe metalOre(String name, ItemEntry<? extends HoeItem> crushed, int duration) {
+	protected GeneratedRecipe metalOre(String name, ItemEntry<? extends Item> crushed, int duration) {
 		return create(name + "_ore", b -> b.duration(duration)
 			.withCondition(new NotCondition(new TagEmptyCondition("forge", "ores/" + name)))
 			.require(AllTags.forgeItemTag("ores/" + name))
 			.output(crushed.get())
 			.output(.3f, crushed.get(), 2)
-			.output(.125f, BellBlock.m));
+			.output(.125f, Blocks.COBBLESTONE));
 	}
 
 	public CrushingRecipeGen(DataGenerator p_i48262_1_) {

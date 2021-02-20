@@ -1,60 +1,60 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.particle;
+package com.simibubi.create.content.contraptions.fluids.particle;
 
-import com.simibubi.kinetic_api.AllParticleTypes;
-import com.simibubi.kinetic_api.content.contraptions.fluids.potion.PotionFluid;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.particle.LavaEmberParticle;
-import net.minecraft.client.particle.SpellParticle;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
+import com.simibubi.create.AllParticleTypes;
+import com.simibubi.create.content.contraptions.fluids.potion.PotionFluid;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.particle.ParticleTextureSheet;
+import net.minecraft.client.particle.SpriteBillboardParticle;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.screen.GrindstoneScreenHandler;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.screen.PlayerScreenHandler;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fluids.FluidStack;
 
-public class FluidStackParticle extends SpellParticle {
+public class FluidStackParticle extends SpriteBillboardParticle {
 	private final float field_217587_G;
 	private final float field_217588_H;
 	private FluidStack fluid;
 
-	public static FluidStackParticle create(ParticleType<FluidParticleData> type, DragonHeadEntityModel world, FluidStack fluid, double x,
+	public static FluidStackParticle create(ParticleType<FluidParticleData> type, ClientWorld world, FluidStack fluid, double x,
 		double y, double z, double vx, double vy, double vz) {
 		if (type == AllParticleTypes.BASIN_FLUID.get())
 			return new BasinFluidParticle(world, fluid, x, y, z, vx, vy, vz);
 		return new FluidStackParticle(world, fluid, x, y, z, vx, vy, vz);
 	}
 
-	public FluidStackParticle(DragonHeadEntityModel world, FluidStack fluid, double x, double y, double z, double vx, double vy,
+	public FluidStackParticle(ClientWorld world, FluidStack fluid, double x, double y, double z, double vx, double vy,
 		double vz) {
 		super(world, x, y, z, vx, vy, vz);
 		this.fluid = fluid;
-		this.a(KeyBinding.B()
-			.a(GrindstoneScreenHandler.result)
+		this.setSprite(MinecraftClient.getInstance()
+			.getSpriteAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE)
 			.apply(fluid.getFluid()
 				.getAttributes()
 				.getStillTexture()));
 
-		this.u = 1.0F;
-		this.v = 0.8F;
-		this.w = 0.8F;
-		this.x = 0.8F;
+		this.gravityStrength = 1.0F;
+		this.colorRed = 0.8F;
+		this.colorGreen = 0.8F;
+		this.colorBlue = 0.8F;
 		this.multiplyColor(fluid.getFluid()
 			.getAttributes()
 			.getColor(fluid));
 		
-		this.j = vx;
-		this.k = vy;
-		this.l = vz;
+		this.velocityX = vx;
+		this.velocityY = vy;
+		this.velocityZ = vz;
 
-		this.B /= 2.0F;
-		this.field_217587_G = this.r.nextFloat() * 3.0F;
-		this.field_217588_H = this.r.nextFloat() * 3.0F;
+		this.scale /= 2.0F;
+		this.field_217587_G = this.random.nextFloat() * 3.0F;
+		this.field_217588_H = this.random.nextFloat() * 3.0F;
 	}
 
 	@Override
-	protected int a(float p_189214_1_) {
-		int brightnessForRender = super.a(p_189214_1_);
+	protected int getColorMultiplier(float p_189214_1_) {
+		int brightnessForRender = super.getColorMultiplier(p_189214_1_);
 		int skyLight = brightnessForRender >> 20;
 		int blockLight = (brightnessForRender >> 4) & 0xf;
 		blockLight = Math.max(blockLight, fluid.getFluid()
@@ -64,43 +64,43 @@ public class FluidStackParticle extends SpellParticle {
 	}
 
 	protected void multiplyColor(int color) {
-		this.v *= (float) (color >> 16 & 255) / 255.0F;
-		this.w *= (float) (color >> 8 & 255) / 255.0F;
-		this.x *= (float) (color & 255) / 255.0F;
+		this.colorRed *= (float) (color >> 16 & 255) / 255.0F;
+		this.colorGreen *= (float) (color >> 8 & 255) / 255.0F;
+		this.colorBlue *= (float) (color & 255) / 255.0F;
 	}
 
-	protected float c() {
-		return this.C.a((double) ((this.field_217587_G + 1.0F) / 4.0F * 16.0F));
+	protected float getMinU() {
+		return this.sprite.getFrameU((double) ((this.field_217587_G + 1.0F) / 4.0F * 16.0F));
 	}
 
-	protected float d() {
-		return this.C.a((double) (this.field_217587_G / 4.0F * 16.0F));
+	protected float getMaxU() {
+		return this.sprite.getFrameU((double) (this.field_217587_G / 4.0F * 16.0F));
 	}
 
-	protected float e() {
-		return this.C.b((double) (this.field_217588_H / 4.0F * 16.0F));
+	protected float getMinV() {
+		return this.sprite.getFrameV((double) (this.field_217588_H / 4.0F * 16.0F));
 	}
 
-	protected float f() {
-		return this.C.b((double) ((this.field_217588_H + 1.0F) / 4.0F * 16.0F));
+	protected float getMaxV() {
+		return this.sprite.getFrameV((double) ((this.field_217588_H + 1.0F) / 4.0F * 16.0F));
 	}
 
 	@Override
-	public void clearAtlas() {
-		super.a();
+	public void tick() {
+		super.tick();
 		if (!canEvaporate())
 			return;
-		if (m)
-			j();
-		if (!o)
+		if (onGround)
+			markDead();
+		if (!dead)
 			return;
-		if (!m && c.t.nextFloat() < 1 / 8f)
+		if (!onGround && world.random.nextFloat() < 1 / 8f)
 			return;
 
-		EntityHitResult rgb = ColorHelper.getRGB(fluid.getFluid()
+		Vec3d rgb = ColorHelper.getRGB(fluid.getFluid()
 			.getAttributes()
 			.getColor(fluid));
-		c.addParticle(ParticleTypes.ENTITY_EFFECT, g, h, i, rgb.entity, rgb.c, rgb.d);
+		world.addParticle(ParticleTypes.ENTITY_EFFECT, x, y, z, rgb.x, rgb.y, rgb.z);
 	}
 	
 	protected boolean canEvaporate() {
@@ -108,8 +108,8 @@ public class FluidStackParticle extends SpellParticle {
 	}
 
 	@Override
-	public LavaEmberParticle b() {
-		return LavaEmberParticle.a;
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.TERRAIN_SHEET;
 	}
 
 }

@@ -1,67 +1,68 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
-import afj;
-import dcg;
 import java.util.function.Predicate;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.util.hit.EntityHitResult;
+
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.BlockView.a;
-import net.minecraft.world.BlockView.b;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.RaycastContext.FluidHandling;
+import net.minecraft.world.RaycastContext.ShapeType;
+import net.minecraft.world.World;
 
 public class RaycastHelper {
 
-	public static dcg rayTraceRange(GameMode worldIn, PlayerAbilities playerIn, double range) {
-		EntityHitResult origin = getTraceOrigin(playerIn);
-		EntityHitResult target = getTraceTarget(playerIn, range, origin);
-		BlockView context = new BlockView(origin, target, a.a, b.a, playerIn);
-		return worldIn.a(context);
+	public static BlockHitResult rayTraceRange(World worldIn, PlayerEntity playerIn, double range) {
+		Vec3d origin = getTraceOrigin(playerIn);
+		Vec3d target = getTraceTarget(playerIn, range, origin);
+		RaycastContext context = new RaycastContext(origin, target, ShapeType.COLLIDER, FluidHandling.NONE, playerIn);
+		return worldIn.raycast(context);
 	}
 
-	public static PredicateTraceResult rayTraceUntil(PlayerAbilities playerIn, double range,
+	public static PredicateTraceResult rayTraceUntil(PlayerEntity playerIn, double range,
 			Predicate<BlockPos> predicate) {
-		EntityHitResult origin = getTraceOrigin(playerIn);
-		EntityHitResult target = getTraceTarget(playerIn, range, origin);
+		Vec3d origin = getTraceOrigin(playerIn);
+		Vec3d target = getTraceTarget(playerIn, range, origin);
 		return rayTraceUntil(origin, target, predicate);
 	}
 
-	public static EntityHitResult getTraceTarget(PlayerAbilities playerIn, double range, EntityHitResult origin) {
-		float f = playerIn.q;
-		float f1 = playerIn.p;
-		float f2 = afj.b(-f1 * 0.017453292F - (float) Math.PI);
-		float f3 = afj.a(-f1 * 0.017453292F - (float) Math.PI);
-		float f4 = -afj.b(-f * 0.017453292F);
-		float f5 = afj.a(-f * 0.017453292F);
+	public static Vec3d getTraceTarget(PlayerEntity playerIn, double range, Vec3d origin) {
+		float f = playerIn.pitch;
+		float f1 = playerIn.yaw;
+		float f2 = MathHelper.cos(-f1 * 0.017453292F - (float) Math.PI);
+		float f3 = MathHelper.sin(-f1 * 0.017453292F - (float) Math.PI);
+		float f4 = -MathHelper.cos(-f * 0.017453292F);
+		float f5 = MathHelper.sin(-f * 0.017453292F);
 		float f6 = f3 * f4;
 		float f7 = f2 * f4;
 		double d3 = range;
-		EntityHitResult Vector3d1 = origin.b((double) f6 * d3, (double) f5 * d3, (double) f7 * d3);
+		Vec3d Vector3d1 = origin.add((double) f6 * d3, (double) f5 * d3, (double) f7 * d3);
 		return Vector3d1;
 	}
 
-	public static EntityHitResult getTraceOrigin(PlayerAbilities playerIn) {
-		double d0 = playerIn.cC();
-		double d1 = playerIn.cD() + (double) playerIn.cd();
-		double d2 = playerIn.cG();
-		EntityHitResult Vector3d = new EntityHitResult(d0, d1, d2);
+	public static Vec3d getTraceOrigin(PlayerEntity playerIn) {
+		double d0 = playerIn.getX();
+		double d1 = playerIn.getY() + (double) playerIn.getStandingEyeHeight();
+		double d2 = playerIn.getZ();
+		Vec3d Vector3d = new Vec3d(d0, d1, d2);
 		return Vector3d;
 	}
 
-	public static PredicateTraceResult rayTraceUntil(EntityHitResult start, EntityHitResult end, Predicate<BlockPos> predicate) {
-		if (Double.isNaN(start.entity) || Double.isNaN(start.c) || Double.isNaN(start.d))
+	public static PredicateTraceResult rayTraceUntil(Vec3d start, Vec3d end, Predicate<BlockPos> predicate) {
+		if (Double.isNaN(start.x) || Double.isNaN(start.y) || Double.isNaN(start.z))
 			return null;
-		if (Double.isNaN(end.entity) || Double.isNaN(end.c) || Double.isNaN(end.d))
+		if (Double.isNaN(end.x) || Double.isNaN(end.y) || Double.isNaN(end.z))
 			return null;
 
-		int dx = afj.c(end.entity);
-		int dy = afj.c(end.c);
-		int dz = afj.c(end.d);
-		int x = afj.c(start.entity);
-		int y = afj.c(start.c);
-		int z = afj.c(start.d);
+		int dx = MathHelper.floor(end.x);
+		int dy = MathHelper.floor(end.y);
+		int dz = MathHelper.floor(end.z);
+		int x = MathHelper.floor(start.x);
+		int y = MathHelper.floor(start.y);
+		int z = MathHelper.floor(start.z);
 
 		BlockPos currentPos = new BlockPos(x, y, z);
 
@@ -71,7 +72,7 @@ public class RaycastHelper {
 		int remainingDistance = 200;
 
 		while (remainingDistance-- >= 0) {
-			if (Double.isNaN(start.entity) || Double.isNaN(start.c) || Double.isNaN(start.d)) {
+			if (Double.isNaN(start.x) || Double.isNaN(start.y) || Double.isNaN(start.z)) {
 				return null;
 			}
 
@@ -113,20 +114,20 @@ public class RaycastHelper {
 			double d3 = 999.0D;
 			double d4 = 999.0D;
 			double d5 = 999.0D;
-			double d6 = end.entity - start.entity;
-			double d7 = end.c - start.c;
-			double d8 = end.d - start.d;
+			double d6 = end.x - start.x;
+			double d7 = end.y - start.y;
+			double d8 = end.z - start.z;
 
 			if (flag2) {
-				d3 = (d0 - start.entity) / d6;
+				d3 = (d0 - start.x) / d6;
 			}
 
 			if (flag) {
-				d4 = (d1 - start.c) / d7;
+				d4 = (d1 - start.y) / d7;
 			}
 
 			if (flag1) {
-				d5 = (d2 - start.d) / d8;
+				d5 = (d2 - start.z) / d8;
 			}
 
 			if (d3 == -0.0D) {
@@ -145,18 +146,18 @@ public class RaycastHelper {
 
 			if (d3 < d4 && d3 < d5) {
 				enumfacing = dx > x ? Direction.WEST : Direction.EAST;
-				start = new EntityHitResult(d0, start.c + d7 * d3, start.d + d8 * d3);
+				start = new Vec3d(d0, start.y + d7 * d3, start.z + d8 * d3);
 			} else if (d4 < d5) {
 				enumfacing = dy > y ? Direction.DOWN : Direction.UP;
-				start = new EntityHitResult(start.entity + d6 * d4, d1, start.d + d8 * d4);
+				start = new Vec3d(start.x + d6 * d4, d1, start.z + d8 * d4);
 			} else {
 				enumfacing = dz > z ? Direction.NORTH : Direction.SOUTH;
-				start = new EntityHitResult(start.entity + d6 * d5, start.c + d7 * d5, d2);
+				start = new Vec3d(start.x + d6 * d5, start.y + d7 * d5, d2);
 			}
 
-			x = afj.c(start.entity) - (enumfacing == Direction.EAST ? 1 : 0);
-			y = afj.c(start.c) - (enumfacing == Direction.UP ? 1 : 0);
-			z = afj.c(start.d) - (enumfacing == Direction.SOUTH ? 1 : 0);
+			x = MathHelper.floor(start.x) - (enumfacing == Direction.EAST ? 1 : 0);
+			y = MathHelper.floor(start.y) - (enumfacing == Direction.UP ? 1 : 0);
+			z = MathHelper.floor(start.z) - (enumfacing == Direction.SOUTH ? 1 : 0);
 			currentPos = new BlockPos(x, y, z);
 
 			if (predicate.test(currentPos))

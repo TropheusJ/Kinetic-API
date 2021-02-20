@@ -1,61 +1,63 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.mounted;
+package com.simibubi.create.content.contraptions.components.structureMovement.mounted;
 
 import java.util.List;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
-import apx;
-import bnx;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AbstractContraptionEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.Contraption;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.OrientedContraptionEntity;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import net.minecraft.block.BlockWithEntity;
-import net.minecraft.block.DetectorRailBlock;
+
+import com.simibubi.create.AllItems;
+import com.simibubi.create.content.contraptions.components.structureMovement.AbstractContraptionEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.Contraption;
+import com.simibubi.create.content.contraptions.components.structureMovement.OrientedContraptionEntity;
+import com.simibubi.create.foundation.utility.NBTHelper;
+
+import net.minecraft.block.AbstractRailBlock;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.DispenserBlock;
 import net.minecraft.block.dispenser.DispenserBehavior;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.entity.ai.brain.ScheduleBuilder.ActivityEntry;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.HoeItem;
+import net.minecraft.block.enums.RailShape;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity.Type;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.stat.StatHandler;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
-public class MinecartContraptionItem extends HoeItem {
+public class MinecartContraptionItem extends Item {
 
-	private final ScheduleBuilder.ActivityEntry minecartType;
+	private final AbstractMinecartEntity.Type minecartType;
 
-	public static MinecartContraptionItem rideable(a builder) {
-		return new MinecartContraptionItem(ActivityEntry.startTime, builder);
+	public static MinecartContraptionItem rideable(Settings builder) {
+		return new MinecartContraptionItem(Type.RIDEABLE, builder);
 	}
 
-	public static MinecartContraptionItem furnace(a builder) {
-		return new MinecartContraptionItem(ActivityEntry.c, builder);
+	public static MinecartContraptionItem furnace(Settings builder) {
+		return new MinecartContraptionItem(Type.FURNACE, builder);
 	}
 
-	public static MinecartContraptionItem chest(a builder) {
-		return new MinecartContraptionItem(ActivityEntry.activity, builder);
+	public static MinecartContraptionItem chest(Settings builder) {
+		return new MinecartContraptionItem(Type.CHEST, builder);
 	}
 
-	private MinecartContraptionItem(ActivityEntry minecartTypeIn, a builder) {
+	private MinecartContraptionItem(Type minecartTypeIn, Settings builder) {
 		super(builder);
 		this.minecartType = minecartTypeIn;
-		DetectorRailBlock.a(this, DISPENSER_BEHAVIOR);
+		DispenserBlock.registerBehavior(this, DISPENSER_BEHAVIOR);
 	}
 
 	// Taken and adjusted from MinecartItem
@@ -63,52 +65,52 @@ public class MinecartContraptionItem extends HoeItem {
 		private final ItemDispenserBehavior behaviourDefaultDispenseItem = new ItemDispenserBehavior();
 
 		@Override
-		public ItemCooldownManager a(BlockPointer source, ItemCooldownManager stack) {
-			Direction direction = source.e()
-				.c(DetectorRailBlock.a);
-			GameMode world = source.getWorld();
+		public ItemStack dispenseSilently(BlockPointer source, ItemStack stack) {
+			Direction direction = source.getBlockState()
+				.get(DispenserBlock.FACING);
+			World world = source.getWorld();
 			double d0 = source.getX() + (double) direction.getOffsetX() * 1.125D;
 			double d1 = Math.floor(source.getY()) + (double) direction.getOffsetY();
 			double d2 = source.getZ() + (double) direction.getOffsetZ() * 1.125D;
 			BlockPos blockpos = source.getBlockPos()
 				.offset(direction);
-			PistonHandler blockstate = world.d_(blockpos);
-			Instrument railshape = blockstate.b() instanceof BlockWithEntity
-				? ((BlockWithEntity) blockstate.b()).getRailDirection(blockstate, world, blockpos, null)
-				: Instrument.NORTH_SOUTH;
+			BlockState blockstate = world.getBlockState(blockpos);
+			RailShape railshape = blockstate.getBlock() instanceof AbstractRailBlock
+				? ((AbstractRailBlock) blockstate.getBlock()).getRailDirection(blockstate, world, blockpos, null)
+				: RailShape.NORTH_SOUTH;
 			double d3;
-			if (blockstate.a(StatHandler.H)) {
-				if (railshape.c()) {
+			if (blockstate.isIn(BlockTags.RAILS)) {
+				if (railshape.isAscending()) {
 					d3 = 0.6D;
 				} else {
 					d3 = 0.1D;
 				}
 			} else {
-				if (!blockstate.isAir(world, blockpos) || !world.d_(blockpos.down())
-					.a(StatHandler.H)) {
+				if (!blockstate.isAir(world, blockpos) || !world.getBlockState(blockpos.down())
+					.isIn(BlockTags.RAILS)) {
 					return this.behaviourDefaultDispenseItem.dispense(source, stack);
 				}
 
-				PistonHandler blockstate1 = world.d_(blockpos.down());
-				Instrument railshape1 = blockstate1.b() instanceof BlockWithEntity
-					? ((BlockWithEntity) blockstate1.b()).getRailDirection(blockstate1, world, blockpos.down(),
+				BlockState blockstate1 = world.getBlockState(blockpos.down());
+				RailShape railshape1 = blockstate1.getBlock() instanceof AbstractRailBlock
+					? ((AbstractRailBlock) blockstate1.getBlock()).getRailDirection(blockstate1, world, blockpos.down(),
 						null)
-					: Instrument.NORTH_SOUTH;
-				if (direction != Direction.DOWN && railshape1.c()) {
+					: RailShape.NORTH_SOUTH;
+				if (direction != Direction.DOWN && railshape1.isAscending()) {
 					d3 = -0.4D;
 				} else {
 					d3 = -0.9D;
 				}
 			}
 
-			ScheduleBuilder abstractminecartentity = ScheduleBuilder.a(world, d0, d1 + d3, d2,
-				((MinecartContraptionItem) stack.b()).minecartType);
-			if (stack.t())
-				abstractminecartentity.a(stack.r());
-			world.c(abstractminecartentity);
+			AbstractMinecartEntity abstractminecartentity = AbstractMinecartEntity.create(world, d0, d1 + d3, d2,
+				((MinecartContraptionItem) stack.getItem()).minecartType);
+			if (stack.hasCustomName())
+				abstractminecartentity.setCustomName(stack.getName());
+			world.spawnEntity(abstractminecartentity);
 			addContraptionToMinecart(world, stack, abstractminecartentity, direction);
 
-			stack.g(1);
+			stack.decrement(1);
 			return stack;
 		}
 
@@ -121,42 +123,42 @@ public class MinecartContraptionItem extends HoeItem {
 
 	// Taken and adjusted from MinecartItem
 	@Override
-	public Difficulty a(bnx context) {
-		GameMode world = context.p();
-		BlockPos blockpos = context.a();
-		PistonHandler blockstate = world.d_(blockpos);
-		if (!blockstate.a(StatHandler.H)) {
-			return Difficulty.FAIL;
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		World world = context.getWorld();
+		BlockPos blockpos = context.getBlockPos();
+		BlockState blockstate = world.getBlockState(blockpos);
+		if (!blockstate.isIn(BlockTags.RAILS)) {
+			return ActionResult.FAIL;
 		} else {
-			ItemCooldownManager itemstack = context.m();
-			if (!world.v) {
-				Instrument railshape = blockstate.b() instanceof BlockWithEntity
-					? ((BlockWithEntity) blockstate.b()).getRailDirection(blockstate, world, blockpos, null)
-					: Instrument.NORTH_SOUTH;
+			ItemStack itemstack = context.getStack();
+			if (!world.isClient) {
+				RailShape railshape = blockstate.getBlock() instanceof AbstractRailBlock
+					? ((AbstractRailBlock) blockstate.getBlock()).getRailDirection(blockstate, world, blockpos, null)
+					: RailShape.NORTH_SOUTH;
 				double d0 = 0.0D;
-				if (railshape.c()) {
+				if (railshape.isAscending()) {
 					d0 = 0.5D;
 				}
 
-				ScheduleBuilder abstractminecartentity =
-					ScheduleBuilder.a(world, (double) blockpos.getX() + 0.5D,
+				AbstractMinecartEntity abstractminecartentity =
+					AbstractMinecartEntity.create(world, (double) blockpos.getX() + 0.5D,
 						(double) blockpos.getY() + 0.0625D + d0, (double) blockpos.getZ() + 0.5D, this.minecartType);
-				if (itemstack.t())
-					abstractminecartentity.a(itemstack.r());
-				PlayerAbilities player = context.n();
-				world.c(abstractminecartentity);
+				if (itemstack.hasCustomName())
+					abstractminecartentity.setCustomName(itemstack.getName());
+				PlayerEntity player = context.getPlayer();
+				world.spawnEntity(abstractminecartentity);
 				addContraptionToMinecart(world, itemstack, abstractminecartentity,
-					player == null ? null : player.bY());
+					player == null ? null : player.getHorizontalFacing());
 			}
 
-			itemstack.g(1);
-			return Difficulty.SUCCESS;
+			itemstack.decrement(1);
+			return ActionResult.SUCCESS;
 		}
 	}
 
-	public static void addContraptionToMinecart(GameMode world, ItemCooldownManager itemstack, ScheduleBuilder cart,
+	public static void addContraptionToMinecart(World world, ItemStack itemstack, AbstractMinecartEntity cart,
 		@Nullable Direction newFacing) {
-		CompoundTag tag = itemstack.p();
+		CompoundTag tag = itemstack.getOrCreateTag();
 		if (tag.contains("Contraption")) {
 			CompoundTag contraptionTag = tag.getCompound("Contraption");
 
@@ -169,71 +171,71 @@ public class MinecartContraptionItem extends HoeItem {
 			OrientedContraptionEntity contraptionEntity =
 				OrientedContraptionEntity.create(world, mountedContraption, intialOrientation);
 
-			contraptionEntity.m(cart);
-			contraptionEntity.d(cart.cC(), cart.cD(), cart.cG());
-			world.c(contraptionEntity);
+			contraptionEntity.startRiding(cart);
+			contraptionEntity.updatePosition(cart.getX(), cart.getY(), cart.getZ());
+			world.spawnEntity(contraptionEntity);
 		}
 	}
 
 	@Override
-	public String f(ItemCooldownManager stack) {
-		return "item.kinetic_api.minecart_contraption";
+	public String getTranslationKey(ItemStack stack) {
+		return "item.create.minecart_contraption";
 	}
 
 	@Override
-	public void a(ChorusFruitItem group, DefaultedList<ItemCooldownManager> items) {}
+	public void appendStacks(ItemGroup group, DefaultedList<ItemStack> items) {}
 
 	@SubscribeEvent
 	public static void wrenchCanBeUsedToPickUpMinecartContraptions(PlayerInteractEvent.EntityInteract event) {
-		apx entity = event.getTarget();
-		PlayerAbilities player = event.getPlayer();
+		Entity entity = event.getTarget();
+		PlayerEntity player = event.getPlayer();
 		if (player == null || entity == null)
 			return;
 
-		ItemCooldownManager wrench = player.b(event.getHand());
+		ItemStack wrench = player.getStackInHand(event.getHand());
 		if (!AllItems.WRENCH.isIn(wrench))
 			return;
 		if (entity instanceof AbstractContraptionEntity)
-			entity = entity.cs();
-		if (!(entity instanceof ScheduleBuilder))
+			entity = entity.getVehicle();
+		if (!(entity instanceof AbstractMinecartEntity))
 			return;
-		ScheduleBuilder cart = (ScheduleBuilder) entity;
-		ActivityEntry type = cart.o();
-		if (type != ActivityEntry.startTime && type != ActivityEntry.c && type != ActivityEntry.activity)
+		AbstractMinecartEntity cart = (AbstractMinecartEntity) entity;
+		Type type = cart.getMinecartType();
+		if (type != Type.RIDEABLE && type != Type.FURNACE && type != Type.CHEST)
 			return;
-		List<apx> passengers = cart.cm();
+		List<Entity> passengers = cart.getPassengerList();
 		if (passengers.isEmpty() || !(passengers.get(0) instanceof OrientedContraptionEntity))
 			return;
 		OrientedContraptionEntity contraption = (OrientedContraptionEntity) passengers.get(0);
 
-		if (!event.getWorld().v) {
-			player.bm.a(event.getWorld(), create(type, contraption).a(entity.S()));
-			contraption.ac();
-			entity.ac();
+		if (!event.getWorld().isClient) {
+			player.inventory.offerOrDrop(event.getWorld(), create(type, contraption).setCustomName(entity.getCustomName()));
+			contraption.remove();
+			entity.remove();
 		}
 
-		event.setCancellationResult(Difficulty.SUCCESS);
+		event.setCancellationResult(ActionResult.SUCCESS);
 		event.setCanceled(true);
 	}
 
-	public static ItemCooldownManager create(ActivityEntry type, OrientedContraptionEntity entity) {
-		ItemCooldownManager stack = ItemCooldownManager.tick;
+	public static ItemStack create(Type type, OrientedContraptionEntity entity) {
+		ItemStack stack = ItemStack.EMPTY;
 
 		switch (type) {
-		case startTime:
+		case RIDEABLE:
 			stack = AllItems.MINECART_CONTRAPTION.asStack();
 			break;
-		case c:
+		case FURNACE:
 			stack = AllItems.FURNACE_MINECART_CONTRAPTION.asStack();
 			break;
-		case activity:
+		case CHEST:
 			stack = AllItems.CHEST_MINECART_CONTRAPTION.asStack();
 			break;
 		default:
 			break;
 		}
 
-		if (stack.a())
+		if (stack.isEmpty())
 			return stack;
 
 		CompoundTag tag = entity.getContraption()
@@ -245,7 +247,7 @@ public class MinecartContraptionItem extends HoeItem {
 		if (entity.isInitialOrientationPresent())
 			NBTHelper.writeEnum(tag, "InitialOrientation", entity.getInitialOrientation());
 
-		stack.p()
+		stack.getOrCreateTag()
 			.put("Contraption", tag);
 		return stack;
 	}

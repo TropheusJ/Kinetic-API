@@ -1,26 +1,27 @@
-package com.simibubi.kinetic_api.content.contraptions.components.crafter;
+package com.simibubi.create.content.contraptions.components.crafter;
 
-import static com.simibubi.kinetic_api.content.contraptions.base.HorizontalKineticBlock.HORIZONTAL_FACING;
+import static com.simibubi.create.content.contraptions.base.HorizontalKineticBlock.HORIZONTAL_FACING;
 
-import bqx;
-import com.simibubi.kinetic_api.AllSpriteShifts;
-import com.simibubi.kinetic_api.content.contraptions.components.crafter.ConnectedInputHandler.ConnectedInput;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShiftEntry;
-import com.simibubi.kinetic_api.foundation.block.connected.ConnectedTextureBehaviour;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.AllSpriteShifts;
+import com.simibubi.create.content.contraptions.components.crafter.ConnectedInputHandler.ConnectedInput;
+import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
+import com.simibubi.create.foundation.block.connected.ConnectedTextureBehaviour;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.world.BlockRenderView;
 
 public class CrafterCTBehaviour extends ConnectedTextureBehaviour {
 
 	@Override
-	public boolean connectsTo(PistonHandler state, PistonHandler other, bqx reader, BlockPos pos, BlockPos otherPos,
+	public boolean connectsTo(BlockState state, BlockState other, BlockRenderView reader, BlockPos pos, BlockPos otherPos,
 		Direction face) {
-		if (state.b() != other.b())
+		if (state.getBlock() != other.getBlock())
 			return false;
-		if (state.c(HORIZONTAL_FACING) != other.c(HORIZONTAL_FACING))
+		if (state.get(HORIZONTAL_FACING) != other.get(HORIZONTAL_FACING))
 			return false;
 
 		ConnectedInput input1 = CrafterHelper.getInput(reader, pos);
@@ -38,11 +39,11 @@ public class CrafterCTBehaviour extends ConnectedTextureBehaviour {
 	}
 
 	@Override
-	protected boolean reverseUVs(PistonHandler state, Direction direction) {
+	protected boolean reverseUVs(BlockState state, Direction direction) {
 		if (!direction.getAxis()
 			.isVertical())
 			return false;
-		Direction facing = state.c(HORIZONTAL_FACING);
+		Direction facing = state.get(HORIZONTAL_FACING);
 		if (facing.getAxis() == direction.getAxis())
 			return false;
 
@@ -53,8 +54,8 @@ public class CrafterCTBehaviour extends ConnectedTextureBehaviour {
 	}
 
 	@Override
-	public CTSpriteShiftEntry get(PistonHandler state, Direction direction) {
-		Direction facing = state.c(HORIZONTAL_FACING);
+	public CTSpriteShiftEntry get(BlockState state, Direction direction) {
+		Direction facing = state.get(HORIZONTAL_FACING);
 		boolean isFront = facing.getAxis() == direction.getAxis();
 		boolean isVertical = direction.getAxis()
 			.isVertical();

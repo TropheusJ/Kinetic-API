@@ -1,19 +1,19 @@
-package com.simibubi.kinetic_api.foundation.gui;
+package com.simibubi.create.foundation.gui;
 
 import java.util.List;
 import java.util.function.Consumer;
-import net.minecraft.client.gui.screen.PresetsScreen;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.simibubi.create.AllKeys;
+import com.simibubi.create.content.schematics.client.tools.Tools;
+import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.util.Window;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.simibubi.kinetic_api.AllKeys;
-import com.simibubi.kinetic_api.content.schematics.client.tools.Tools;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import dew;
 
-public class ToolSelectionScreen extends PresetsScreen {
+public class ToolSelectionScreen extends Screen {
 
 	public final String scrollToCycle = Lang.translate("gui.toolmenu.cycle")
 		.getString();
@@ -31,7 +31,7 @@ public class ToolSelectionScreen extends PresetsScreen {
 
 	public ToolSelectionScreen(List<Tools> tools, Consumer<Tools> callback) {
 		super(new LiteralText("Tool Selection"));
-		this.i = KeyBinding.B();
+		this.client = MinecraftClient.getInstance();
 		this.tools = tools;
 		this.callback = callback;
 		focused = false;
@@ -56,26 +56,26 @@ public class ToolSelectionScreen extends PresetsScreen {
 		selection = (selection + tools.size()) % tools.size();
 	}
 
-	private void draw(BufferVertexConsumer matrixStack, float partialTicks) {
-		KeyBinding mc = KeyBinding.B();
-		dew mainWindow = mc.aB();
+	private void draw(MatrixStack matrixStack, float partialTicks) {
+		MinecraftClient mc = MinecraftClient.getInstance();
+		Window mainWindow = mc.getWindow();
 		if (!initialized)
-			b(mc, mainWindow.o(), mainWindow.p());
+			init(mc, mainWindow.getScaledWidth(), mainWindow.getScaledHeight());
 
-		int x = (mainWindow.o() - w) / 2 + 15;
-		int y = mainWindow.p() - h - 75;
+		int x = (mainWindow.getScaledWidth() - w) / 2 + 15;
+		int y = mainWindow.getScaledHeight() - h - 75;
 
-		matrixStack.a();
-		matrixStack.a(0, -yOffset, focused ? 100 : 0);
+		matrixStack.push();
+		matrixStack.translate(0, -yOffset, focused ? 100 : 0);
 
 		AllGuiTextures gray = AllGuiTextures.HUD_BACKGROUND;
 		RenderSystem.enableBlend();
 		RenderSystem.color4f(1, 1, 1, focused ? 7 / 8f : 1 / 2f);
 
-		KeyBinding.B()
-			.L()
-			.a(gray.location);
-		a(matrixStack, x - 15, y, gray.startX, gray.startY, w, h, gray.width, gray.height);
+		MinecraftClient.getInstance()
+			.getTextureManager()
+			.bindTexture(gray.location);
+		drawTexture(matrixStack, x - 15, y, gray.startX, gray.startY, w, h, gray.width, gray.height);
 
 		float toolTipAlpha = yOffset / 10;
 		List<Text> toolTip = tools.get(selection)
@@ -84,40 +84,40 @@ public class ToolSelectionScreen extends PresetsScreen {
 
 		if (toolTipAlpha > 0.25f) {
 			RenderSystem.color4f(.7f, .7f, .8f, toolTipAlpha);
-			a(matrixStack, x - 15, y + 33, gray.startX, gray.startY, w, h + 22, gray.width, gray.height);
+			drawTexture(matrixStack, x - 15, y + 33, gray.startX, gray.startY, w, h + 22, gray.width, gray.height);
 			RenderSystem.color4f(1, 1, 1, 1);
 
 			if (toolTip.size() > 0)
-				o.b(matrixStack, toolTip.get(0), x - 10, y + 38, 0xEEEEEE + stringAlphaComponent);
+				textRenderer.draw(matrixStack, toolTip.get(0), x - 10, y + 38, 0xEEEEEE + stringAlphaComponent);
 			if (toolTip.size() > 1)
-				o.b(matrixStack, toolTip.get(1), x - 10, y + 50, 0xCCDDFF + stringAlphaComponent);
+				textRenderer.draw(matrixStack, toolTip.get(1), x - 10, y + 50, 0xCCDDFF + stringAlphaComponent);
 			if (toolTip.size() > 2)
-				o.b(matrixStack, toolTip.get(2), x - 10, y + 60, 0xCCDDFF + stringAlphaComponent);
+				textRenderer.draw(matrixStack, toolTip.get(2), x - 10, y + 60, 0xCCDDFF + stringAlphaComponent);
 			if (toolTip.size() > 3)
-				o.b(matrixStack, toolTip.get(3), x - 10, y + 72, 0xCCCCDD + stringAlphaComponent);
+				textRenderer.draw(matrixStack, toolTip.get(3), x - 10, y + 72, 0xCCCCDD + stringAlphaComponent);
 		}
 
 		RenderSystem.color4f(1, 1, 1, 1);
 		if (tools.size() > 1) {
 			String keyName = AllKeys.TOOL_MENU.getBoundKey();
-			int width = i.aB()
-				.o();
+			int width = client.getWindow()
+				.getScaledWidth();
 			if (!focused)
-				a(matrixStack, i.category, Lang.translate(holdToFocus, keyName), width / 2,
+				drawCenteredText(matrixStack, client.textRenderer, Lang.translate(holdToFocus, keyName), width / 2,
 					y - 10, 0xCCDDFF);
 			else
-				a(matrixStack, i.category, scrollToCycle, width / 2, y - 10, 0xCCDDFF);
+				drawCenteredString(matrixStack, client.textRenderer, scrollToCycle, width / 2, y - 10, 0xCCDDFF);
 		} else {
 			x += 65;
 		}
 
 		for (int i = 0; i < tools.size(); i++) {
-			matrixStack.a();
+			matrixStack.push();
 
 			float alpha = focused ? 1 : .2f;
 			if (i == selection) {
-				matrixStack.a(0, -10, 0);
-				a(matrixStack, i.category, tools.get(i)
+				matrixStack.translate(0, -10, 0);
+				drawCenteredString(matrixStack, client.textRenderer, tools.get(i)
 					.getDisplayName()
 					.getString(), x + i * 50 + 24, y + 28, 0xCCDDFF);
 				alpha = 1;
@@ -131,10 +131,10 @@ public class ToolSelectionScreen extends PresetsScreen {
 				.getIcon()
 				.draw(matrixStack, this, x + i * 50 + 16, y + 11);
 
-			matrixStack.b();
+			matrixStack.pop();
 		}
 
-		matrixStack.b();
+		matrixStack.pop();
 	}
 
 	public void update() {
@@ -144,18 +144,18 @@ public class ToolSelectionScreen extends PresetsScreen {
 			yOffset *= .9f;
 	}
 
-	public void renderPassive(BufferVertexConsumer matrixStack, float partialTicks) {
+	public void renderPassive(MatrixStack matrixStack, float partialTicks) {
 		draw(matrixStack, partialTicks);
 	}
 
 	@Override
-	public void au_() {
+	public void onClose() {
 		callback.accept(tools.get(selection));
 	}
 
 	@Override
-	protected void b() {
-		super.b();
+	protected void init() {
+		super.init();
 		initialized = true;
 	}
 }

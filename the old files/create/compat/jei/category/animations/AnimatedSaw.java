@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.compat.jei.category.animations;
+package com.simibubi.create.compat.jei.category.animations;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.components.saw.SawBlock;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.components.saw.SawBlock;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
@@ -13,15 +13,15 @@ import net.minecraft.util.math.Direction.Axis;
 public class AnimatedSaw extends AnimatedKinetics {
 
 	@Override
-	public void draw(BufferVertexConsumer matrixStack, int xOffset, int yOffset) {
-		matrixStack.a();
-		matrixStack.a(xOffset, yOffset, 0);
+	public void draw(MatrixStack matrixStack, int xOffset, int yOffset) {
+		matrixStack.push();
+		matrixStack.translate(xOffset, yOffset, 0);
 		AllGuiTextures.JEI_SHADOW.draw(matrixStack, -16, 13);
 
-		matrixStack.a(0, 0, 200);
-		matrixStack.a(29, 17, 0);
-		matrixStack.a(Vector3f.POSITIVE_X.getDegreesQuaternion(-22.5f));
-		matrixStack.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(90 - 225f));
+		matrixStack.translate(0, 0, 200);
+		matrixStack.translate(29, 17, 0);
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-22.5f));
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(90 - 225f));
 		int scale = 25;
 
 		GuiGameElement.of(shaft(Axis.X))
@@ -30,7 +30,7 @@ public class AnimatedSaw extends AnimatedKinetics {
 			.render(matrixStack);
 
 		GuiGameElement.of(AllBlocks.MECHANICAL_SAW.getDefaultState()
-			.a(SawBlock.FACING, Direction.UP))
+			.with(SawBlock.FACING, Direction.UP))
 			.rotateBlock(0, 0, 0)
 			.scale(scale)
 			.render(matrixStack);
@@ -40,7 +40,7 @@ public class AnimatedSaw extends AnimatedKinetics {
 			.scale(scale)
 			.render(matrixStack);
 
-		matrixStack.b();
+		matrixStack.pop();
 	}
 
 }

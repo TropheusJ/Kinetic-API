@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.terrainzapper;
+package com.simibubi.create.content.curiosities.zapper.terrainzapper;
 
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.utility.Lang;
 
 public enum PlacementOptions {
 

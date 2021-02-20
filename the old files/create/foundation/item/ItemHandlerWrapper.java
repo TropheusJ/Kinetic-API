@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.foundation.item;
+package com.simibubi.create.foundation.item;
 
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandlerModifiable;
 
 public class ItemHandlerWrapper implements IItemHandlerModifiable {
@@ -17,17 +17,17 @@ public class ItemHandlerWrapper implements IItemHandlerModifiable {
 	}
 
 	@Override
-	public ItemCooldownManager getStackInSlot(int slot) {
+	public ItemStack getStackInSlot(int slot) {
 		return wrapped.getStackInSlot(slot);
 	}
 
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
 		return wrapped.insertItem(slot, stack, simulate);
 	}
 
 	@Override
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
+	public ItemStack extractItem(int slot, int amount, boolean simulate) {
 		return wrapped.extractItem(slot, amount, simulate);
 	}
 
@@ -37,12 +37,12 @@ public class ItemHandlerWrapper implements IItemHandlerModifiable {
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		return wrapped.isItemValid(slot, stack);
 	}
 
 	@Override
-	public void setStackInSlot(int slot, ItemCooldownManager stack) {
+	public void setStackInSlot(int slot, ItemStack stack) {
 		wrapped.setStackInSlot(slot, stack);
 	}
 

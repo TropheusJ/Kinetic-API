@@ -1,78 +1,80 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.gearbox;
+package com.simibubi.create.content.contraptions.relays.gearbox;
 
 import java.util.Arrays;
 import java.util.List;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.RotatedPillarKineticBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.fluid.LavaFluid;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.RotatedPillarKineticBlock;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext.Builder;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.WorldView;
 
 public class GearboxBlock extends RotatedPillarKineticBlock {
 
-	public GearboxBlock(c properties) {
+	public GearboxBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.GEARBOX.create();
 	}
 
 	@Override
-	public LavaFluid f(PistonHandler state) {
-		return LavaFluid.e;
+	public PistonBehavior getPistonBehavior(BlockState state) {
+		return PistonBehavior.PUSH_ONLY;
 	}
 
 	@Override
-	public void a(ChorusFruitItem group, DefaultedList<ItemCooldownManager> items) {
-		super.a(group, items);
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> items) {
+		super.addStacksForDisplay(group, items);
 		items.add(AllItems.VERTICAL_GEARBOX.asStack());
 	}
 
 	@SuppressWarnings("deprecation")
 	@Override
-	public List<ItemCooldownManager> a(PistonHandler state, net.minecraft.loot.LootGsons.a builder) {
-		if (state.c(AXIS).isVertical())
-			return super.a(state, builder);
-		return Arrays.asList(new ItemCooldownManager(AllItems.VERTICAL_GEARBOX.get()));
+	public List<ItemStack> getDroppedStacks(BlockState state, Builder builder) {
+		if (state.get(AXIS).isVertical())
+			return super.getDroppedStacks(state, builder);
+		return Arrays.asList(new ItemStack(AllItems.VERTICAL_GEARBOX.get()));
 	}
 	
 	@Override
-	public ItemCooldownManager getPickBlock(PistonHandler state, Box target, MobSpawnerLogic world, BlockPos pos,
-			PlayerAbilities player) {
-		if (state.c(AXIS).isVertical())
+	public ItemStack getPickBlock(BlockState state, HitResult target, BlockView world, BlockPos pos,
+			PlayerEntity player) {
+		if (state.get(AXIS).isVertical())
 			return super.getPickBlock(state, target, world, pos, player);
-		return new ItemCooldownManager(AllItems.VERTICAL_GEARBOX.get());
+		return new ItemStack(AllItems.VERTICAL_GEARBOX.get());
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		return n().a(AXIS, Axis.Y);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return getDefaultState().with(AXIS, Axis.Y);
 	}
 
 	// IRotate:
 
 	@Override
-	public boolean hasShaftTowards(ItemConvertible world, BlockPos pos, PistonHandler state, Direction face) {
-		return face.getAxis() != state.c(AXIS);
+	public boolean hasShaftTowards(WorldView world, BlockPos pos, BlockState state, Direction face) {
+		return face.getAxis() != state.get(AXIS);
 	}
 
 	@Override
-	public Axis getRotationAxis(PistonHandler state) {
-		return state.c(AXIS);
+	public Axis getRotationAxis(BlockState state) {
+		return state.get(AXIS);
 	}
 }

@@ -1,38 +1,38 @@
-package com.simibubi.kinetic_api.compat.jei.category;
+package com.simibubi.create.compat.jei.category;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.simibubi.kinetic_api.AllFluids;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.compat.jei.DoubleItemIcon;
-import com.simibubi.kinetic_api.compat.jei.EmptyBackground;
-import com.simibubi.kinetic_api.content.contraptions.fluids.potion.PotionFluidHandler;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingOutput;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipe;
-import com.simibubi.kinetic_api.foundation.fluid.FluidIngredient;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.AllFluids;
+import com.simibubi.create.Create;
+import com.simibubi.create.compat.jei.DoubleItemIcon;
+import com.simibubi.create.compat.jei.EmptyBackground;
+import com.simibubi.create.content.contraptions.fluids.potion.PotionFluidHandler;
+import com.simibubi.create.content.contraptions.processing.ProcessingOutput;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipe;
+import com.simibubi.create.foundation.fluid.FluidIngredient;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.utility.Lang;
 
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IGuiFluidStackGroup;
 import mezz.jei.api.gui.ingredient.IGuiItemStackGroup;
 import mezz.jei.api.recipe.category.IRecipeCategory;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.recipe.Ingredient;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.Recipe;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.GameRules;
 import net.minecraftforge.fluids.FluidStack;
 
-public abstract class CreateRecipeCategory<T extends Ingredient<?>> implements IRecipeCategory<T> {
+public abstract class CreateRecipeCategory<T extends Recipe<?>> implements IRecipeCategory<T> {
 
 	public List<Supplier<? extends Object>> recipeCatalysts = new ArrayList<>();
-	public List<Supplier<List<? extends Ingredient<?>>>> recipes = new ArrayList<>();
+	public List<Supplier<List<? extends Recipe<?>>>> recipes = new ArrayList<>();
 	public Identifier uid;
 
 	protected String name;
@@ -70,7 +70,7 @@ public abstract class CreateRecipeCategory<T extends Ingredient<?>> implements I
 		return background;
 	}
 
-	protected static AllGuiTextures getRenderedSlot(Ingredient<?> recipe, int index) {
+	protected static AllGuiTextures getRenderedSlot(Recipe<?> recipe, int index) {
 		AllGuiTextures jeiSlot = AllGuiTextures.JEI_SLOT;
 		if (!(recipe instanceof ProcessingRecipe))
 			return jeiSlot;
@@ -89,12 +89,12 @@ public abstract class CreateRecipeCategory<T extends Ingredient<?>> implements I
 		return new EmptyBackground(width, height);
 	}
 
-	protected static IDrawable doubleItemIcon(GameRules item1, GameRules item2) {
-		return new DoubleItemIcon(() -> new ItemCooldownManager(item1), () -> new ItemCooldownManager(item2));
+	protected static IDrawable doubleItemIcon(ItemConvertible item1, ItemConvertible item2) {
+		return new DoubleItemIcon(() -> new ItemStack(item1), () -> new ItemStack(item2));
 	}
 
-	protected static IDrawable itemIcon(GameRules item) {
-		return new DoubleItemIcon(() -> new ItemCooldownManager(item), () -> ItemCooldownManager.tick);
+	protected static IDrawable itemIcon(ItemConvertible item) {
+		return new DoubleItemIcon(() -> new ItemStack(item), () -> ItemStack.EMPTY);
 	}
 
 	protected static void addStochasticTooltip(IGuiItemStackGroup itemStacks, List<ProcessingOutput> results) {
@@ -130,7 +130,7 @@ public abstract class CreateRecipeCategory<T extends Ingredient<?>> implements I
 
 		fluidStacks.addTooltipCallback((slotIndex, input, fluid, tooltip) -> {
 			if (fluid.getFluid()
-				.a(AllFluids.POTION.get())) {
+				.matchesType(AllFluids.POTION.get())) {
 				Text name = PotionFluidHandler.getPotionName(fluid);
 				if (tooltip.isEmpty())
 					tooltip.add(0, name);

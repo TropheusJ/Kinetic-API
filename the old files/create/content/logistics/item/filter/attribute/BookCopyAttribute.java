@@ -1,11 +1,13 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter.attribute;
+package com.simibubi.create.content.logistics.item.filter.attribute;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.LilyPadItem;
+
+import com.simibubi.create.content.logistics.item.filter.ItemAttribute;
+
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.WrittenBookItem;
 import net.minecraft.nbt.CompoundTag;
-import com.simibubi.kinetic_api.content.logistics.item.filter.ItemAttribute;
 
 public class BookCopyAttribute implements ItemAttribute {
     int generation;
@@ -15,12 +17,12 @@ public class BookCopyAttribute implements ItemAttribute {
     }
 
     @Override
-    public boolean appliesTo(ItemCooldownManager itemStack) {
+    public boolean appliesTo(ItemStack itemStack) {
         return extractGeneration(itemStack) == generation;
     }
 
     @Override
-    public List<ItemAttribute> listAttributesOf(ItemCooldownManager itemStack) {
+    public List<ItemAttribute> listAttributesOf(ItemStack itemStack) {
         int generation = extractGeneration(itemStack);
 
         List<ItemAttribute> atts = new ArrayList<>();
@@ -54,9 +56,9 @@ public class BookCopyAttribute implements ItemAttribute {
         return new BookCopyAttribute(nbt.getInt("generation"));
     }
 
-    private int extractGeneration(ItemCooldownManager stack) {
-        CompoundTag nbt = stack.o();
-        if (nbt != null && stack.b() instanceof LilyPadItem) {
+    private int extractGeneration(ItemStack stack) {
+        CompoundTag nbt = stack.getTag();
+        if (nbt != null && stack.getItem() instanceof WrittenBookItem) {
             return nbt.getInt("generation");
         }
         return -1;

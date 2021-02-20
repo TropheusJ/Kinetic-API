@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.content.schematics.client.tools;
+package com.simibubi.create.content.schematics.client.tools;
 
-import com.simibubi.kinetic_api.content.schematics.client.SchematicTransformation;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.content.schematics.client.SchematicTransformation;
+import com.simibubi.create.foundation.utility.VecHelper;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.Vec3d;
 
 public class MoveTool extends PlacementToolBase {
 
@@ -24,10 +24,10 @@ public class MoveTool extends PlacementToolBase {
 			return true;
 
 		SchematicTransformation transformation = schematicHandler.getTransformation();
-		EntityHitResult vec = EntityHitResult.b(selectedFace.getVector()).a(-Math.signum(delta));
-		vec = vec.d(transformation.getMirrorModifier(Axis.X), 1, transformation.getMirrorModifier(Axis.Z));
+		Vec3d vec = Vec3d.of(selectedFace.getVector()).multiply(-Math.signum(delta));
+		vec = vec.multiply(transformation.getMirrorModifier(Axis.X), 1, transformation.getMirrorModifier(Axis.Z));
 		vec = VecHelper.rotate(vec, transformation.getRotationTarget(), Axis.Y);
-		transformation.move((float) vec.entity, 0, (float) vec.d);
+		transformation.move((float) vec.x, 0, (float) vec.z);
 		schematicHandler.markDirty();
 		
 		return true;

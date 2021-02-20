@@ -1,18 +1,19 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
 import java.util.List;
-import afj;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.Contraption;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.LerpedFloat;
+
+import com.simibubi.create.content.contraptions.components.structureMovement.Contraption;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.LerpedFloat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -23,7 +24,7 @@ public abstract class PortableStorageInterfaceTileEntity extends SmartTileEntity
 	protected LerpedFloat connectionAnimation;
 	protected boolean powered;
 
-	public PortableStorageInterfaceTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public PortableStorageInterfaceTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		transferTimer = 0;
 		connectionAnimation = LerpedFloat.linear()
@@ -42,8 +43,8 @@ public abstract class PortableStorageInterfaceTileEntity extends SmartTileEntity
 	protected abstract void invalidateCapability();
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		boolean wasConnected = isConnected();
 
 		if (transferTimer > 0) {
@@ -53,28 +54,28 @@ public abstract class PortableStorageInterfaceTileEntity extends SmartTileEntity
 		}
 
 		boolean isConnected = isConnected();
-		if (wasConnected != isConnected && !d.v)
-			X_();
+		if (wasConnected != isConnected && !world.isClient)
+			markDirty();
 
 		float progress = 0;
 		int timeUnit = getTransferTimeout() / 2;
 		if (isConnected)
 			progress = 1;
 		else if (transferTimer >= timeUnit * 3)
-			progress = afj.g((transferTimer - timeUnit * 3) / (float) timeUnit, 1, 0);
+			progress = MathHelper.lerp((transferTimer - timeUnit * 3) / (float) timeUnit, 1, 0);
 		else if (transferTimer < timeUnit)
-			progress = afj.g(transferTimer / (float) timeUnit, 0, 1);
+			progress = MathHelper.lerp(transferTimer / (float) timeUnit, 0, 1);
 		connectionAnimation.setValue(progress);
 	}
 
 	@Override
-	public void al_() {
-		super.al_();
+	public void markRemoved() {
+		super.markRemoved();
 		invalidateCapability();
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		super.fromTag(state, compound, clientPacket);
 		transferTimer = compound.getInt("Timer");
 		distance = compound.getFloat("Distance");
@@ -90,7 +91,7 @@ public abstract class PortableStorageInterfaceTileEntity extends SmartTileEntity
 	}
 
 	public void neighbourChanged() {
-		boolean isBlockPowered = d.r(e);
+		boolean isBlockPowered = world.isReceivingRedstonePower(pos);
 		if (isBlockPowered == powered)
 			return;
 		powered = isBlockPowered;
@@ -101,10 +102,14 @@ public abstract class PortableStorageInterfaceTileEntity extends SmartTileEntity
 		return powered;
 	}
 
+	protected Box cachedBoundingBox;
 	@Override
 	@Environment(EnvType.CLIENT)
-	public Timer getRenderBoundingBox() {
-		return super.getRenderBoundingBox().g(2);
+	public Box getRenderBoundingBox() {
+		if (cachedBoundingBox == null) {
+			cachedBoundingBox = super.getRenderBoundingBox().expand(2);
+		}
+		return cachedBoundingBox;
 	}
 
 	public boolean isTransferring() {

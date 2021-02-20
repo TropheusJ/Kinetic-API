@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -12,15 +12,15 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.content.contraptions.fluids.PipeConnection.Flow;
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockFace;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
+import com.simibubi.create.content.contraptions.fluids.PipeConnection.Flow;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.BlockFace;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Pair;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
@@ -30,7 +30,7 @@ public class FluidNetwork {
 
 	private static int CYCLES_PER_TICK = 16;
 
-	GameMode world;
+	World world;
 	BlockFace start;
 
 	Supplier<LazyOptional<IFluidHandler>> sourceSupplier;
@@ -45,7 +45,7 @@ public class FluidNetwork {
 	List<Pair<BlockFace, LazyOptional<IFluidHandler>>> targets;
 	Map<BlockPos, WeakReference<FluidTransportBehaviour>> cache;
 
-	public FluidNetwork(GameMode world, BlockFace location, Supplier<LazyOptional<IFluidHandler>> sourceSupplier) {
+	public FluidNetwork(World world, BlockFace location, Supplier<LazyOptional<IFluidHandler>> sourceSupplier) {
 		this.world = world;
 		this.start = location;
 		this.sourceSupplier = sourceSupplier;
@@ -278,7 +278,7 @@ public class FluidNetwork {
 	private FluidTransportBehaviour getFluidTransfer(BlockPos pos) {
 		WeakReference<FluidTransportBehaviour> weakReference = cache.get(pos);
 		FluidTransportBehaviour behaviour = weakReference != null ? weakReference.get() : null;
-		if (behaviour != null && behaviour.tileEntity.q())
+		if (behaviour != null && behaviour.tileEntity.isRemoved())
 			behaviour = null;
 		if (behaviour == null) {
 			behaviour = TileEntityBehaviour.get(world, pos, FluidTransportBehaviour.TYPE);

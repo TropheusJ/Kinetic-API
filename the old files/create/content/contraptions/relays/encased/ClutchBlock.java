@@ -1,33 +1,34 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
-import com.simibubi.kinetic_api.AllTileEntities;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.AllTileEntities;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 public class ClutchBlock extends GearshiftBlock {
 
-	public ClutchBlock(c properties) {
+	public ClutchBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.CLUTCH.create();
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, BeetrootsBlock blockIn, BlockPos fromPos,
+	public void neighborUpdate(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos,
 			boolean isMoving) {
-		if (worldIn.v)
+		if (worldIn.isClient)
 			return;
 
-		boolean previouslyPowered = state.c(POWERED);
-		if (previouslyPowered != worldIn.r(pos)) {
-			worldIn.a(pos, state.a(POWERED), 2 | 16);
+		boolean previouslyPowered = state.get(POWERED);
+		if (previouslyPowered != worldIn.isReceivingRedstonePower(pos)) {
+			worldIn.setBlockState(pos, state.cycle(POWERED), 2 | 16);
 			detachKinetics(worldIn, pos, previouslyPowered);
 		}
 	}

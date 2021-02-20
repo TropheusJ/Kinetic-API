@@ -1,14 +1,14 @@
-package com.simibubi.kinetic_api.content.curiosities.symmetry;
+package com.simibubi.create.content.curiosities.symmetry;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
-import net.minecraft.client.options.KeyBinding;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
@@ -41,8 +41,8 @@ public class SymmetryEffectPacket extends SimplePacketBase {
 	}
 
 	public void handle(Supplier<Context> ctx) {
-		ctx.get().enqueueWork(() -> DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-			if (KeyBinding.B().s.cz().f(EntityHitResult.b(mirror)) > 100)
+		ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+			if (MinecraftClient.getInstance().player.getPos().distanceTo(Vec3d.of(mirror)) > 100)
 				return;
 			for (BlockPos to : positions)
 				SymmetryHandler.drawEffect(mirror, to);

@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.foundation.item;
+package com.simibubi.create.foundation.item;
 
 import java.util.List;
 import java.util.Random;
-import net.minecraft.client.texture.StatusEffectSpriteManager;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.Lang;
 
 public class WipScription extends ItemDescription {
 
@@ -15,7 +15,7 @@ public class WipScription extends ItemDescription {
 		add(getLines(), Lang.translate("tooltip.workInProgress").formatted(Formatting.RED));
 
 		int descriptions = 0;
-		while (StatusEffectSpriteManager.a("kinetic_api.tooltip.randomWipDescription" + descriptions++))
+		while (I18n.hasTranslation("create.tooltip.randomWipDescription" + descriptions++))
 			;
 
 		if (--descriptions > 0) {

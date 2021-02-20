@@ -1,10 +1,11 @@
-package com.simibubi.kinetic_api.foundation.data;
+package com.simibubi.create.foundation.data;
 
-import com.simibubi.kinetic_api.content.contraptions.relays.gauge.GaugeBlock;
+import com.simibubi.create.content.contraptions.relays.gauge.GaugeBlock;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraftforge.client.model.generators.ModelFile;
@@ -12,9 +13,9 @@ import net.minecraftforge.client.model.generators.ModelFile;
 public abstract class DirectionalAxisBlockStateGen extends SpecialBlockStateGen {
 
 	@Override
-	protected int getXRotation(PistonHandler state) {
-		Direction direction = state.c(GaugeBlock.FACING);
-		boolean alongFirst = state.c(GaugeBlock.AXIS_ALONG_FIRST_COORDINATE);
+	protected int getXRotation(BlockState state) {
+		Direction direction = state.get(GaugeBlock.FACING);
+		boolean alongFirst = state.get(GaugeBlock.AXIS_ALONG_FIRST_COORDINATE);
 
 		if (direction == Direction.DOWN)
 			return 180;
@@ -27,9 +28,9 @@ public abstract class DirectionalAxisBlockStateGen extends SpecialBlockStateGen 
 	}
 
 	@Override
-	protected int getYRotation(PistonHandler state) {
-		Direction direction = state.c(GaugeBlock.FACING);
-		boolean alongFirst = state.c(GaugeBlock.AXIS_ALONG_FIRST_COORDINATE);
+	protected int getYRotation(BlockState state) {
+		Direction direction = state.get(GaugeBlock.FACING);
+		boolean alongFirst = state.get(GaugeBlock.AXIS_ALONG_FIRST_COORDINATE);
 
 		if (direction.getAxis()
 			.isVertical())
@@ -38,13 +39,13 @@ public abstract class DirectionalAxisBlockStateGen extends SpecialBlockStateGen 
 		return horizontalAngle(direction) + 90;
 	}
 
-	public abstract <T extends BeetrootsBlock> String getModelPrefix(DataGenContext<BeetrootsBlock, T> ctx,
-		RegistrateBlockstateProvider prov, PistonHandler state);
+	public abstract <T extends Block> String getModelPrefix(DataGenContext<Block, T> ctx,
+		RegistrateBlockstateProvider prov, BlockState state);
 
 	@Override
-	public <T extends BeetrootsBlock> ModelFile getModel(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov,
-		PistonHandler state) {
-		boolean vertical = state.c(GaugeBlock.FACING)
+	public <T extends Block> ModelFile getModel(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov,
+		BlockState state) {
+		boolean vertical = state.get(GaugeBlock.FACING)
 			.getAxis()
 			.isVertical();
 		String partial = vertical ? "" : "_wall";

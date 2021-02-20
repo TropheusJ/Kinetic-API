@@ -1,26 +1,26 @@
-package com.simibubi.kinetic_api.content.contraptions.wrench;
+package com.simibubi.create.content.contraptions.wrench;
 
-import com.simibubi.kinetic_api.foundation.block.render.CustomRenderedItemModelRenderer;
-import com.simibubi.kinetic_api.foundation.item.PartialItemModelRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.block.render.CustomRenderedItemModelRenderer;
+import com.simibubi.create.foundation.item.PartialItemModelRenderer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.item.ItemStack;
 
 public class WrenchItemRenderer extends CustomRenderedItemModelRenderer<WrenchModel> {
 
 	@Override
-	protected void render(ItemCooldownManager stack, WrenchModel model, PartialItemModelRenderer renderer, BufferVertexConsumer ms,
-		BackgroundRenderer buffer, int light, int overlay) {
+	protected void render(ItemStack stack, WrenchModel model, PartialItemModelRenderer renderer, MatrixStack ms,
+		VertexConsumerProvider buffer, int light, int overlay) {
 		renderer.render(model.getBakedModel(), light);
 
 		float worldTime = AnimationTickHolder.getRenderTick();
 		float angle = worldTime * -.5f % 360;
 		float xOffset = -1/16f;
-		ms.a(-xOffset, 0, 0);
-		ms.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(angle));
-		ms.a(xOffset, 0, 0);
+		ms.translate(-xOffset, 0, 0);
+		ms.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(angle));
+		ms.translate(xOffset, 0, 0);
 		
 		renderer.render(model.getPartial("gear"), light);
 	}

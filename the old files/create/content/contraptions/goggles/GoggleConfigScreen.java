@@ -1,18 +1,18 @@
-package com.simibubi.kinetic_api.content.contraptions.goggles;
+package com.simibubi.create.content.contraptions.goggles;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.gui.AbstractSimiScreen;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.gui.AbstractSimiScreen;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
 
 public class GoggleConfigScreen extends AbstractSimiScreen {
 
@@ -37,49 +37,49 @@ public class GoggleConfigScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	protected void b() {
-		KeyBinding mc = KeyBinding.B();
-		this.k = mc.aB().o();
-		this.l = mc.aB().p();
+	protected void init() {
+		MinecraftClient mc = MinecraftClient.getInstance();
+		this.width = mc.getWindow().getScaledWidth();
+		this.height = mc.getWindow().getScaledHeight();
 
 		offsetX = AllConfigs.CLIENT.overlayOffsetX.get();
 		offsetY = AllConfigs.CLIENT.overlayOffsetY.get();
 	}
 
 	@Override
-	public void e() {
+	public void removed() {
 		AllConfigs.CLIENT.overlayOffsetX.set(offsetX);
 		AllConfigs.CLIENT.overlayOffsetY.set(offsetY);
 	}
 
 	@Override
-	public boolean a(double x, double y, int button) {
+	public boolean mouseClicked(double x, double y, int button) {
 		updateOffset(x, y);
 
 		return true;
 	}
 
 	@Override
-	public boolean a(double p_mouseDragged_1_, double p_mouseDragged_3_, int p_mouseDragged_5_, double p_mouseDragged_6_, double p_mouseDragged_8_) {
+	public boolean mouseDragged(double p_mouseDragged_1_, double p_mouseDragged_3_, int p_mouseDragged_5_, double p_mouseDragged_6_, double p_mouseDragged_8_) {
 		updateOffset(p_mouseDragged_1_, p_mouseDragged_3_);
 
 		return true;
 	}
 
 	private void updateOffset(double windowX, double windowY) {
-		offsetX = (int) (windowX - (this.k / 2));
-		offsetY = (int) (windowY - (this.l / 2));
+		offsetX = (int) (windowX - (this.width / 2));
+		offsetY = (int) (windowY - (this.height / 2));
 	}
 
 	@Override
-	protected void renderWindow(BufferVertexConsumer ms, int mouseX, int mouseY, float partialTicks) {
-		ms.a();
-		int posX = this.k / 2 + offsetX;
-		int posY = this.l / 2 + offsetY;
-		b(ms, tooltip, posX, posY);
+	protected void renderWindow(MatrixStack ms, int mouseX, int mouseY, float partialTicks) {
+		ms.push();
+		int posX = this.width / 2 + offsetX;
+		int posY = this.height / 2 + offsetY;
+		renderTooltip(ms, tooltip, posX, posY);
 
-		ItemCooldownManager item = AllItems.GOGGLES.asStack();
+		ItemStack item = AllItems.GOGGLES.asStack();
 		GuiGameElement.of(item).atLocal(posX + 10, posY, 450).render(ms);
-		ms.b();
+		ms.pop();
 	}
 }

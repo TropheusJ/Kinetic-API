@@ -1,13 +1,14 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.pipes;
+package com.simibubi.create.content.contraptions.fluids.pipes;
 
-import com.simibubi.kinetic_api.foundation.data.DirectionalAxisBlockStateGen;
+import com.simibubi.create.foundation.data.DirectionalAxisBlockStateGen;
 import com.tterrag.registrate.builders.ItemBuilder;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
 import com.tterrag.registrate.util.nullness.NonNullFunction;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.item.BannerItem;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.item.BlockItem;
 import net.minecraftforge.client.model.generators.ModelFile;
 
 public class BracketGenerator extends DirectionalAxisBlockStateGen {
@@ -19,17 +20,17 @@ public class BracketGenerator extends DirectionalAxisBlockStateGen {
 	}
 
 	@Override
-	public <T extends BeetrootsBlock> String getModelPrefix(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov,
-		PistonHandler state) {
+	public <T extends Block> String getModelPrefix(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov,
+		BlockState state) {
 		return "";
 	}
 
 	@Override
-	public <T extends BeetrootsBlock> ModelFile getModel(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov,
-		PistonHandler state) {
-		String type = state.c(BracketBlock.TYPE)
-			.a();
-		boolean vertical = state.c(BracketBlock.SHAPE)
+	public <T extends Block> ModelFile getModel(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov,
+		BlockState state) {
+		String type = state.get(BracketBlock.TYPE)
+			.asString();
+		boolean vertical = state.get(BracketBlock.FACING)
 			.getAxis()
 			.isVertical();
 
@@ -41,7 +42,7 @@ public class BracketGenerator extends DirectionalAxisBlockStateGen {
 			.texture("plate", prov.modLoc("block/bracket_plate_" + material));
 	}
 
-	public static <I extends BannerItem, P> NonNullFunction<ItemBuilder<I, P>, P> itemModel(String material) {
+	public static <I extends BlockItem, P> NonNullFunction<ItemBuilder<I, P>, P> itemModel(String material) {
 		return b -> b.model((c, p) -> p.withExistingParent(c.getName(), p.modLoc("block/bracket/item"))
 			.texture("bracket", p.modLoc("block/bracket_" + material))
 			.texture("plate", p.modLoc("block/bracket_plate_" + material)))

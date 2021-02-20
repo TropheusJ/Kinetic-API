@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.particle;
+package com.simibubi.create.content.contraptions.fluids.particle;
 
 import java.util.Optional;
 
@@ -6,12 +6,12 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.simibubi.kinetic_api.AllParticleTypes;
-import com.simibubi.kinetic_api.content.contraptions.particle.ICustomParticleData;
+import com.simibubi.create.AllParticleTypes;
+import com.simibubi.create.content.contraptions.particle.ICustomParticleData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.particle.LargeFireSmokeParticle;
-import net.minecraft.fluid.FlowableFluid;
+import net.minecraft.client.particle.ParticleFactory;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleEffect;
@@ -37,7 +37,7 @@ public class FluidParticleData implements ParticleEffect, ICustomParticleData<Fl
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public LargeFireSmokeParticle<FluidParticleData> getFactory() {
+	public ParticleFactory<FluidParticleData> getFactory() {
 		return (data, world, x, y, z, vx, vy, vz) -> FluidStackParticle.create(data.type, world, data.fluid, x, y, z,
 			vx, vy, vz);
 	}
@@ -90,7 +90,7 @@ public class FluidParticleData implements ParticleEffect, ICustomParticleData<Fl
 			// TODO Fluid particles on command
 			public FluidParticleData read(ParticleType<FluidParticleData> particleTypeIn, StringReader reader)
 				throws CommandSyntaxException {
-				return new FluidParticleData(particleTypeIn, new FluidStack(FlowableFluid.c, 1));
+				return new FluidParticleData(particleTypeIn, new FluidStack(Fluids.WATER, 1));
 			}
 
 			public FluidParticleData read(ParticleType<FluidParticleData> particleTypeIn, PacketByteBuf buffer) {

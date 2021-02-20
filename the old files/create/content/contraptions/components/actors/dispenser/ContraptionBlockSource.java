@@ -1,16 +1,16 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors.dispenser;
+package com.simibubi.create.content.contraptions.components.actors.dispenser;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.foundation.utility.BlockHelper;
 
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPointer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -52,22 +52,22 @@ public class ContraptionBlockSource implements BlockPointer {
 	}
 
 	@Override
-	public PistonHandler e() {
-		if(BlockHelper.hasBlockStateProperty(context.state, BambooLeaves.M) && overrideFacing != null)
-			return context.state.a(BambooLeaves.M, overrideFacing);
+	public BlockState getBlockState() {
+		if(BlockHelper.hasBlockStateProperty(context.state, Properties.FACING) && overrideFacing != null)
+			return context.state.with(Properties.FACING, overrideFacing);
 		return context.state;
 	}
 
 	@Override
 	@Nullable
-	public <T extends BeehiveBlockEntity> T g() {
+	public <T extends BlockEntity> T getBlockEntity() {
 		return null;
 	}
 
 	@Override
 	@Nullable
 	public ServerWorld getWorld() {
-		MinecraftServer server = context.world.l();
-		return server != null ? server.getWorld(context.world.X()) : null;
+		MinecraftServer server = context.world.getServer();
+		return server != null ? server.getWorld(context.world.getRegistryKey()) : null;
 	}
 }

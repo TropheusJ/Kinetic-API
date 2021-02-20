@@ -1,35 +1,42 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.mounted;
+package com.simibubi.create.content.contraptions.components.structureMovement.mounted;
 
 import java.util.List;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.math.Direction.Axis;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.CenteredSideValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
 
-public class CartAssemblerTileEntity extends SmartTileEntity {
+import com.simibubi.create.content.contraptions.components.structureMovement.AssemblyException;
+import com.simibubi.create.content.contraptions.components.structureMovement.IDisplayAssemblyExceptions;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.CenteredSideValueBoxTransform;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.block.enums.RailShape;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.Vec3d;
+
+public class CartAssemblerTileEntity extends SmartTileEntity implements IDisplayAssemblyExceptions {
 	private static final int assemblyCooldown = 8;
 
 	protected ScrollOptionBehaviour<CartMovementMode> movementMode;
 	private int ticksSinceMinecartUpdate;
+	protected AssemblyException lastException;
 
-	public CartAssemblerTileEntity(BellBlockEntity<? extends CartAssemblerTileEntity> type) {
+	public CartAssemblerTileEntity(BlockEntityType<? extends CartAssemblerTileEntity> type) {
 		super(type);
 		ticksSinceMinecartUpdate = assemblyCooldown;
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		if (ticksSinceMinecartUpdate < assemblyCooldown) {
 			ticksSinceMinecartUpdate++;
 		}
@@ -41,6 +48,23 @@ public class CartAssemblerTileEntity extends SmartTileEntity {
 			Lang.translate("contraptions.cart_movement_mode"), this, getMovementModeSlot());
 		movementMode.requiresWrench();
 		behaviours.add(movementMode);
+	}
+
+	@Override
+	public void write(CompoundTag compound, boolean clientPacket) {
+		AssemblyException.write(compound, lastException);
+		super.write(compound, clientPacket);
+	}
+
+	@Override
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
+		lastException = AssemblyException.read(compound);
+		super.fromTag(state, compound, clientPacket);
+	}
+
+	@Override
+	public AssemblyException getLastAssemblyException() {
+		return lastException;
 	}
 
 	protected ValueBoxTransform getMovementModeSlot() {
@@ -56,13 +80,13 @@ public class CartAssemblerTileEntity extends SmartTileEntity {
 					return false;
 				if (!BlockHelper.hasBlockStateProperty(state, CartAssemblerBlock.RAIL_SHAPE))
 					return false;
-				Instrument railShape = state.c(CartAssemblerBlock.RAIL_SHAPE);
-				return (d.getAxis() == Axis.X) == (railShape == Instrument.NORTH_SOUTH);
+				RailShape railShape = state.get(CartAssemblerBlock.RAIL_SHAPE);
+				return (d.getAxis() == Axis.X) == (railShape == RailShape.NORTH_SOUTH);
 			});
 		}
 		
 		@Override
-		protected EntityHitResult getSouthLocation() {
+		protected Vec3d getSouthLocation() {
 			return VecHelper.voxelSpace(8, 8, 18);
 		}
 		
@@ -102,5 +126,4 @@ public class CartAssemblerTileEntity extends SmartTileEntity {
 	public boolean isMinecartUpdateValid() {
 		return ticksSinceMinecartUpdate >= assemblyCooldown;
 	}
-
 }

@@ -1,39 +1,39 @@
-package com.simibubi.kinetic_api;
+package com.simibubi.create;
 
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.compat.jei.ConversionRecipe;
-import com.simibubi.kinetic_api.content.contraptions.components.crafter.MechanicalCraftingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.components.crusher.CrushingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.components.fan.SplashingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.components.millstone.MillingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.components.mixer.CompactingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.components.mixer.MixingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.components.press.PressingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.components.saw.CuttingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.fluids.actors.FillingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.BasinRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.EmptyingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeFactory;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeSerializer;
-import com.simibubi.kinetic_api.content.curiosities.tools.SandPaperPolishingRecipe;
-import com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper.BlockzapperUpgradeRecipe;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.recipe.MapExtendingRecipe;
+import com.simibubi.create.compat.jei.ConversionRecipe;
+import com.simibubi.create.content.contraptions.components.crafter.MechanicalCraftingRecipe;
+import com.simibubi.create.content.contraptions.components.crusher.CrushingRecipe;
+import com.simibubi.create.content.contraptions.components.fan.SplashingRecipe;
+import com.simibubi.create.content.contraptions.components.millstone.MillingRecipe;
+import com.simibubi.create.content.contraptions.components.mixer.CompactingRecipe;
+import com.simibubi.create.content.contraptions.components.mixer.MixingRecipe;
+import com.simibubi.create.content.contraptions.components.press.PressingRecipe;
+import com.simibubi.create.content.contraptions.components.saw.CuttingRecipe;
+import com.simibubi.create.content.contraptions.fluids.actors.FillingRecipe;
+import com.simibubi.create.content.contraptions.processing.BasinRecipe;
+import com.simibubi.create.content.contraptions.processing.EmptyingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeFactory;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeSerializer;
+import com.simibubi.create.content.curiosities.tools.SandPaperPolishingRecipe;
+import com.simibubi.create.content.curiosities.zapper.blockzapper.BlockzapperUpgradeRecipe;
+import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeSerializer;
+import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.ShapedRecipe;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.event.RegistryEvent;
 
 public enum AllRecipeTypes {
 
-	BLOCKZAPPER_UPGRADE(BlockzapperUpgradeRecipe.Serializer::new, Recipe.a),
+	BLOCKZAPPER_UPGRADE(BlockzapperUpgradeRecipe.Serializer::new, RecipeType.CRAFTING),
 	MECHANICAL_CRAFTING(MechanicalCraftingRecipe.Serializer::new),
 
 	CONVERSION(processingSerializer(ConversionRecipe::new)),
@@ -51,22 +51,22 @@ public enum AllRecipeTypes {
 
 	;
 
-	public MapExtendingRecipe<?> serializer;
-	public Supplier<MapExtendingRecipe<?>> supplier;
-	public Recipe<? extends Ingredient<? extends BossBar>> type;
+	public RecipeSerializer<?> serializer;
+	public Supplier<RecipeSerializer<?>> supplier;
+	public RecipeType<? extends Recipe<? extends Inventory>> type;
 
-	AllRecipeTypes(Supplier<MapExtendingRecipe<?>> supplier) {
+	AllRecipeTypes(Supplier<RecipeSerializer<?>> supplier) {
 		this(supplier, null);
 	}
 
-	AllRecipeTypes(Supplier<MapExtendingRecipe<?>> supplier,
-		Recipe<? extends Ingredient<? extends BossBar>> existingType) {
+	AllRecipeTypes(Supplier<RecipeSerializer<?>> supplier,
+		RecipeType<? extends Recipe<? extends Inventory>> existingType) {
 		this.supplier = supplier;
 		this.type = existingType;
 	}
 
-	public static void register(RegistryEvent.Register<MapExtendingRecipe<?>> event) {
-		RecipeSerializer.setCraftingSize(9, 9);
+	public static void register(RegistryEvent.Register<RecipeSerializer<?>> event) {
+		ShapedRecipe.setCraftingSize(9, 9);
 
 		for (AllRecipeTypes r : AllRecipeTypes.values()) {
 			if (r.type == null)
@@ -79,26 +79,26 @@ public enum AllRecipeTypes {
 		}
 	}
 
-	private static <T extends Ingredient<?>> Recipe<T> customType(String id) {
-		return Registry.register(Registry.RECIPE_TYPE, new Identifier(Create.ID, id), new Recipe<T>() {
+	private static <T extends Recipe<?>> RecipeType<T> customType(String id) {
+		return Registry.register(Registry.RECIPE_TYPE, new Identifier(Create.ID, id), new RecipeType<T>() {
 			public String toString() {
 				return Create.ID + ":" + id;
 			}
 		});
 	}
 
-	private static Supplier<MapExtendingRecipe<?>> processingSerializer(
+	private static Supplier<RecipeSerializer<?>> processingSerializer(
 		ProcessingRecipeFactory<? extends ProcessingRecipe<?>> factory) {
 		return () -> new ProcessingRecipeSerializer<>(factory);
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Recipe<?>> T getType() {
+	public <T extends RecipeType<?>> T getType() {
 		return (T) type;
 	}
 
-	public <C extends BossBar, T extends Ingredient<C>> Optional<T> find(C inv, GameMode world) {
-		return world.o()
-			.a(getType(), inv, world);
+	public <C extends Inventory, T extends Recipe<C>> Optional<T> find(C inv, World world) {
+		return world.getRecipeManager()
+			.getFirstMatch(getType(), inv, world);
 	}
 }

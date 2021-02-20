@@ -1,56 +1,57 @@
-package com.simibubi.kinetic_api.content.contraptions.components.turntable;
+package com.simibubi.create.content.contraptions.components.turntable;
 
-import afj;
-import apx;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticBlock;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.RedstoneLampBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.KineticBlock;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockRenderType;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class TurntableBlock extends KineticBlock implements ITE<TurntableTileEntity> {
 
-	public TurntableBlock(c properties) {
+	public TurntableBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.TURNTABLE.create();
 	}
 
 	@Override
-	public RedstoneLampBlock b(PistonHandler state) {
-		return RedstoneLampBlock.b;
+	public BlockRenderType getRenderType(BlockState state) {
+		return BlockRenderType.ENTITYBLOCK_ANIMATED;
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
 		return AllShapes.TURNTABLE_SHAPE;
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, apx e) {
-		if (!e.an())
+	public void onEntityCollision(BlockState state, World worldIn, BlockPos pos, Entity e) {
+		if (!e.isOnGround())
 			return;
-		if (e.cB().c > 0)
+		if (e.getVelocity().y > 0)
 			return;
-		if (e.cD() < pos.getY() + .5f)
+		if (e.getY() < pos.getY() + .5f)
 			return;
 
 		withTileEntityDo(worldIn, pos, te -> {
@@ -58,46 +59,46 @@ public class TurntableBlock extends KineticBlock implements ITE<TurntableTileEnt
 			if (speed == 0)
 				return;
 
-			GameMode world = e.cf();
-			if (world.v && (e instanceof PlayerAbilities)) {
-				if (worldIn.d_(e.cA()) != state) {
-					EntityHitResult origin = VecHelper.getCenterOf(pos);
-					EntityHitResult offset = e.cz()
-						.d(origin);
-					offset = VecHelper.rotate(offset, afj.a(speed, -16, 16) / 1f, Axis.Y);
-					EntityHitResult movement = origin.e(offset)
-						.d(e.cz());
-					e.f(e.cB()
-						.e(movement));
-					e.w = true;
+			World world = e.getEntityWorld();
+			if (world.isClient && (e instanceof PlayerEntity)) {
+				if (worldIn.getBlockState(e.getBlockPos()) != state) {
+					Vec3d origin = VecHelper.getCenterOf(pos);
+					Vec3d offset = e.getPos()
+						.subtract(origin);
+					offset = VecHelper.rotate(offset, MathHelper.clamp(speed, -16, 16) / 1f, Axis.Y);
+					Vec3d movement = origin.add(offset)
+						.subtract(e.getPos());
+					e.setVelocity(e.getVelocity()
+						.add(movement));
+					e.velocityModified = true;
 				}
 			}
 
-			if ((e instanceof PlayerAbilities))
+			if ((e instanceof PlayerEntity))
 				return;
-			if (world.v)
+			if (world.isClient)
 				return;
 
-			if ((e instanceof SaddledComponent)) {
-				float diff = e.bJ() - speed;
-				((SaddledComponent) e).n(20);
-				e.n(diff);
-				e.m(diff);
-				e.c(false);
-				e.w = true;
+			if ((e instanceof LivingEntity)) {
+				float diff = e.getHeadYaw() - speed;
+				((LivingEntity) e).setDespawnCounter(20);
+				e.setYaw(diff);
+				e.setHeadYaw(diff);
+				e.setOnGround(false);
+				e.velocityModified = true;
 			}
 
-			e.p -= speed;
+			e.yaw -= speed;
 		});
 	}
 
 	@Override
-	public boolean hasShaftTowards(ItemConvertible world, BlockPos pos, PistonHandler state, Direction face) {
+	public boolean hasShaftTowards(WorldView world, BlockPos pos, BlockState state, Direction face) {
 		return face == Direction.DOWN;
 	}
 
 	@Override
-	public Axis getRotationAxis(PistonHandler state) {
+	public Axis getRotationAxis(BlockState state) {
 		return Axis.Y;
 	}
 

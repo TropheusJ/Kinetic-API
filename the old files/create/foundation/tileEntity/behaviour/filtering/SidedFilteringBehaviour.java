@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering;
+package com.simibubi.create.foundation.tileEntity.behaviour.filtering;
 
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -7,16 +7,17 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform.Sided;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform.Sided;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.NBTHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.util.Constants.NBT;
 
 public class SidedFilteringBehaviour extends FilteringBehaviour {
@@ -89,7 +90,7 @@ public class SidedFilteringBehaviour extends FilteringBehaviour {
 	}
 
 	@Override
-	public void setFilter(Direction side, ItemCooldownManager stack) {
+	public void setFilter(Direction side, ItemStack stack) {
 		if (!sidedFilters.containsKey(side))
 			return;
 		sidedFilters.get(side)
@@ -97,14 +98,14 @@ public class SidedFilteringBehaviour extends FilteringBehaviour {
 	}
 
 	@Override
-	public ItemCooldownManager getFilter(Direction side) {
+	public ItemStack getFilter(Direction side) {
 		if (!sidedFilters.containsKey(side))
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		return sidedFilters.get(side)
 			.getFilter();
 	}
 
-	public boolean test(Direction side, ItemCooldownManager stack) {
+	public boolean test(Direction side, ItemStack stack) {
 		if (!sidedFilters.containsKey(side))
 			return true;
 		return sidedFilters.get(side)
@@ -125,10 +126,10 @@ public class SidedFilteringBehaviour extends FilteringBehaviour {
 			.destroy();
 	}
 
-	public boolean testHit(Direction direction, EntityHitResult hit) {
+	public boolean testHit(Direction direction, Vec3d hit) {
 		ValueBoxTransform.Sided sidedPositioning = (Sided) slotPositioning;
-		PistonHandler state = tileEntity.p();
-		EntityHitResult localHit = hit.d(EntityHitResult.b(tileEntity.o()));
+		BlockState state = tileEntity.getCachedState();
+		Vec3d localHit = hit.subtract(Vec3d.of(tileEntity.getPos()));
 		return sidedPositioning.fromSide(direction)
 			.testHit(state, localHit);
 	}

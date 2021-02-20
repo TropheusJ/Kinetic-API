@@ -1,45 +1,46 @@
-package com.simibubi.kinetic_api.content.contraptions.goggles;
+package com.simibubi.create.content.contraptions.goggles;
 
-import aqc;
-import com.simibubi.kinetic_api.AllItems;
-import net.minecraft.block.DetectorRailBlock;
-import net.minecraft.entity.ItemSteerable;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.HoeItem;
-import net.minecraft.screen.StonecutterScreenHandler;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.LocalDifficulty;
+import com.simibubi.create.AllItems;
 
-public class GogglesItem extends HoeItem {
+import net.minecraft.block.DispenserBlock;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ArmorItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.world.World;
 
-	public GogglesItem(a properties) {
+public class GogglesItem extends Item {
+
+	public GogglesItem(Settings properties) {
 		super(properties);
-		DetectorRailBlock.a(this, StonecutterScreenHandler.a);
+		DispenserBlock.registerBehavior(this, ArmorItem.DISPENSER_BEHAVIOR);
 	}
 
 	@Override
-	public aqc getEquipmentSlot(ItemCooldownManager stack) {
-		return aqc.f;
+	public EquipmentSlot getEquipmentSlot(ItemStack stack) {
+		return EquipmentSlot.HEAD;
 	}
 
-	public LocalDifficulty<ItemCooldownManager> a(GameMode worldIn, PlayerAbilities playerIn, ItemScatterer handIn) {
-		ItemCooldownManager itemstack = playerIn.b(handIn);
-		aqc equipmentslottype = ItemSteerable.j(itemstack);
-		ItemCooldownManager itemstack1 = playerIn.b(equipmentslottype);
-		if (itemstack1.a()) {
-			playerIn.a(equipmentslottype, itemstack.i());
-			itemstack.e(0);
-			return new LocalDifficulty<>(Difficulty.SUCCESS, itemstack);
+	public TypedActionResult<ItemStack> use(World worldIn, PlayerEntity playerIn, Hand handIn) {
+		ItemStack itemstack = playerIn.getStackInHand(handIn);
+		EquipmentSlot equipmentslottype = MobEntity.getPreferredEquipmentSlot(itemstack);
+		ItemStack itemstack1 = playerIn.getEquippedStack(equipmentslottype);
+		if (itemstack1.isEmpty()) {
+			playerIn.equipStack(equipmentslottype, itemstack.copy());
+			itemstack.setCount(0);
+			return new TypedActionResult<>(ActionResult.SUCCESS, itemstack);
 		} else {
-			return new LocalDifficulty<>(Difficulty.FAIL, itemstack);
+			return new TypedActionResult<>(ActionResult.FAIL, itemstack);
 		}
 	}
 
-	public static boolean canSeeParticles(PlayerAbilities player) {
-		for (ItemCooldownManager itemStack : player.bn())
+	public static boolean canSeeParticles(PlayerEntity player) {
+		for (ItemStack itemStack : player.getArmorItems())
 			if (AllItems.GOGGLES.isIn(itemStack))
 				return true;
 		return false;

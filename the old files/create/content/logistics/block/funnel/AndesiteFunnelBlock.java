@@ -1,23 +1,24 @@
-package com.simibubi.kinetic_api.content.logistics.block.funnel;
+package com.simibubi.create.content.logistics.block.funnel;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.AllBlocks;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
 
 public class AndesiteFunnelBlock extends FunnelBlock {
 
-	public AndesiteFunnelBlock(c p_i48415_1_) {
+	public AndesiteFunnelBlock(Settings p_i48415_1_) {
 		super(p_i48415_1_);
 	}
 
 	@Override
-	public PistonHandler getEquivalentBeltFunnel(MobSpawnerLogic world, BlockPos pos, PistonHandler state) {
-		Direction facing = state.c(SHAPE);
+	public BlockState getEquivalentBeltFunnel(BlockView world, BlockPos pos, BlockState state) {
+		Direction facing = state.get(FACING);
 		return AllBlocks.ANDESITE_BELT_FUNNEL.getDefaultState()
-			.a(BeltFunnelBlock.aq, facing)
-			.a(POWERED, state.c(POWERED));
+			.with(BeltFunnelBlock.FACING, facing)
+			.with(POWERED, state.get(POWERED));
 	}
 
 }

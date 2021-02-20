@@ -1,20 +1,22 @@
-package com.simibubi.kinetic_api.foundation.block.connected;
+package com.simibubi.create.foundation.block.connected;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import bqx;
-import com.simibubi.kinetic_api.foundation.block.connected.ConnectedTextureBehaviour.CTContext;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import elg;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.SpriteTexturedVertexConsumer;
-import net.minecraft.client.render.Tessellator;
+
+import com.simibubi.create.foundation.block.connected.ConnectedTextureBehaviour.CTContext;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.client.model.data.ModelDataMap.Builder;
 import net.minecraftforge.client.model.data.ModelProperty;
@@ -41,20 +43,20 @@ public class CTModel extends BakedModelWrapperWithData {
 		}
 	}
 	
-	public CTModel(elg originalModel, ConnectedTextureBehaviour behaviour) {
+	public CTModel(BakedModel originalModel, ConnectedTextureBehaviour behaviour) {
 		super(originalModel);
 		this.behaviour = behaviour;
 	}
 
 	@Override
-	protected Builder gatherModelData(Builder builder, bqx world, BlockPos pos, PistonHandler state) {
+	protected Builder gatherModelData(Builder builder, BlockRenderView world, BlockPos pos, BlockState state) {
 		return builder.withInitial(CT_PROPERTY, createCTData(world, pos, state));
 	}
 
-	protected CTData createCTData(bqx world, BlockPos pos, PistonHandler state) {
+	protected CTData createCTData(BlockRenderView world, BlockPos pos, BlockState state) {
 		CTData data = new CTData();
 		for (Direction face : Iterate.directions) {
-			if (!BeetrootsBlock.c(state, world, pos, face) && !behaviour.buildContextForOccludedDirections())
+			if (!Block.shouldDrawSide(state, world, pos, face) && !behaviour.buildContextForOccludedDirections())
 				continue;
 			CTSpriteShiftEntry spriteShift = behaviour.get(state, face);
 			if (spriteShift == null)
@@ -66,30 +68,30 @@ public class CTModel extends BakedModelWrapperWithData {
 	}
 
 	@Override
-	public List<SpriteTexturedVertexConsumer> getQuads(PistonHandler state, Direction side, Random rand, IModelData extraData) {
-		List<SpriteTexturedVertexConsumer> quads = new ArrayList<>(super.getQuads(state, side, rand, extraData));
+	public List<BakedQuad> getQuads(BlockState state, Direction side, Random rand, IModelData extraData) {
+		List<BakedQuad> quads = new ArrayList<>(super.getQuads(state, side, rand, extraData));
 		if (!extraData.hasProperty(CT_PROPERTY))
 			return quads;
 		CTData data = extraData.getData(CT_PROPERTY);
 
 		for (int i = 0; i < quads.size(); i++) {
-			SpriteTexturedVertexConsumer quad = quads.get(i);
+			BakedQuad quad = quads.get(i);
 
-			CTSpriteShiftEntry spriteShift = behaviour.get(state, quad.e());
+			CTSpriteShiftEntry spriteShift = behaviour.get(state, quad.getFace());
 			if (spriteShift == null)
 				continue;
 			if (quad.a() != spriteShift.getOriginal())
 				continue;
-			int index = data.get(quad.e());
+			int index = data.get(quad.getFace());
 			if (index == -1)
 				continue;
 
-			SpriteTexturedVertexConsumer newQuad = new SpriteTexturedVertexConsumer(Arrays.copyOf(quad.b(), quad.b().length),
-				quad.d(), quad.e(), quad.a(), quad.f());
-			Tessellator format = BufferBuilder.buffer;
-			int[] vertexData = newQuad.b();
+			BakedQuad newQuad = new BakedQuad(Arrays.copyOf(quad.getVertexData(), quad.getVertexData().length),
+				quad.getColorIndex(), quad.getFace(), quad.a(), quad.hasShade());
+			VertexFormat format = VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL;
+			int[] vertexData = newQuad.getVertexData();
 
-			for (int vertex = 0; vertex < vertexData.length; vertex += format.a()) {
+			for (int vertex = 0; vertex < vertexData.length; vertex += format.getVertexSizeInteger()) {
 				int uvOffset = 16 / 4;
 				int uIndex = vertex + uvOffset;
 				int vIndex = vertex + uvOffset + 1;

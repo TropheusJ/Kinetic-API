@@ -1,17 +1,17 @@
-package com.simibubi.kinetic_api.foundation.item;
+package com.simibubi.create.foundation.item;
 
 import java.util.Random;
-import com.simibubi.kinetic_api.foundation.renderState.RenderTypes;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import elg;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.foundation.renderState.RenderTypes;
+import com.simibubi.create.foundation.utility.Iterate;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.entity.HorseEntityRenderer;
-import net.minecraft.client.render.model.json.ModelElementTexture;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
 import net.minecraftforge.client.model.data.EmptyModelData;
 import net.minecraftforge.client.model.data.IModelData;
@@ -20,11 +20,11 @@ public class PartialItemModelRenderer {
 
 	static PartialItemModelRenderer instance;
 
-	ItemCooldownManager stack;
+	ItemStack stack;
 	int overlay;
-	BufferVertexConsumer ms;
-	ModelElementTexture.b transformType;
-	BackgroundRenderer buffer;
+	MatrixStack ms;
+	ModelTransformation.Mode transformType;
+	VertexConsumerProvider buffer;
 
 	static PartialItemModelRenderer get() {
 		if (instance == null)
@@ -32,7 +32,7 @@ public class PartialItemModelRenderer {
 		return instance;
 	}
 
-	public static PartialItemModelRenderer of(ItemCooldownManager stack, ModelElementTexture.b transformType, BufferVertexConsumer ms, BackgroundRenderer buffer, int overlay) {
+	public static PartialItemModelRenderer of(ItemStack stack, ModelTransformation.Mode transformType, MatrixStack ms, VertexConsumerProvider buffer, int overlay) {
 		PartialItemModelRenderer instance = get();
 		instance.stack = stack;
 		instance.buffer = buffer;
@@ -42,54 +42,54 @@ public class PartialItemModelRenderer {
 		return instance;
 	}
 
-	public void render(elg model, int light) {
+	public void render(BakedModel model, int light) {
 		render(model, RenderTypes.getItemPartialTranslucent(), light);
 	}
 	
-	public void renderSolid(elg model, int light) {
+	public void renderSolid(BakedModel model, int light) {
 		render(model, RenderTypes.getItemPartialSolid(), light);
 	}
 	
-	public void renderSolidGlowing(elg model, int light) {
+	public void renderSolidGlowing(BakedModel model, int light) {
 		render(model, RenderTypes.getGlowingSolid(), light);
 	}
 	
-	public void renderGlowing(elg model, int light) {
+	public void renderGlowing(BakedModel model, int light) {
 		render(model, RenderTypes.getGlowingTranslucent(), light);
 	}
 
-	public void render(elg model, VertexConsumerProvider type, int light) {
-		if (stack.a())
+	public void render(BakedModel model, RenderLayer type, int light) {
+		if (stack.isEmpty())
 			return;
 
-		ms.a();
-		ms.a(-0.5D, -0.5D, -0.5D);
+		ms.push();
+		ms.translate(-0.5D, -0.5D, -0.5D);
 
-		if (!model.d())
+		if (!model.isBuiltin())
 			renderBakedItemModel(model, light, ms,
-				HorseEntityRenderer.a(buffer, type, true, stack.u()));
+				ItemRenderer.getArmorGlintConsumer(buffer, type, true, stack.hasGlint()));
 		else
-			stack.b()
+			stack.getItem()
 				.getItemStackTileEntityRenderer()
-				.a(stack, transformType, ms, buffer, light, overlay);
+				.render(stack, transformType, ms, buffer, light, overlay);
 
-		ms.b();
+		ms.pop();
 	}
 
-	private void renderBakedItemModel(elg model, int light, BufferVertexConsumer ms, OverlayVertexConsumer p_229114_6_) {
-		HorseEntityRenderer ir = KeyBinding.B()
-			.ac();
+	private void renderBakedItemModel(BakedModel model, int light, MatrixStack ms, VertexConsumer p_229114_6_) {
+		ItemRenderer ir = MinecraftClient.getInstance()
+			.getItemRenderer();
 		Random random = new Random();
 		IModelData data = EmptyModelData.INSTANCE;
 
 		for (Direction direction : Iterate.directions) {
 			random.setSeed(42L);
-			ir.a(ms, p_229114_6_, model.getQuads(null, direction, random, data), stack,
+			ir.renderBakedItemQuads(ms, p_229114_6_, model.getQuads(null, direction, random, data), stack,
 				light, overlay);
 		}
 
 		random.setSeed(42L);
-		ir.a(ms, p_229114_6_, model.getQuads(null, null, random, data),
+		ir.renderBakedItemQuads(ms, p_229114_6_, model.getQuads(null, null, random, data),
 			stack, light, overlay);
 	}
 

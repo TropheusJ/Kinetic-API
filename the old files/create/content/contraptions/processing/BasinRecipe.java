@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,19 +8,20 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
-import com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
-import com.simibubi.kinetic_api.foundation.fluid.FluidIngredient;
-import com.simibubi.kinetic_api.foundation.item.SmartInventory;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour.TankSegment;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.recipe.FireworkRocketRecipe;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
+import com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
+import com.simibubi.create.foundation.fluid.FluidIngredient;
+import com.simibubi.create.foundation.item.SmartInventory;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour.TankSegment;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Ingredient;
-import net.minecraft.world.GameMode;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
@@ -29,12 +30,12 @@ import net.minecraftforge.items.IItemHandler;
 
 public class BasinRecipe extends ProcessingRecipe<SmartInventory> {
 
-	public static boolean match(BasinTileEntity basin, Ingredient<?> recipe) {
+	public static boolean match(BasinTileEntity basin, Recipe<?> recipe) {
 		FilteringBehaviour filter = basin.getFilter();
 		if (filter == null)
 			return false;
 
-		boolean filterTest = filter.test(recipe.c());
+		boolean filterTest = filter.test(recipe.getOutput());
 		if (recipe instanceof BasinRecipe) {
 			BasinRecipe basinRecipe = (BasinRecipe) recipe;
 			if (basinRecipe.getRollableResults()
@@ -51,11 +52,11 @@ public class BasinRecipe extends ProcessingRecipe<SmartInventory> {
 		return apply(basin, recipe, true);
 	}
 
-	public static boolean apply(BasinTileEntity basin, Ingredient<?> recipe) {
+	public static boolean apply(BasinTileEntity basin, Recipe<?> recipe) {
 		return apply(basin, recipe, false);
 	}
 
-	private static boolean apply(BasinTileEntity basin, Ingredient<?> recipe, boolean test) {
+	private static boolean apply(BasinTileEntity basin, Recipe<?> recipe, boolean test) {
 		boolean isBasinRecipe = recipe instanceof BasinRecipe;
 		IItemHandler availableItems = basin.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY)
 			.orElse(null);
@@ -65,18 +66,18 @@ public class BasinRecipe extends ProcessingRecipe<SmartInventory> {
 		if (availableItems == null || availableFluids == null)
 			return false;
 
-		HeatLevel heat = BasinTileEntity.getHeatLevelOf(basin.v()
-			.d_(basin.o()
+		HeatLevel heat = BasinTileEntity.getHeatLevelOf(basin.getWorld()
+			.getBlockState(basin.getPos()
 				.down(1)));
 		if (isBasinRecipe && !((BasinRecipe) recipe).getRequiredHeat()
 			.testBlazeBurner(heat))
 			return false;
 
-		List<ItemCooldownManager> recipeOutputItems = new ArrayList<>();
+		List<ItemStack> recipeOutputItems = new ArrayList<>();
 		List<FluidStack> recipeOutputFluids = new ArrayList<>();
 
-		List<FireworkRocketRecipe> ingredients = new LinkedList<>(recipe.a());
-		ingredients.sort(Comparator.comparingInt(i -> i.a().length));
+		List<Ingredient> ingredients = new LinkedList<>(recipe.getPreviewInputs());
+		ingredients.sort(Comparator.comparingInt(i -> i.getMatchingStacksClient().length));
 		List<FluidIngredient> fluidIngredients =
 			isBasinRecipe ? ((BasinRecipe) recipe).getFluidIngredients() : Collections.emptyList();
 
@@ -89,24 +90,24 @@ public class BasinRecipe extends ProcessingRecipe<SmartInventory> {
 			int[] extractedFluidsFromTank = new int[availableFluids.getTanks()];
 
 			Ingredients: for (int i = 0; i < ingredients.size(); i++) {
-				FireworkRocketRecipe ingredient = ingredients.get(i);
+				Ingredient ingredient = ingredients.get(i);
 
 				for (int slot = 0; slot < availableItems.getSlots(); slot++) {
 					if (simulate && availableItems.getStackInSlot(slot)
-						.E() <= extractedItemsFromSlot[slot])
+						.getCount() <= extractedItemsFromSlot[slot])
 						continue;
-					ItemCooldownManager extracted = availableItems.extractItem(slot, 1, true);
-					if (!ingredient.a(extracted))
+					ItemStack extracted = availableItems.extractItem(slot, 1, true);
+					if (!ingredient.test(extracted))
 						continue;
 					// Catalyst items are never consumed
 					if (extracted.hasContainerItem() && extracted.getContainerItem()
-						.a(extracted))
+						.isItemEqualIgnoreDamage(extracted))
 						continue Ingredients;
 					if (!simulate)
 						availableItems.extractItem(slot, 1, false);
 					else if (extracted.hasContainerItem())
 						recipeOutputItems.add(extracted.getContainerItem()
-							.i());
+							.copy());
 					extractedItemsFromSlot[slot]++;
 					continue Ingredients;
 				}
@@ -154,7 +155,7 @@ public class BasinRecipe extends ProcessingRecipe<SmartInventory> {
 					recipeOutputItems.addAll(((BasinRecipe) recipe).rollResults());
 					recipeOutputFluids.addAll(((BasinRecipe) recipe).getFluidResults());
 				} else
-					recipeOutputItems.add(recipe.c());
+					recipeOutputItems.add(recipe.getOutput());
 			}
 
 			if (!basin.acceptOutputs(recipeOutputItems, recipeOutputFluids, simulate))
@@ -164,10 +165,10 @@ public class BasinRecipe extends ProcessingRecipe<SmartInventory> {
 		return true;
 	}
 
-	public static BasinRecipe convertShapeless(Ingredient<?> recipe) {
+	public static BasinRecipe convertShapeless(Recipe<?> recipe) {
 		BasinRecipe basinRecipe =
-			new ProcessingRecipeBuilder<>(BasinRecipe::new, recipe.f()).withItemIngredients(recipe.a())
-				.withSingleItemOutput(recipe.c())
+			new ProcessingRecipeBuilder<>(BasinRecipe::new, recipe.getId()).withItemIngredients(recipe.getPreviewInputs())
+				.withSingleItemOutput(recipe.getOutput())
 				.build();
 		return basinRecipe;
 	}
@@ -206,7 +207,7 @@ public class BasinRecipe extends ProcessingRecipe<SmartInventory> {
 	}
 
 	@Override
-	public boolean matches(SmartInventory inv, @Nonnull GameMode worldIn) {
+	public boolean matches(SmartInventory inv, @Nonnull World worldIn) {
 		return false;
 	}
 

@@ -1,58 +1,72 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
-import static net.minecraft.block.HayBlock.aq;
+import static net.minecraft.block.HorizontalBlock.HORIZONTAL_FACING;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.ChestBlock;
-import net.minecraft.block.CoralBlock;
-import net.minecraft.block.JigsawBlock;
-import net.minecraft.block.PaneBlock;
-import net.minecraft.block.StonecutterBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementBehaviour;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.content.contraptions.components.structureMovement.render.RenderedContraption;
+import com.simibubi.create.foundation.render.backend.FastRenderDispatcher;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.CocoaBlock;
+import net.minecraft.block.CropBlock;
+import net.minecraft.block.KelpBlock;
+import net.minecraft.block.KelpPlantBlock;
+import net.minecraft.block.SugarCaneBlock;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
 import net.minecraft.state.property.IntProperty;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.state.property.Properties;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.common.IPlantable;
 
 public class HarvesterMovementBehaviour extends MovementBehaviour {
 
 	@Override
 	public boolean isActive(MovementContext context) {
-		return !VecHelper.isVecPointingTowards(context.relativeMotion, context.state.c(aq)
+		return !VecHelper.isVecPointingTowards(context.relativeMotion, context.state.get(FACING)
 			.getOpposite());
 	}
 
 	@Override
-	public void renderInContraption(MovementContext context, BufferVertexConsumer ms, BufferVertexConsumer msLocal,
-		BackgroundRenderer buffers) {
-		HarvesterRenderer.renderInContraption(context, ms, msLocal, buffers);
+	public boolean hasSpecialInstancedRendering() {
+		return true;
 	}
 
 	@Override
-	public EntityHitResult getActiveAreaOffset(MovementContext context) {
-		return EntityHitResult.b(context.state.c(aq)
+	public void addInstance(RenderedContraption contraption, MovementContext context) {
+		HarvesterRenderer.addInstanceForContraption(contraption, context);
+	}
+
+	@Override
+	public void renderInContraption(MovementContext context, MatrixStack ms, MatrixStack msLocal,
+		VertexConsumerProvider buffers) {
+		if (!FastRenderDispatcher.available())
+			HarvesterRenderer.renderInContraption(context, ms, msLocal, buffers);
+	}
+
+	@Override
+	public Vec3d getActiveAreaOffset(MovementContext context) {
+		return Vec3d.of(context.state.get(FACING)
 			.getVector())
-			.a(.45);
+			.multiply(.45);
 	}
 
 	@Override
 	public void visitNewPosition(MovementContext context, BlockPos pos) {
-		GameMode world = context.world;
-		PistonHandler stateVisited = world.d_(pos);
+		World world = context.world;
+		BlockState stateVisited = world.getBlockState(pos);
 		boolean notCropButCuttable = false;
 
-		if (world.v)
+		if (world.isClient)
 			return;
 
 		if (!isValidCrop(world, pos, stateVisited)) {
@@ -63,35 +77,35 @@ public class HarvesterMovementBehaviour extends MovementBehaviour {
 		}
 
 		MutableBoolean seedSubtracted = new MutableBoolean(notCropButCuttable);
-		PistonHandler state = stateVisited;
+		BlockState state = stateVisited;
 		BlockHelper.destroyBlock(world, pos, 1, stack -> {
-			if (!seedSubtracted.getValue() && stack.a(new ItemCooldownManager(state.b()))) {
-				stack.g(1);
+			if (!seedSubtracted.getValue() && stack.isItemEqualIgnoreDamage(new ItemStack(state.getBlock()))) {
+				stack.decrement(1);
 				seedSubtracted.setTrue();
 			}
 			dropItem(context, stack);
 		});
 
-		world.a(pos, cutCrop(world, pos, stateVisited));
+		world.setBlockState(pos, cutCrop(world, pos, stateVisited));
 	}
 
-	private boolean isValidCrop(GameMode world, BlockPos pos, PistonHandler state) {
-		if (state.b() instanceof CoralBlock) {
-			CoralBlock crop = (CoralBlock) state.b();
-			if (!crop.h(state))
+	private boolean isValidCrop(World world, BlockPos pos, BlockState state) {
+		if (state.getBlock() instanceof CropBlock) {
+			CropBlock crop = (CropBlock) state.getBlock();
+			if (!crop.isMature(state))
 				return false;
 			return true;
 		}
-		if (state.k(world, pos)
-			.b() || state.b() instanceof ChestBlock) {
-			for (IntProperty<?> property : state.r()) {
-				if (!(property instanceof DoubleBlockHalf))
+		if (state.getCollisionShape(world, pos)
+			.isEmpty() || state.getBlock() instanceof CocoaBlock) {
+			for (Property<?> property : state.getProperties()) {
+				if (!(property instanceof IntProperty))
 					continue;
-				if (!property.f()
-					.equals(BambooLeaves.ae.f()))
+				if (!property.getName()
+					.equals(Properties.AGE_1.getName()))
 					continue;
-				if (((DoubleBlockHalf) property).a()
-					.size() - 1 != state.c((DoubleBlockHalf) property)
+				if (((IntProperty) property).getValues()
+					.size() - 1 != state.get((IntProperty) property)
 						.intValue())
 					continue;
 				return true;
@@ -101,64 +115,64 @@ public class HarvesterMovementBehaviour extends MovementBehaviour {
 		return false;
 	}
 
-	private boolean isValidOther(GameMode world, BlockPos pos, PistonHandler state) {
-		if (state.b() instanceof CoralBlock)
+	private boolean isValidOther(World world, BlockPos pos, BlockState state) {
+		if (state.getBlock() instanceof CropBlock)
 			return false;
-		if (state.b() instanceof StonecutterBlock)
+		if (state.getBlock() instanceof SugarCaneBlock)
 			return true;
 
-		if (state.k(world, pos)
-			.b() || state.b() instanceof ChestBlock) {
-			if (state.b() instanceof JigsawBlock)
+		if (state.getCollisionShape(world, pos)
+			.isEmpty() || state.getBlock() instanceof CocoaBlock) {
+			if (state.getBlock() instanceof KelpPlantBlock)
 				return true;
-			if (state.b() instanceof PaneBlock)
+			if (state.getBlock() instanceof KelpBlock)
 				return true;
 
-			for (IntProperty<?> property : state.r()) {
-				if (!(property instanceof DoubleBlockHalf))
+			for (Property<?> property : state.getProperties()) {
+				if (!(property instanceof IntProperty))
 					continue;
-				if (!property.f()
-					.equals(BambooLeaves.ae.f()))
+				if (!property.getName()
+					.equals(Properties.AGE_1.getName()))
 					continue;
 				return false;
 			}
 
-			if (state.b() instanceof IPlantable)
+			if (state.getBlock() instanceof IPlantable)
 				return true;
 		}
 
 		return false;
 	}
 
-	private PistonHandler cutCrop(GameMode world, BlockPos pos, PistonHandler state) {
-		if (state.b() instanceof CoralBlock) {
-			CoralBlock crop = (CoralBlock) state.b();
-			return crop.b(0);
+	private BlockState cutCrop(World world, BlockPos pos, BlockState state) {
+		if (state.getBlock() instanceof CropBlock) {
+			CropBlock crop = (CropBlock) state.getBlock();
+			return crop.withAge(0);
 		}
-		if (state.b() == BellBlock.cH || state.b() == BellBlock.kc) {
-			if (state.m()
-				.c())
-				return BellBlock.FACING.n();
-			return state.m()
-				.g();
+		if (state.getBlock() == Blocks.SUGAR_CANE || state.getBlock() == Blocks.KELP) {
+			if (state.getFluidState()
+				.isEmpty())
+				return Blocks.AIR.getDefaultState();
+			return state.getFluidState()
+				.getBlockState();
 		}
-		if (state.k(world, pos)
-			.b() || state.b() instanceof ChestBlock) {
-			for (IntProperty<?> property : state.r()) {
-				if (!(property instanceof DoubleBlockHalf))
+		if (state.getCollisionShape(world, pos)
+			.isEmpty() || state.getBlock() instanceof CocoaBlock) {
+			for (Property<?> property : state.getProperties()) {
+				if (!(property instanceof IntProperty))
 					continue;
-				if (!property.f()
-					.equals(BambooLeaves.ae.f()))
+				if (!property.getName()
+					.equals(Properties.AGE_1.getName()))
 					continue;
-				return state.a((DoubleBlockHalf) property, Integer.valueOf(0));
+				return state.with((IntProperty) property, Integer.valueOf(0));
 			}
 		}
 
-		if (state.m()
-			.c())
-			return BellBlock.FACING.n();
-		return state.m()
-			.g();
+		if (state.getFluidState()
+			.isEmpty())
+			return Blocks.AIR.getDefaultState();
+		return state.getFluidState()
+			.getBlockState();
 	}
 
 }

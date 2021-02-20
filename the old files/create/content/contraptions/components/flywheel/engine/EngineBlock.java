@@ -1,86 +1,88 @@
-package com.simibubi.kinetic_api.content.contraptions.components.flywheel.engine;
+package com.simibubi.create.content.contraptions.components.flywheel.engine;
 
 import javax.annotation.Nullable;
-import bnx;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.wrench.IWrenchable;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
+
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.wrench.IWrenchable;
+import com.simibubi.create.foundation.utility.Iterate;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.HayBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.HorizontalFacingBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public abstract class EngineBlock extends HayBlock implements IWrenchable {
+public abstract class EngineBlock extends HorizontalFacingBlock implements IWrenchable {
 
-	protected EngineBlock(c builder) {
+	protected EngineBlock(Settings builder) {
 		super(builder);
 	}
 
 	@Override
-	public boolean a(PistonHandler state, ItemConvertible worldIn, BlockPos pos) {
-		return isValidPosition(state, worldIn, pos, state.c(aq));
+	public boolean canPlaceAt(BlockState state, WorldView worldIn, BlockPos pos) {
+		return isValidPosition(state, worldIn, pos, state.get(FACING));
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 	
 	@Override
-	public Difficulty onWrenched(PistonHandler state, bnx context) {
-		return Difficulty.FAIL;
+	public ActionResult onWrenched(BlockState state, ItemUsageContext context) {
+		return ActionResult.FAIL;
 	}
 	
 	@Override
-	public abstract BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world);
+	public abstract BlockEntity createTileEntity(BlockState state, BlockView world);
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		Direction facing = context.j();
-		return n().a(aq,
-				facing.getAxis().isVertical() ? context.f().getOpposite() : facing);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		Direction facing = context.getSide();
+		return getDefaultState().with(FACING,
+				facing.getAxis().isVertical() ? context.getPlayerFacing().getOpposite() : facing);
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		super.a(builder.a(aq));
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		super.appendProperties(builder.add(FACING));
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, BeetrootsBlock blockIn, BlockPos fromPos,
+	public void neighborUpdate(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos,
 			boolean isMoving) {
-		if (worldIn.v)
+		if (worldIn.isClient)
 			return;
 
 		if (fromPos.equals(getBaseBlockPos(state, pos))) {
-			if (!a(state, worldIn, pos)) {
-				worldIn.b(pos, true);
+			if (!canPlaceAt(state, worldIn, pos)) {
+				worldIn.breakBlock(pos, true);
 				return;
 			}
 		}
 	}
 
-	private boolean isValidPosition(PistonHandler state, MobSpawnerLogic world, BlockPos pos, Direction facing) {
+	private boolean isValidPosition(BlockState state, BlockView world, BlockPos pos, Direction facing) {
 		BlockPos baseBlockPos = getBaseBlockPos(state, pos);
-		if (!isValidBaseBlock(world.d_(baseBlockPos), world, pos))
+		if (!isValidBaseBlock(world.getBlockState(baseBlockPos), world, pos))
 			return false;
 		for (Direction otherFacing : Iterate.horizontalDirections) {
 			if (otherFacing == facing)
 				continue;
 			BlockPos otherPos = baseBlockPos.offset(otherFacing);
-			PistonHandler otherState = world.d_(otherPos);
-			if (otherState.b() instanceof EngineBlock
+			BlockState otherState = world.getBlockState(otherPos);
+			if (otherState.getBlock() instanceof EngineBlock
 					&& getBaseBlockPos(otherState, otherPos).equals(baseBlockPos))
 				return false;
 		}
@@ -88,14 +90,14 @@ public abstract class EngineBlock extends HayBlock implements IWrenchable {
 		return true;
 	}
 	
-	public static BlockPos getBaseBlockPos(PistonHandler state, BlockPos pos) {
-		return pos.offset(state.c(aq).getOpposite());
+	public static BlockPos getBaseBlockPos(BlockState state, BlockPos pos) {
+		return pos.offset(state.get(FACING).getOpposite());
 	}
 
 	@Nullable
 	@Environment(EnvType.CLIENT)
 	public abstract AllBlockPartials getFrameModel();
 
-	protected abstract boolean isValidBaseBlock(PistonHandler baseBlock, MobSpawnerLogic world, BlockPos pos);
+	protected abstract boolean isValidBaseBlock(BlockState baseBlock, BlockView world, BlockPos pos);
 
 }

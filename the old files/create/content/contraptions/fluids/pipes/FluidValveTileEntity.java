@@ -1,25 +1,27 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.pipes;
+package com.simibubi.create.content.contraptions.fluids.pipes;
 
 import java.util.List;
-import afj;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.fluids.pipes.FluidValveTileEntity.ValvePipeBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.fluids.pipes.StraightPipeTileEntity.StraightPipeFluidTransportBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.LerpedFloat;
-import com.simibubi.kinetic_api.foundation.utility.LerpedFloat.Chaser;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.fluids.pipes.FluidValveTileEntity.ValvePipeBehaviour;
+import com.simibubi.create.content.contraptions.fluids.pipes.StraightPipeTileEntity.StraightPipeFluidTransportBehaviour;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.LerpedFloat;
+import com.simibubi.create.foundation.utility.LerpedFloat.Chaser;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.fluids.FluidStack;
 
 public class FluidValveTileEntity extends KineticTileEntity {
 
 	LerpedFloat pointer;
 
-	public FluidValveTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public FluidValveTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		pointer = LerpedFloat.linear()
 			.startWithValue(0)
@@ -35,30 +37,30 @@ public class FluidValveTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		pointer.tickChaser();
 
-		if (d.v)
+		if (world.isClient)
 			return;
 
-		PistonHandler blockState = p();
-		if (!(blockState.b() instanceof FluidValveBlock))
+		BlockState blockState = getCachedState();
+		if (!(blockState.getBlock() instanceof FluidValveBlock))
 			return;
-		boolean stateOpen = blockState.c(FluidValveBlock.ENABLED);
+		boolean stateOpen = blockState.get(FluidValveBlock.ENABLED);
 
 		if (stateOpen && pointer.getValue() == 0) {
-			switchToBlockState(d, e, blockState.a(FluidValveBlock.ENABLED, false));
+			switchToBlockState(world, pos, blockState.with(FluidValveBlock.ENABLED, false));
 			return;
 		}
 		if (!stateOpen && pointer.getValue() == 1) {
-			switchToBlockState(d, e, blockState.a(FluidValveBlock.ENABLED, true));
+			switchToBlockState(world, pos, blockState.with(FluidValveBlock.ENABLED, true));
 			return;
 		}
 	}
 
 	private float getChaseSpeed() {
-		return afj.a(Math.abs(getSpeed()) / 16 / 20, 0, 1);
+		return MathHelper.clamp(Math.abs(getSpeed()) / 16 / 20, 0, 1);
 	}
 
 	@Override
@@ -68,7 +70,7 @@ public class FluidValveTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		super.fromTag(state, compound, clientPacket);
 		pointer.readNBT(compound.getCompound("Pointer"), clientPacket);
 	}
@@ -76,6 +78,11 @@ public class FluidValveTileEntity extends KineticTileEntity {
 	@Override
 	public void addBehaviours(List<TileEntityBehaviour> behaviours) {
 		behaviours.add(new ValvePipeBehaviour(this));
+	}
+	
+	@Override
+	public boolean shouldRenderAsTE() {
+		return true;
 	}
 
 	class ValvePipeBehaviour extends StraightPipeFluidTransportBehaviour {
@@ -85,13 +92,13 @@ public class FluidValveTileEntity extends KineticTileEntity {
 		}
 
 		@Override
-		public boolean canHaveFlowToward(PistonHandler state, Direction direction) {
+		public boolean canHaveFlowToward(BlockState state, Direction direction) {
 			return FluidValveBlock.getPipeAxis(state) == direction.getAxis();
 		}
 
 		@Override
-		public boolean canPullFluidFrom(FluidStack fluid, PistonHandler state, Direction direction) {
-			if (state.b(FluidValveBlock.ENABLED) && state.c(FluidValveBlock.ENABLED))
+		public boolean canPullFluidFrom(FluidStack fluid, BlockState state, Direction direction) {
+			if (state.contains(FluidValveBlock.ENABLED) && state.get(FluidValveBlock.ENABLED))
 				return super.canPullFluidFrom(fluid, state, direction);
 			return false;
 		}

@@ -1,28 +1,28 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter;
+package com.simibubi.create.content.logistics.item.filter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.logistics.item.filter.AttributeFilterContainer.WhitelistMode;
+import com.simibubi.create.content.logistics.item.filter.FilterScreenPacket.Option;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.gui.widgets.IconButton;
+import com.simibubi.create.foundation.gui.widgets.Indicator;
+import com.simibubi.create.foundation.gui.widgets.Label;
+import com.simibubi.create.foundation.gui.widgets.SelectionScrollInput;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.Pair;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import bfs;
-import com.simibubi.kinetic_api.content.logistics.item.filter.AttributeFilterContainer.WhitelistMode;
-import com.simibubi.kinetic_api.content.logistics.item.filter.FilterScreenPacket.Option;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.gui.widgets.IconButton;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Indicator;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Label;
-import com.simibubi.kinetic_api.foundation.gui.widgets.SelectionScrollInput;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
 
 public class AttributeFilterScreen extends AbstractFilterScreen<AttributeFilterContainer> {
 
@@ -47,21 +47,21 @@ public class AttributeFilterScreen extends AbstractFilterScreen<AttributeFilterC
 	private Text noSelectedT = Lang.translate(PREFIX + "no_selected_attributes");
 	private Text selectedT = Lang.translate(PREFIX + "selected_attributes");
 
-	private ItemCooldownManager lastItemScanned = ItemCooldownManager.tick;
+	private ItemStack lastItemScanned = ItemStack.EMPTY;
 	private List<ItemAttribute> attributesOfItem = new ArrayList<>();
 	private List<Text> selectedAttributes = new ArrayList<>();
 	private SelectionScrollInput attributeSelector;
 	private Label attributeSelectorLabel;
 
-	public AttributeFilterScreen(AttributeFilterContainer container, bfs inv, Text title) {
+	public AttributeFilterScreen(AttributeFilterContainer container, PlayerInventory inv, Text title) {
 		super(container, inv, title, AllGuiTextures.ATTRIBUTE_FILTER);
 	}
 
 	@Override
-	protected void b() {
-		super.b();
-		int x = w;
-		int y = x;
+	protected void init() {
+		super.init();
+		int x = x;
+		int y = y;
 
 		whitelistDis = new IconButton(x + 47, y + 59, AllIcons.I_WHITELIST_OR);
 		whitelistDis.setToolTip(allowDisN);
@@ -89,108 +89,108 @@ public class AttributeFilterScreen extends AbstractFilterScreen<AttributeFilterC
 		attributeSelector = new SelectionScrollInput(x + 39, y + 21, 137, 18);
 		attributeSelector.forOptions(Arrays.asList(LiteralText.EMPTY));
 		attributeSelector.removeCallback();
-		referenceItemChanged(t.filterInventory.getStackInSlot(0));
+		referenceItemChanged(handler.filterInventory.getStackInSlot(0));
 
 		widgets.add(attributeSelector);
 		widgets.add(attributeSelectorLabel);
 
 		selectedAttributes.clear();
-		selectedAttributes.add((t.selectedAttributes.isEmpty() ? noSelectedT : selectedT).copy()
+		selectedAttributes.add((handler.selectedAttributes.isEmpty() ? noSelectedT : selectedT).copy()
 			.formatted(Formatting.YELLOW));
-		t.selectedAttributes.forEach(at -> selectedAttributes.add(new LiteralText("- ")
+		handler.selectedAttributes.forEach(at -> selectedAttributes.add(new LiteralText("- ")
 			.append(at.getFirst()
 				.format(at.getSecond()))
 			.formatted(Formatting.GRAY)));
 
 	}
 
-	private void referenceItemChanged(ItemCooldownManager stack) {
+	private void referenceItemChanged(ItemStack stack) {
 		lastItemScanned = stack;
 
-		if (stack.a()) {
-			attributeSelector.o = false;
-			attributeSelector.p = false;
+		if (stack.isEmpty()) {
+			attributeSelector.active = false;
+			attributeSelector.visible = false;
 			attributeSelectorLabel.text = referenceH.copy()
 				.formatted(Formatting.ITALIC);
-			add.o = false;
-			addInverted.o = false;
+			add.active = false;
+			addInverted.active = false;
 			attributeSelector.calling(s -> {
 			});
 			return;
 		}
 
-		add.o = true;
+		add.active = true;
 
-		addInverted.o = true;
-		attributeSelector.titled(stack.r()
+		addInverted.active = true;
+		attributeSelector.titled(stack.getName()
 			.copy()
 			.append("..."));
 		attributesOfItem.clear();
 		for (ItemAttribute itemAttribute : ItemAttribute.types)
-			attributesOfItem.addAll(itemAttribute.listAttributesOf(stack, i.r));
+			attributesOfItem.addAll(itemAttribute.listAttributesOf(stack, client.world));
 		List<Text> options = attributesOfItem.stream()
 			.map(a -> a.format(false))
 			.collect(Collectors.toList());
 		attributeSelector.forOptions(options);
-		attributeSelector.o = true;
-		attributeSelector.p = true;
+		attributeSelector.active = true;
+		attributeSelector.visible = true;
 		attributeSelector.setState(0);
 		attributeSelector.calling(i -> {
 			attributeSelectorLabel.setTextAndTrim(options.get(i), true, 112);
 			ItemAttribute selected = attributesOfItem.get(i);
-			for (Pair<ItemAttribute, Boolean> existing : t.selectedAttributes) {
+			for (Pair<ItemAttribute, Boolean> existing : handler.selectedAttributes) {
 				CompoundTag testTag = new CompoundTag();
 				CompoundTag testTag2 = new CompoundTag();
 				existing.getFirst()
 					.serializeNBT(testTag);
 				selected.serializeNBT(testTag2);
 				if (testTag.equals(testTag2)) {
-					add.o = false;
-					addInverted.o = false;
+					add.active = false;
+					addInverted.active = false;
 					return;
 				}
 			}
-			add.o = true;
-			addInverted.o = true;
+			add.active = true;
+			addInverted.active = true;
 		});
 		attributeSelector.onChanged();
 	}
 
 	@Override
-	public void renderWindowForeground(BufferVertexConsumer matrixStack, int mouseX, int mouseY, float partialTicks) {
-		ItemCooldownManager stack = t.filterInventory.getStackInSlot(1);
-		matrixStack.a();
-		matrixStack.a(0.0F, 0.0F, 32.0F);
-		this.d(200);
-		this.j.b = 200.0F;
-		this.j.a(o, stack, w + 22, x + 57,
+	public void renderWindowForeground(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+		ItemStack stack = handler.filterInventory.getStackInSlot(1);
+		matrixStack.push();
+		matrixStack.translate(0.0F, 0.0F, 32.0F);
+		this.setZOffset(200);
+		this.itemRenderer.zOffset = 200.0F;
+		this.itemRenderer.renderGuiItemOverlay(textRenderer, stack, x + 22, y + 57,
 			String.valueOf(selectedAttributes.size() - 1));
-		this.d(0);
-		this.j.b = 0.0F;
-		matrixStack.b();
+		this.setZOffset(0);
+		this.itemRenderer.zOffset = 0.0F;
+		matrixStack.pop();
 
 		super.renderWindowForeground(matrixStack, mouseX, mouseY, partialTicks);
 	}
 
 	@Override
-	public void d() {
-		super.d();
-		ItemCooldownManager stackInSlot = t.filterInventory.getStackInSlot(0);
+	public void tick() {
+		super.tick();
+		ItemStack stackInSlot = handler.filterInventory.getStackInSlot(0);
 		if (!stackInSlot.equals(lastItemScanned, false))
 			referenceItemChanged(stackInSlot);
 	}
 
 	@Override
-	protected void a(BufferVertexConsumer matrixStack, int mouseX, int mouseY) {
-		if (this.i.s.bm.m()
-			.a() && this.v != null && this.v.f()) {
-			if (this.v.d == 37) {
-				b(matrixStack, selectedAttributes, mouseX, mouseY);
+	protected void drawMouseoverTooltip(MatrixStack matrixStack, int mouseX, int mouseY) {
+		if (this.client.player.inventory.getCursorStack()
+			.isEmpty() && this.focusedSlot != null && this.focusedSlot.hasStack()) {
+			if (this.focusedSlot.id == 37) {
+				renderTooltip(matrixStack, selectedAttributes, mouseX, mouseY);
 				return;
 			}
-			this.a(matrixStack, this.v.e(), mouseX, mouseY);
+			this.renderTooltip(matrixStack, this.focusedSlot.getStack(), mouseX, mouseY);
 		}
-		super.a(matrixStack, mouseX, mouseY);
+		super.drawMouseoverTooltip(matrixStack, mouseX, mouseY);
 	}
 
 	@Override
@@ -204,33 +204,33 @@ public class AttributeFilterScreen extends AbstractFilterScreen<AttributeFilterC
 	}
 
 	@Override
-	public boolean a(double x, double y, int button) {
-		boolean mouseClicked = super.a(x, y, button);
+	public boolean mouseClicked(double x, double y, int button) {
+		boolean mouseClicked = super.mouseClicked(x, y, button);
 
 		if (button != 0)
 			return mouseClicked;
 
-		if (blacklist.g()) {
-			t.whitelistMode = WhitelistMode.BLACKLIST;
+		if (blacklist.isHovered()) {
+			handler.whitelistMode = WhitelistMode.BLACKLIST;
 			sendOptionUpdate(Option.BLACKLIST);
 			return true;
 		}
 
-		if (whitelistCon.g()) {
-			t.whitelistMode = WhitelistMode.WHITELIST_CONJ;
+		if (whitelistCon.isHovered()) {
+			handler.whitelistMode = WhitelistMode.WHITELIST_CONJ;
 			sendOptionUpdate(Option.WHITELIST2);
 			return true;
 		}
 
-		if (whitelistDis.g()) {
-			t.whitelistMode = WhitelistMode.WHITELIST_DISJ;
+		if (whitelistDis.isHovered()) {
+			handler.whitelistMode = WhitelistMode.WHITELIST_DISJ;
 			sendOptionUpdate(Option.WHITELIST);
 			return true;
 		}
 
-		if (add.g() && add.o)
+		if (add.isHovered() && add.active)
 			return handleAddedAttibute(false);
-		if (addInverted.g() && addInverted.o)
+		if (addInverted.isHovered() && addInverted.active)
 			return handleAddedAttibute(true);
 
 		return mouseClicked;
@@ -240,15 +240,15 @@ public class AttributeFilterScreen extends AbstractFilterScreen<AttributeFilterC
 		int index = attributeSelector.getState();
 		if (index >= attributesOfItem.size())
 			return false;
-		add.o = false;
-		addInverted.o = false;
+		add.active = false;
+		addInverted.active = false;
 		CompoundTag tag = new CompoundTag();
 		ItemAttribute itemAttribute = attributesOfItem.get(index);
 		itemAttribute.serializeNBT(tag);
 		AllPackets.channel
 			.sendToServer(new FilterScreenPacket(inverted ? Option.ADD_INVERTED_TAG : Option.ADD_TAG, tag));
-		t.appendSelectedAttribute(itemAttribute, inverted);
-		if (t.selectedAttributes.size() == 1)
+		handler.appendSelectedAttribute(itemAttribute, inverted);
+		if (handler.selectedAttributes.size() == 1)
 			selectedAttributes.set(0, selectedT.copy()
 				.formatted(Formatting.YELLOW));
 		selectedAttributes.add(new LiteralText("- ").append(itemAttribute.format(inverted))
@@ -261,31 +261,31 @@ public class AttributeFilterScreen extends AbstractFilterScreen<AttributeFilterC
 		selectedAttributes.clear();
 		selectedAttributes.add(noSelectedT.copy()
 			.formatted(Formatting.YELLOW));
-		if (!lastItemScanned.a()) {
-			add.o = true;
-			addInverted.o = true;
+		if (!lastItemScanned.isEmpty()) {
+			add.active = true;
+			addInverted.active = true;
 		}
 	}
 
 	@Override
 	protected boolean isButtonEnabled(IconButton button) {
 		if (button == blacklist)
-			return t.whitelistMode != WhitelistMode.BLACKLIST;
+			return handler.whitelistMode != WhitelistMode.BLACKLIST;
 		if (button == whitelistCon)
-			return t.whitelistMode != WhitelistMode.WHITELIST_CONJ;
+			return handler.whitelistMode != WhitelistMode.WHITELIST_CONJ;
 		if (button == whitelistDis)
-			return t.whitelistMode != WhitelistMode.WHITELIST_DISJ;
+			return handler.whitelistMode != WhitelistMode.WHITELIST_DISJ;
 		return true;
 	}
 
 	@Override
 	protected boolean isIndicatorOn(Indicator indicator) {
 		if (indicator == blacklistIndicator)
-			return t.whitelistMode == WhitelistMode.BLACKLIST;
+			return handler.whitelistMode == WhitelistMode.BLACKLIST;
 		if (indicator == whitelistConIndicator)
-			return t.whitelistMode == WhitelistMode.WHITELIST_CONJ;
+			return handler.whitelistMode == WhitelistMode.WHITELIST_CONJ;
 		if (indicator == whitelistDisIndicator)
-			return t.whitelistMode == WhitelistMode.WHITELIST_DISJ;
+			return handler.whitelistMode == WhitelistMode.WHITELIST_DISJ;
 		return false;
 	}
 

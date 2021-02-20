@@ -1,30 +1,30 @@
-package com.simibubi.kinetic_api.content.curiosities.symmetry;
+package com.simibubi.create.content.curiosities.symmetry;
 
-import com.simibubi.kinetic_api.content.curiosities.symmetry.mirror.CrossPlaneMirror;
-import com.simibubi.kinetic_api.content.curiosities.symmetry.mirror.EmptyMirror;
-import com.simibubi.kinetic_api.content.curiosities.symmetry.mirror.PlaneMirror;
-import com.simibubi.kinetic_api.content.curiosities.symmetry.mirror.SymmetryMirror;
-import com.simibubi.kinetic_api.content.curiosities.symmetry.mirror.TriplePlaneMirror;
-import com.simibubi.kinetic_api.foundation.gui.AbstractSimiScreen;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import com.simibubi.kinetic_api.foundation.gui.widgets.IconButton;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Label;
-import com.simibubi.kinetic_api.foundation.gui.widgets.ScrollInput;
-import com.simibubi.kinetic_api.foundation.gui.widgets.SelectionScrollInput;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.networking.NbtPacket;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.content.curiosities.symmetry.mirror.CrossPlaneMirror;
+import com.simibubi.create.content.curiosities.symmetry.mirror.EmptyMirror;
+import com.simibubi.create.content.curiosities.symmetry.mirror.PlaneMirror;
+import com.simibubi.create.content.curiosities.symmetry.mirror.SymmetryMirror;
+import com.simibubi.create.content.curiosities.symmetry.mirror.TriplePlaneMirror;
+import com.simibubi.create.foundation.gui.AbstractSimiScreen;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import com.simibubi.create.foundation.gui.widgets.IconButton;
+import com.simibubi.create.foundation.gui.widgets.Label;
+import com.simibubi.create.foundation.gui.widgets.ScrollInput;
+import com.simibubi.create.foundation.gui.widgets.SelectionScrollInput;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.networking.NbtPacket;
+import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.network.PacketDistributor;
 
 public class SymmetryWandScreen extends AbstractSimiScreen {
@@ -39,23 +39,23 @@ public class SymmetryWandScreen extends AbstractSimiScreen {
 	private final Text orientation = Lang.translate("gui.symmetryWand.orientation");
 
 	private SymmetryMirror currentElement;
-	private ItemCooldownManager wand;
-	private ItemScatterer hand;
+	private ItemStack wand;
+	private Hand hand;
 
-	public SymmetryWandScreen(ItemCooldownManager wand, ItemScatterer hand) {
+	public SymmetryWandScreen(ItemStack wand, Hand hand) {
 		super();
 
 		currentElement = SymmetryWandItem.getMirror(wand);
 		if (currentElement instanceof EmptyMirror) {
-			currentElement = new PlaneMirror(EntityHitResult.a);
+			currentElement = new PlaneMirror(Vec3d.ZERO);
 		}
 		this.hand = hand;
 		this.wand = wand;
 	}
 
 	@Override
-	public void b() {
-		super.b();
+	public void init() {
+		super.init();
 		AllGuiTextures background = AllGuiTextures.WAND_OF_SYMMETRY;
 		this.setWindowSize(background.width + 50, background.height + 50);
 
@@ -115,10 +115,10 @@ public class SymmetryWandScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	protected void renderWindow(BufferVertexConsumer matrixStack, int mouseX, int mouseY, float partialTicks) {
+	protected void renderWindow(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
 		AllGuiTextures.WAND_OF_SYMMETRY.draw(matrixStack, this, guiLeft, guiTop);
 
-		o.a(matrixStack, wand.r(), guiLeft + 11, guiTop + 3, 0xffffff);
+		textRenderer.drawWithShadow(matrixStack, wand.getName(), guiLeft + 11, guiTop + 3, 0xffffff);
 
 		renderBlock(matrixStack);
 		GuiGameElement.of(wand)
@@ -128,38 +128,38 @@ public class SymmetryWandScreen extends AbstractSimiScreen {
 			.render(matrixStack);
 	}
 
-	protected void renderBlock(BufferVertexConsumer ms) {
-		ms.a();
-		ms.a(guiLeft + 26f, guiTop + 37, 20);
-		ms.a(16, 16, 16);
-		ms.a(new Vector3f(.3f, 1f, 0f).getDegreesQuaternion(-22.5f));
+	protected void renderBlock(MatrixStack ms) {
+		ms.push();
+		ms.translate(guiLeft + 26f, guiTop + 37, 20);
+		ms.scale(16, 16, 16);
+		ms.multiply(new Vector3f(.3f, 1f, 0f).getDegreesQuaternion(-22.5f));
 		currentElement.applyModelTransform(ms);
 		// RenderSystem.multMatrix(ms.peek().getModel());
 		GuiGameElement.of(currentElement.getModel())
 			.render(ms);
 
-		ms.b();
+		ms.pop();
 	}
 
 	@Override
-	public void e() {
-		ItemCooldownManager heldItem = i.s.b(hand);
-		CompoundTag compound = heldItem.o();
+	public void removed() {
+		ItemStack heldItem = client.player.getStackInHand(hand);
+		CompoundTag compound = heldItem.getTag();
 		compound.put(SymmetryWandItem.SYMMETRY, currentElement.writeToNbt());
-		heldItem.c(compound);
+		heldItem.setTag(compound);
 		AllPackets.channel.send(PacketDistributor.SERVER.noArg(), new NbtPacket(heldItem, hand));
-		i.s.a(hand, heldItem);
-		super.e();
+		client.player.setStackInHand(hand, heldItem);
+		super.removed();
 	}
 	
 	@Override
-	public boolean a(double x, double y, int button) {
-		if (confirmButton.g()) {
-			KeyBinding.B().s.m();
+	public boolean mouseClicked(double x, double y, int button) {
+		if (confirmButton.isHovered()) {
+			MinecraftClient.getInstance().player.updateSubmergedInWaterState();
 			return true;
 		}
 
-		return super.a(x, y, button);
+		return super.mouseClicked(x, y, button);
 	}
 
 }

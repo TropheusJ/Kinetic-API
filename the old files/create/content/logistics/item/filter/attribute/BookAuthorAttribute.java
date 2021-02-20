@@ -1,10 +1,12 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter.attribute;
+package com.simibubi.create.content.logistics.item.filter.attribute;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.content.logistics.item.filter.ItemAttribute;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import com.simibubi.kinetic_api.content.logistics.item.filter.ItemAttribute;
 
 public class BookAuthorAttribute implements ItemAttribute {
     String author;
@@ -14,12 +16,12 @@ public class BookAuthorAttribute implements ItemAttribute {
     }
 
     @Override
-    public boolean appliesTo(ItemCooldownManager itemStack) {
+    public boolean appliesTo(ItemStack itemStack) {
         return extractAuthor(itemStack).equals(author);
     }
 
     @Override
-    public List<ItemAttribute> listAttributesOf(ItemCooldownManager itemStack) {
+    public List<ItemAttribute> listAttributesOf(ItemStack itemStack) {
         String name = extractAuthor(itemStack);
 
         List<ItemAttribute> atts = new ArrayList<>();
@@ -49,8 +51,8 @@ public class BookAuthorAttribute implements ItemAttribute {
         return new BookAuthorAttribute(nbt.getString("author"));
     }
 
-    private String extractAuthor(ItemCooldownManager stack) {
-        CompoundTag nbt = stack.o();
+    private String extractAuthor(ItemStack stack) {
+        CompoundTag nbt = stack.getTag();
         if (nbt != null && nbt.contains("author")) {
             return nbt.getString("author");
         }

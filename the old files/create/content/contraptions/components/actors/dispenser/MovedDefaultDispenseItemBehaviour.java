@@ -1,52 +1,53 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors.dispenser;
+package com.simibubi.create.content.contraptions.components.actors.dispenser;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import net.minecraft.block.DetectorRailBlock;
-import net.minecraft.block.entity.EnderChestBlockEntity;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+
+import net.minecraft.block.DispenserBlock;
+import net.minecraft.block.entity.HopperBlockEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 public class MovedDefaultDispenseItemBehaviour implements IMovedDispenseItemBehaviour {
 	private static final MovedDefaultDispenseItemBehaviour defaultInstance = new MovedDefaultDispenseItemBehaviour();
 
-	public static void doDispense(GameMode p_82486_0_, ItemCooldownManager p_82486_1_, int p_82486_2_, EntityHitResult facing, BlockPos p_82486_4_, MovementContext context) {
-		double d0 = p_82486_4_.getX() + facing.entity + .5;
-		double d1 = p_82486_4_.getY() + facing.c + .5;
-		double d2 = p_82486_4_.getZ() + facing.d + .5;
-		if (Direction.getFacing(facing.entity, facing.c, facing.d).getAxis() == Direction.Axis.Y) {
+	public static void doDispense(World p_82486_0_, ItemStack p_82486_1_, int p_82486_2_, Vec3d facing, BlockPos p_82486_4_, MovementContext context) {
+		double d0 = p_82486_4_.getX() + facing.x + .5;
+		double d1 = p_82486_4_.getY() + facing.y + .5;
+		double d2 = p_82486_4_.getZ() + facing.z + .5;
+		if (Direction.getFacing(facing.x, facing.y, facing.z).getAxis() == Direction.Axis.Y) {
 			d1 = d1 - 0.125D;
 		} else {
 			d1 = d1 - 0.15625D;
 		}
 
-		PaintingEntity itementity = new PaintingEntity(p_82486_0_, d0, d1, d2, p_82486_1_);
-		double d3 = p_82486_0_.t.nextDouble() * 0.1D + 0.2D;
-		itementity.n(p_82486_0_.t.nextGaussian() * (double) 0.0075F * (double) p_82486_2_ + facing.getX() * d3 + context.motion.entity, p_82486_0_.t.nextGaussian() * (double) 0.0075F * (double) p_82486_2_ + facing.getY() * d3 + context.motion.c, p_82486_0_.t.nextGaussian() * (double) 0.0075F * (double) p_82486_2_ + facing.getZ() * d3 + context.motion.d);
-		p_82486_0_.c(itementity);
+		ItemEntity itementity = new ItemEntity(p_82486_0_, d0, d1, d2, p_82486_1_);
+		double d3 = p_82486_0_.random.nextDouble() * 0.1D + 0.2D;
+		itementity.setVelocity(p_82486_0_.random.nextGaussian() * (double) 0.0075F * (double) p_82486_2_ + facing.getX() * d3 + context.motion.x, p_82486_0_.random.nextGaussian() * (double) 0.0075F * (double) p_82486_2_ + facing.getY() * d3 + context.motion.y, p_82486_0_.random.nextGaussian() * (double) 0.0075F * (double) p_82486_2_ + facing.getZ() * d3 + context.motion.z);
+		p_82486_0_.spawnEntity(itementity);
 	}
 
 	@Override
-	public ItemCooldownManager dispense(ItemCooldownManager itemStack, MovementContext context, BlockPos pos) {
-		EntityHitResult facingVec = EntityHitResult.b(context.state.c(DetectorRailBlock.a).getVector());
+	public ItemStack dispense(ItemStack itemStack, MovementContext context, BlockPos pos) {
+		Vec3d facingVec = Vec3d.of(context.state.get(DispenserBlock.FACING).getVector());
 		facingVec = context.rotation.apply(facingVec);
-		facingVec.d();
+		facingVec.normalize();
 
 		Direction closestToFacing = getClosestFacingDirection(facingVec);
-		BossBar iinventory = EnderChestBlockEntity.b(context.world, pos.offset(closestToFacing));
+		Inventory iinventory = HopperBlockEntity.getInventoryAt(context.world, pos.offset(closestToFacing));
 		if (iinventory == null) {
 			this.playDispenseSound(context.world, pos);
 			this.spawnDispenseParticles(context.world, pos, closestToFacing);
 			return this.dispenseStack(itemStack, context, pos, facingVec);
 		} else {
-			if (EnderChestBlockEntity.a(null, iinventory, itemStack.i().a(1), closestToFacing.getOpposite()).a())
-				itemStack.g(1);
+			if (HopperBlockEntity.transfer(null, iinventory, itemStack.copy().split(1), closestToFacing.getOpposite()).isEmpty())
+				itemStack.decrement(1);
 			return itemStack;
 		}
 	}
@@ -54,8 +55,8 @@ public class MovedDefaultDispenseItemBehaviour implements IMovedDispenseItemBeha
 	/**
 	 * Dispense the specified stack, play the dispense sound and spawn particles.
 	 */
-	protected ItemCooldownManager dispenseStack(ItemCooldownManager itemStack, MovementContext context, BlockPos pos, EntityHitResult facing) {
-		ItemCooldownManager itemstack = itemStack.a(1);
+	protected ItemStack dispenseStack(ItemStack itemStack, MovementContext context, BlockPos pos, Vec3d facing) {
+		ItemStack itemstack = itemStack.split(1);
 		doDispense(context.world, itemstack, 6, facing, pos, context);
 		return itemStack;
 	}
@@ -63,29 +64,29 @@ public class MovedDefaultDispenseItemBehaviour implements IMovedDispenseItemBeha
 	/**
 	 * Play the dispense sound from the specified block.
 	 */
-	protected void playDispenseSound(GrassColors world, BlockPos pos) {
+	protected void playDispenseSound(WorldAccess world, BlockPos pos) {
 		world.syncWorldEvent(1000, pos, 0);
 	}
 
 	/**
 	 * Order clients to display dispense particles from the specified block and facing.
 	 */
-	protected void spawnDispenseParticles(GrassColors world, BlockPos pos, EntityHitResult facing) {
+	protected void spawnDispenseParticles(WorldAccess world, BlockPos pos, Vec3d facing) {
 		spawnDispenseParticles(world, pos, getClosestFacingDirection(facing));
 	}
 
-	protected void spawnDispenseParticles(GrassColors world, BlockPos pos, Direction direction) {
+	protected void spawnDispenseParticles(WorldAccess world, BlockPos pos, Direction direction) {
 		world.syncWorldEvent(2000, pos, direction.getId());
 	}
 
-	protected Direction getClosestFacingDirection(EntityHitResult exactFacing) {
-		return Direction.getFacing(exactFacing.entity, exactFacing.c, exactFacing.d);
+	protected Direction getClosestFacingDirection(Vec3d exactFacing) {
+		return Direction.getFacing(exactFacing.x, exactFacing.y, exactFacing.z);
 	}
 
-	protected ItemCooldownManager placeItemInInventory(ItemCooldownManager consumedFrom, ItemCooldownManager output, MovementContext context, BlockPos pos, EntityHitResult facing) {
-		consumedFrom.g(1);
-		ItemCooldownManager remainder = ItemHandlerHelper.insertItem(context.contraption.inventory, output.i(), false);
-		if (!remainder.a())
+	protected ItemStack placeItemInInventory(ItemStack consumedFrom, ItemStack output, MovementContext context, BlockPos pos, Vec3d facing) {
+		consumedFrom.decrement(1);
+		ItemStack remainder = ItemHandlerHelper.insertItem(context.contraption.inventory, output.copy(), false);
+		if (!remainder.isEmpty())
 			defaultInstance.dispenseStack(output, context, pos, facing);
 		return consumedFrom;
 	}

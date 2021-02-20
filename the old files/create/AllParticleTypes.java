@@ -1,19 +1,19 @@
-package com.simibubi.kinetic_api;
+package com.simibubi.create;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.content.contraptions.fluids.particle.FluidParticleData;
-import com.simibubi.kinetic_api.content.contraptions.particle.AirFlowParticleData;
-import com.simibubi.kinetic_api.content.contraptions.particle.AirParticleData;
-import com.simibubi.kinetic_api.content.contraptions.particle.CubeParticleData;
-import com.simibubi.kinetic_api.content.contraptions.particle.HeaterParticleData;
-import com.simibubi.kinetic_api.content.contraptions.particle.ICustomParticleData;
-import com.simibubi.kinetic_api.content.contraptions.particle.RotationIndicatorParticleData;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.content.contraptions.fluids.particle.FluidParticleData;
+import com.simibubi.create.content.contraptions.particle.AirFlowParticleData;
+import com.simibubi.create.content.contraptions.particle.AirParticleData;
+import com.simibubi.create.content.contraptions.particle.CubeParticleData;
+import com.simibubi.create.content.contraptions.particle.HeaterParticleData;
+import com.simibubi.create.content.contraptions.particle.ICustomParticleData;
+import com.simibubi.create.content.contraptions.particle.RotationIndicatorParticleData;
+import com.simibubi.create.foundation.utility.Lang;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.particle.ItemPickupParticle;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.util.Identifier;
@@ -50,7 +50,7 @@ public enum AllParticleTypes {
 
 	@Environment(EnvType.CLIENT)
 	public static void registerFactories(ParticleFactoryRegisterEvent event) {
-		ItemPickupParticle particles = KeyBinding.B().defaultKey;
+		ParticleManager particles = MinecraftClient.getInstance().particleManager;
 		for (AllParticleTypes particle : values())
 			particle.entry.registerFactory(particles);
 	}
@@ -87,7 +87,7 @@ public enum AllParticleTypes {
 		}
 
 		@Environment(EnvType.CLIENT)
-		void registerFactory(ItemPickupParticle particles) {
+		void registerFactory(ParticleManager particles) {
 			typeFactory.get()
 				.register(getOrCreateType(), particles);
 		}

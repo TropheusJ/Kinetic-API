@@ -1,30 +1,31 @@
-package com.simibubi.kinetic_api.content.logistics.block.belts.tunnel;
+package com.simibubi.create.content.logistics.block.belts.tunnel;
 
-import bqx;
-import com.simibubi.kinetic_api.AllSpriteShifts;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShiftEntry;
-import com.simibubi.kinetic_api.foundation.block.connected.ConnectedTextureBehaviour;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.AllSpriteShifts;
+import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
+import com.simibubi.create.foundation.block.connected.ConnectedTextureBehaviour;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 
 public class BrassTunnelCTBehaviour extends ConnectedTextureBehaviour {
 
 	@Override
-	public CTSpriteShiftEntry get(PistonHandler state, Direction direction) {
+	public CTSpriteShiftEntry get(BlockState state, Direction direction) {
 		return direction == Direction.UP ? AllSpriteShifts.BRASS_TUNNEL_TOP : null;
 	}
 
 	@Override
-	public boolean connectsTo(PistonHandler state, PistonHandler other, bqx reader, BlockPos pos, BlockPos otherPos,
+	public boolean connectsTo(BlockState state, BlockState other, BlockRenderView reader, BlockPos pos, BlockPos otherPos,
 		Direction face) {
 		int yDiff = otherPos.getY() - pos.getY();
 		int zDiff = otherPos.getZ() - pos.getZ();
 		if (yDiff != 0)
 			return false;
 
-		BeehiveBlockEntity te = reader.c(pos);
+		BlockEntity te = reader.getBlockEntity(pos);
 		if (!(te instanceof BrassTunnelTileEntity))
 			return false;
 		BrassTunnelTileEntity tunnelTE = (BrassTunnelTileEntity) te;
@@ -33,22 +34,22 @@ public class BrassTunnelCTBehaviour extends ConnectedTextureBehaviour {
 	}
 
 	@Override
-	public CTContext buildContext(bqx reader, BlockPos pos, PistonHandler state, Direction face) {
+	public CTContext buildContext(BlockRenderView reader, BlockPos pos, BlockState state, Direction face) {
 		return super.buildContext(reader, pos, state, face);
 	}
 
 	@Override
-	protected boolean reverseUVs(PistonHandler state, Direction face) {
+	protected boolean reverseUVs(BlockState state, Direction face) {
 		return super.reverseUVs(state, face);
 	}
 
 	@Override
-	protected boolean reverseUVsHorizontally(PistonHandler state, Direction face) {
+	protected boolean reverseUVsHorizontally(BlockState state, Direction face) {
 		return super.reverseUVsHorizontally(state, face);
 	}
 
 	@Override
-	protected boolean reverseUVsVertically(PistonHandler state, Direction face) {
+	protected boolean reverseUVsVertically(BlockState state, Direction face) {
 		return super.reverseUVsVertically(state, face);
 	}
 

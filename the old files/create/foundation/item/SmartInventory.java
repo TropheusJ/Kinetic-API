@@ -1,11 +1,12 @@
-package com.simibubi.kinetic_api.foundation.item;
+package com.simibubi.create.foundation.item;
 
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
-import com.simibubi.kinetic_api.foundation.tileEntity.SyncedTileEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.foundation.tileEntity.SyncedTileEntity;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.items.ItemStackHandler;
@@ -62,20 +63,20 @@ public class SmartInventory extends RecipeWrapper
 	}
 
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
 		if (!insertionAllowed)
 			return stack;
 		return inv.insertItem(slot, stack, simulate);
 	}
 
 	@Override
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
+	public ItemStack extractItem(int slot, int amount, boolean simulate) {
 		if (!extractionAllowed)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		if (stackNonStackables) {
-			ItemCooldownManager extractItem = inv.extractItem(slot, amount, true);
-			if (!extractItem.a() && extractItem.c() < extractItem.E())
-				amount = extractItem.c();
+			ItemStack extractItem = inv.extractItem(slot, amount, true);
+			if (!extractItem.isEmpty() && extractItem.getMaxCount() < extractItem.getCount())
+				amount = extractItem.getMaxCount();
 		}
 		return inv.extractItem(slot, amount, simulate);
 	}
@@ -86,22 +87,22 @@ public class SmartInventory extends RecipeWrapper
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		return inv.isItemValid(slot, stack);
 	}
 
 	@Override
-	public void setStackInSlot(int slot, ItemCooldownManager stack) {
+	public void setStackInSlot(int slot, ItemStack stack) {
 		inv.setStackInSlot(slot, stack);
 	}
 
 	@Override
-	public ItemCooldownManager a(int slot) {
-		return super.a(slot);
+	public ItemStack getStack(int slot) {
+		return super.getStack(slot);
 	}
 
-	public int getStackLimit(int slot, @Nonnull ItemCooldownManager stack) {
-		return Math.min(getSlotLimit(slot), stack.c());
+	public int getStackLimit(int slot, @Nonnull ItemStack stack) {
+		return Math.min(getSlotLimit(slot), stack.getMaxCount());
 	}
 
 	@Override
@@ -152,8 +153,8 @@ public class SmartInventory extends RecipeWrapper
 	}
 
 	@Override
-	public ItemCooldownManager getStackInSlotIntermediate(int slot) {
-		return a(slot);
+	public ItemStack getStackInSlotIntermediate(int slot) {
+		return getStack(slot);
 	}
 
 }

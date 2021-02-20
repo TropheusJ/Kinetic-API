@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.foundation.gui.widgets;
+package com.simibubi.create.foundation.gui.widgets;
 
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 
 public class Indicator extends AbstractSimiWidget {
@@ -21,7 +21,7 @@ public class Indicator extends AbstractSimiWidget {
 	}
 	
 	@Override
-	public void a(BufferVertexConsumer matrixStack, int mouseX, int mouseY, float partialTicks ) {
+	public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks ) {
 		AllGuiTextures toDraw;
 		switch(state) {
 			case ON: toDraw = AllGuiTextures.INDICATOR_WHITE; break;
@@ -31,7 +31,7 @@ public class Indicator extends AbstractSimiWidget {
 			case GREEN: toDraw = AllGuiTextures.INDICATOR_GREEN; break;
 			default: toDraw = AllGuiTextures.INDICATOR; break;
 		}
-		toDraw.draw(matrixStack, this, l, m);
+		toDraw.draw(matrixStack, this, x, y);
 	}
 	
 }

@@ -1,83 +1,85 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
-import bnx;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalAxisKineticBlock;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.RotatedPillarKineticBlock;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.client.util.SmoothUtil;
-import net.minecraft.fluid.LavaFluid;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.state.property.IntProperty;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.DirectionalAxisKineticBlock;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.base.RotatedPillarKineticBlock;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.EnumProperty;
+import net.minecraft.state.property.Properties;
+import net.minecraft.state.property.Property;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.WorldAccess;
+import net.minecraft.world.WorldView;
 
 public class EncasedBeltBlock extends RotatedPillarKineticBlock {
 
-	public static final IntProperty<Part> PART = DirectionProperty.a("part", Part.class);
-	public static final BedPart CONNECTED_ALONG_FIRST_COORDINATE =
+	public static final Property<Part> PART = EnumProperty.of("part", Part.class);
+	public static final BooleanProperty CONNECTED_ALONG_FIRST_COORDINATE =
 		DirectionalAxisKineticBlock.AXIS_ALONG_FIRST_COORDINATE;
 
-	public EncasedBeltBlock(c properties) {
+	public EncasedBeltBlock(Settings properties) {
 		super(properties);
-		j(n().a(PART, Part.NONE));
+		setDefaultState(getDefaultState().with(PART, Part.NONE));
 	}
 
 	@Override
-	public boolean shouldCheckWeakPower(PistonHandler state, ItemConvertible world, BlockPos pos, Direction side) {
+	public boolean shouldCheckWeakPower(BlockState state, WorldView world, BlockPos pos, Direction side) {
 		return false;
 	}
 
 	@Override
-	public LavaFluid f(PistonHandler state) {
-		return LavaFluid.a;
+	public PistonBehavior getPistonBehavior(BlockState state) {
+		return PistonBehavior.NORMAL;
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		super.a(builder.a(PART, CONNECTED_ALONG_FIRST_COORDINATE));
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		super.appendProperties(builder.add(PART, CONNECTED_ALONG_FIRST_COORDINATE));
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		Axis placedAxis = context.d()
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		Axis placedAxis = context.getPlayerLookDirection()
 			.getAxis();
-		Axis axis = context.n() != null && context.n()
-			.bt() ? placedAxis : getPreferredAxis(context);
+		Axis axis = context.getPlayer() != null && context.getPlayer()
+			.isSneaking() ? placedAxis : getPreferredAxis(context);
 		if (axis == null)
 			axis = placedAxis;
 
-		PistonHandler state = n().a(AXIS, axis);
+		BlockState state = getDefaultState().with(AXIS, axis);
 		for (Direction facing : Iterate.directions) {
 			if (facing.getAxis() == axis)
 				continue;
-			BlockPos pos = context.a();
+			BlockPos pos = context.getBlockPos();
 			BlockPos offset = pos.offset(facing);
-			state = a(state, facing, context.p()
-				.d_(offset), context.p(), pos, offset);
+			state = getStateForNeighborUpdate(state, facing, context.getWorld()
+				.getBlockState(offset), context.getWorld(), pos, offset);
 		}
 		return state;
 	}
 
 	@Override
-	public PistonHandler a(PistonHandler stateIn, Direction face, PistonHandler neighbour, GrassColors worldIn,
+	public BlockState getStateForNeighborUpdate(BlockState stateIn, Direction face, BlockState neighbour, WorldAccess worldIn,
 		BlockPos currentPos, BlockPos facingPos) {
-		Part part = stateIn.c(PART);
-		Axis axis = stateIn.c(AXIS);
-		boolean connectionAlongFirst = stateIn.c(CONNECTED_ALONG_FIRST_COORDINATE);
+		Part part = stateIn.get(PART);
+		Axis axis = stateIn.get(AXIS);
+		boolean connectionAlongFirst = stateIn.get(CONNECTED_ALONG_FIRST_COORDINATE);
 		Axis connectionAxis =
 			connectionAlongFirst ? (axis == Axis.X ? Axis.Y : Axis.X) : (axis == Axis.Z ? Axis.Y : Axis.Z);
 
@@ -88,23 +90,23 @@ public class EncasedBeltBlock extends RotatedPillarKineticBlock {
 		if (axis == faceAxis)
 			return stateIn;
 
-		if (!(neighbour.b() instanceof EncasedBeltBlock)) {
+		if (!(neighbour.getBlock() instanceof EncasedBeltBlock)) {
 			if (facingAlongFirst != connectionAlongFirst || part == Part.NONE)
 				return stateIn;
 			if (part == Part.MIDDLE)
-				return stateIn.a(PART, positive ? Part.END : Part.START);
+				return stateIn.with(PART, positive ? Part.END : Part.START);
 			if ((part == Part.START) == positive)
-				return stateIn.a(PART, Part.NONE);
+				return stateIn.with(PART, Part.NONE);
 			return stateIn;
 		}
 
-		Part otherPart = neighbour.c(PART);
-		Axis otherAxis = neighbour.c(AXIS);
-		boolean otherConnection = neighbour.c(CONNECTED_ALONG_FIRST_COORDINATE);
+		Part otherPart = neighbour.get(PART);
+		Axis otherAxis = neighbour.get(AXIS);
+		boolean otherConnection = neighbour.get(CONNECTED_ALONG_FIRST_COORDINATE);
 		Axis otherConnectionAxis =
 			otherConnection ? (otherAxis == Axis.X ? Axis.Y : Axis.X) : (otherAxis == Axis.Z ? Axis.Y : Axis.Z);
 
-		if (neighbour.c(AXIS) == faceAxis)
+		if (neighbour.get(AXIS) == faceAxis)
 			return stateIn;
 		if (otherPart != Part.NONE && otherConnectionAxis != faceAxis)
 			return stateIn;
@@ -119,49 +121,53 @@ public class EncasedBeltBlock extends RotatedPillarKineticBlock {
 		if ((part == Part.START) != positive)
 			part = Part.MIDDLE;
 
-		return stateIn.a(PART, part)
-			.a(CONNECTED_ALONG_FIRST_COORDINATE, connectionAlongFirst);
+		return stateIn.with(PART, part)
+			.with(CONNECTED_ALONG_FIRST_COORDINATE, connectionAlongFirst);
 	}
 
 	@Override
-	public PistonHandler updateAfterWrenched(PistonHandler newState, bnx context) {
-		BellBlock.FACING.n()
-			.a(context.p(), context.a(), 1);
-		Axis axis = newState.c(AXIS);
-		newState = n().a(AXIS, axis);
+	public BlockState getRotatedBlockState(BlockState originalState, Direction targetedFace) {
+		if (originalState.get(PART) == Part.NONE)
+			return super.getRotatedBlockState(originalState, targetedFace);
+		return super.getRotatedBlockState(originalState,
+			Direction.get(AxisDirection.POSITIVE, getConnectionAxis(originalState)));
+	}
+
+	@Override
+	public BlockState updateAfterWrenched(BlockState newState, ItemUsageContext context) {
+//		Blocks.AIR.getDefaultState()
+//			.updateNeighbors(context.getWorld(), context.getPos(), 1);
+		Axis axis = newState.get(AXIS);
+		newState = getDefaultState().with(AXIS, axis);
+		if (newState.contains(Properties.POWERED))
+			newState = newState.with(Properties.POWERED, context.getWorld()
+				.isReceivingRedstonePower(context.getBlockPos()));
 		for (Direction facing : Iterate.directions) {
 			if (facing.getAxis() == axis)
 				continue;
-			BlockPos pos = context.a();
+			BlockPos pos = context.getBlockPos();
 			BlockPos offset = pos.offset(facing);
-			newState = a(newState, facing, context.p()
-				.d_(offset), context.p(), pos, offset);
+			newState = getStateForNeighborUpdate(newState, facing, context.getWorld()
+				.getBlockState(offset), context.getWorld(), pos, offset);
 		}
-		newState.a(context.p(), context.a(), 1 | 2);
+//		newState.updateNeighbors(context.getWorld(), context.getPos(), 1 | 2);
 		return newState;
 	}
 
 	@Override
-	public boolean hasShaftTowards(ItemConvertible world, BlockPos pos, PistonHandler state, Direction face) {
-		return face.getAxis() == state.c(AXIS);
+	public boolean hasShaftTowards(WorldView world, BlockPos pos, BlockState state, Direction face) {
+		return face.getAxis() == state.get(AXIS);
 	}
 
 	@Override
-	public Axis getRotationAxis(PistonHandler state) {
-		return state.c(AXIS);
+	public Axis getRotationAxis(BlockState state) {
+		return state.get(AXIS);
 	}
 
-	public static boolean areBlocksConnected(PistonHandler state, PistonHandler other, Direction facing) {
-		Part part = state.c(PART);
-		Axis axis = state.c(AXIS);
-		boolean connectionAlongFirst = state.c(CONNECTED_ALONG_FIRST_COORDINATE);
-		Axis connectionAxis =
-			connectionAlongFirst ? (axis == Axis.X ? Axis.Y : Axis.X) : (axis == Axis.Z ? Axis.Y : Axis.Z);
-
-		Axis otherAxis = other.c(AXIS);
-		boolean otherConnection = other.c(CONNECTED_ALONG_FIRST_COORDINATE);
-		Axis otherConnectionAxis =
-			otherConnection ? (otherAxis == Axis.X ? Axis.Y : Axis.X) : (otherAxis == Axis.Z ? Axis.Y : Axis.Z);
+	public static boolean areBlocksConnected(BlockState state, BlockState other, Direction facing) {
+		Part part = state.get(PART);
+		Axis connectionAxis = getConnectionAxis(state);
+		Axis otherConnectionAxis = getConnectionAxis(other);
 
 		if (otherConnectionAxis != connectionAxis)
 			return false;
@@ -175,6 +181,14 @@ public class EncasedBeltBlock extends RotatedPillarKineticBlock {
 		return false;
 	}
 
+	protected static Axis getConnectionAxis(BlockState state) {
+		Axis axis = state.get(AXIS);
+		boolean connectionAlongFirst = state.get(CONNECTED_ALONG_FIRST_COORDINATE);
+		Axis connectionAxis =
+			connectionAlongFirst ? (axis == Axis.X ? Axis.Y : Axis.X) : (axis == Axis.Z ? Axis.Y : Axis.Z);
+		return connectionAxis;
+	}
+
 	public static float getRotationSpeedModifier(KineticTileEntity from, KineticTileEntity to) {
 		float fromMod = 1;
 		float toMod = 1;
@@ -186,15 +200,15 @@ public class EncasedBeltBlock extends RotatedPillarKineticBlock {
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.ENCASED_SHAFT.create();
 	}
 
-	public enum Part implements SmoothUtil {
+	public enum Part implements StringIdentifiable {
 		START, MIDDLE, END, NONE;
 
 		@Override
-		public String a() {
+		public String asString() {
 			return Lang.asId(name());
 		}
 	}

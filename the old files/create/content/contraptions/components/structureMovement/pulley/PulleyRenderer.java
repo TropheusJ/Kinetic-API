@@ -1,25 +1,25 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.pulley;
+package com.simibubi.create.content.contraptions.components.structureMovement.pulley;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AbstractContraptionEntity;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.CreateClient;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.AbstractContraptionEntity;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.MathHelper;
 
 public class PulleyRenderer extends AbstractPulleyRenderer {
 
-	public PulleyRenderer(ebv dispatcher) {
+	public PulleyRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher, AllBlockPartials.ROPE_HALF, AllBlockPartials.ROPE_HALF_MAGNET);
 	}
 
 	@Override
 	protected Axis getShaftAxis(KineticTileEntity te) {
-		return te.p()
-			.c(PulleyBlock.HORIZONTAL_AXIS);
+		return te.getCachedState()
+			.get(PulleyBlock.HORIZONTAL_AXIS);
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public class PulleyRenderer extends AbstractPulleyRenderer {
 		if (pulley.movedContraption != null) {
 			AbstractContraptionEntity e = pulley.movedContraption;
 			PulleyContraption c = (PulleyContraption) pulley.movedContraption.getContraption();
-			double entityPos = afj.d(partialTicks, e.E, e.cD());
+			double entityPos = MathHelper.lerp(partialTicks, e.lastRenderY, e.getY());
 			offset = (float) -(entityPos - c.anchor.getY() - c.initialOffset);
 		}
 

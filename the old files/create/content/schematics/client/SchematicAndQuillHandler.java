@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.schematics.client;
+package com.simibubi.create.content.schematics.client;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -8,40 +8,43 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 import org.apache.commons.io.IOUtils;
-import afj;
-import bnx;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllKeys;
-import com.simibubi.kinetic_api.AllSpecialTextures;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.content.schematics.ClientSchematicLoader;
-import com.simibubi.kinetic_api.content.schematics.packet.InstantSchematicPacket;
-import com.simibubi.kinetic_api.foundation.gui.ScreenOpener;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.utility.FilesHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.RaycastHelper;
-import com.simibubi.kinetic_api.foundation.utility.RaycastHelper.PredicateTraceResult;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import com.simibubi.kinetic_api.foundation.utility.outliner.Outliner;
-import cqx;
-import dcg;
-import net.minecraft.block.BellBlock;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.particle.FishingParticle;
+
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllKeys;
+import com.simibubi.create.AllSpecialTextures;
+import com.simibubi.create.Create;
+import com.simibubi.create.CreateClient;
+import com.simibubi.create.content.schematics.ClientSchematicLoader;
+import com.simibubi.create.content.schematics.packet.InstantSchematicPacket;
+import com.simibubi.create.foundation.gui.ScreenOpener;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.FilesHelper;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.RaycastHelper;
+import com.simibubi.create.foundation.utility.RaycastHelper.PredicateTraceResult;
+import com.simibubi.create.foundation.utility.VecHelper;
+import com.simibubi.create.foundation.utility.outliner.Outliner;
+
+import net.minecraft.block.Blocks;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.structure.processor.StructureProcessor;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.structure.Structure;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult.Type;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box.a;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.timer.Timer;
 
 public class SchematicAndQuillHandler {
 
@@ -59,15 +62,15 @@ public class SchematicAndQuillHandler {
 		if (!AllKeys.ctrlDown())
 			return false;
 		if (secondPos == null)
-			range = (int) afj.a(range + delta, 1, 100);
+			range = (int) MathHelper.clamp(range + delta, 1, 100);
 		if (selectedFace == null)
 			return true;
 
-		Timer bb = new Timer(firstPos, secondPos);
+		Box bb = new Box(firstPos, secondPos);
 		Vec3i vec = selectedFace.getVector();
-		EntityHitResult projectedView = KeyBinding.B().boundKey.k()
-			.b();
-		if (bb.d(projectedView))
+		Vec3d projectedView = MinecraftClient.getInstance().gameRenderer.getCamera()
+			.getPos();
+		if (bb.contains(projectedView))
 			delta *= -1;
 
 		int x = (int) (vec.getX() * delta);
@@ -76,17 +79,17 @@ public class SchematicAndQuillHandler {
 
 		AxisDirection axisDirection = selectedFace.getDirection();
 		if (axisDirection == AxisDirection.NEGATIVE)
-			bb = bb.d(-x, -y, -z);
+			bb = bb.offset(-x, -y, -z);
 
-		double maxX = Math.max(bb.eventCounter - x * axisDirection.offset(), bb.LOGGER);
-		double maxY = Math.max(bb.eventsByName - y * axisDirection.offset(), bb.callback);
-		double maxZ = Math.max(bb.f - z * axisDirection.offset(), bb.events);
-		bb = new Timer(bb.LOGGER, bb.callback, bb.events, maxX, maxY, maxZ);
+		double maxX = Math.max(bb.maxX - x * axisDirection.offset(), bb.minX);
+		double maxY = Math.max(bb.maxY - y * axisDirection.offset(), bb.minY);
+		double maxZ = Math.max(bb.maxZ - z * axisDirection.offset(), bb.minZ);
+		bb = new Box(bb.minX, bb.minY, bb.minZ, maxX, maxY, maxZ);
 
-		firstPos = new BlockPos(bb.LOGGER, bb.callback, bb.events);
-		secondPos = new BlockPos(bb.eventCounter, bb.eventsByName, bb.f);
-		Lang.sendStatus(KeyBinding.B().s, "schematicAndQuill.dimensions", (int) bb.b() + 1,
-			(int) bb.c() + 1, (int) bb.d() + 1);
+		firstPos = new BlockPos(bb.minX, bb.minY, bb.minZ);
+		secondPos = new BlockPos(bb.maxX, bb.maxY, bb.maxZ);
+		Lang.sendStatus(MinecraftClient.getInstance().player, "schematicAndQuill.dimensions", (int) bb.getXLength() + 1,
+			(int) bb.getYLength() + 1, (int) bb.getZLength() + 1);
 
 		return true;
 	}
@@ -97,9 +100,9 @@ public class SchematicAndQuillHandler {
 		if (!isActive())
 			return;
 
-		FishingParticle player = KeyBinding.B().s;
+		ClientPlayerEntity player = MinecraftClient.getInstance().player;
 
-		if (player.bt()) {
+		if (player.isSneaking()) {
 			discard();
 			return;
 		}
@@ -125,7 +128,7 @@ public class SchematicAndQuillHandler {
 	}
 	
 	public void discard() {
-		FishingParticle player = KeyBinding.B().s;
+		ClientPlayerEntity player = MinecraftClient.getInstance().player;
 		firstPos = null;
 		secondPos = null;
 		Lang.sendStatus(player, "schematicAndQuill.abort");
@@ -135,26 +138,25 @@ public class SchematicAndQuillHandler {
 		if (!isActive())
 			return;
 
-		FishingParticle player = KeyBinding.B().s;
+		ClientPlayerEntity player = MinecraftClient.getInstance().player;
 		if (AllKeys.ACTIVATE_TOOL.isPressed()) {
-			float pt = KeyBinding.B()
-				.ai();
-			EntityHitResult targetVec = player.j(pt)
-				.e(player.bg()
-					.a(range));
+			float pt = AnimationTickHolder.getPartialTicks();
+			Vec3d targetVec = player.getCameraPosVec(pt)
+				.add(player.getRotationVector()
+					.multiply(range));
 			selectedPos = new BlockPos(targetVec);
 
 		} else {
-			dcg trace = RaycastHelper.rayTraceRange(player.l, player, 75);
-			if (trace != null && trace.c() == a.b) {
+			BlockHitResult trace = RaycastHelper.rayTraceRange(player.world, player, 75);
+			if (trace != null && trace.getType() == Type.BLOCK) {
 
-				BlockPos hit = trace.a();
-				boolean replaceable = player.l.d_(hit)
-					.a(new PotionUtil(new bnx(player, ItemScatterer.RANDOM, trace)));
-				if (trace.b()
+				BlockPos hit = trace.getBlockPos();
+				boolean replaceable = player.world.getBlockState(hit)
+					.canReplace(new ItemPlacementContext(new ItemUsageContext(player, Hand.MAIN_HAND, trace)));
+				if (trace.getSide()
 					.getAxis()
 					.isVertical() && !replaceable)
-					hit = hit.offset(trace.b());
+					hit = hit.offset(trace.getSide());
 				selectedPos = hit;
 			} else
 				selectedPos = null;
@@ -162,19 +164,19 @@ public class SchematicAndQuillHandler {
 
 		selectedFace = null;
 		if (secondPos != null) {
-			Timer bb = new Timer(firstPos, secondPos).b(1, 1, 1)
-				.g(.45f);
-			EntityHitResult projectedView = KeyBinding.B().boundKey.k()
-				.b();
-			boolean inside = bb.d(projectedView);
+			Box bb = new Box(firstPos, secondPos).stretch(1, 1, 1)
+				.expand(.45f);
+			Vec3d projectedView = MinecraftClient.getInstance().gameRenderer.getCamera()
+				.getPos();
+			boolean inside = bb.contains(projectedView);
 			PredicateTraceResult result =
-				RaycastHelper.rayTraceUntil(player, 70, pos -> inside ^ bb.d(VecHelper.getCenterOf(pos)));
+				RaycastHelper.rayTraceUntil(player, 70, pos -> inside ^ bb.contains(VecHelper.getCenterOf(pos)));
 			selectedFace = result.missed() ? null
 				: inside ? result.getFacing()
 					.getOpposite() : result.getFacing();
 		}
 
-		Timer currentSelectionBox = getCurrentSelectionBox();
+		Box currentSelectionBox = getCurrentSelectionBox();
 		if (currentSelectionBox != null)
 			outliner().chaseAABB(outlineSlot, currentSelectionBox)
 				.colored(0x6886c5)
@@ -183,32 +185,32 @@ public class SchematicAndQuillHandler {
 				.highlightFace(selectedFace);
 	}
 
-	private Timer getCurrentSelectionBox() {
+	private Box getCurrentSelectionBox() {
 		if (secondPos == null) {
 			if (firstPos == null)
-				return selectedPos == null ? null : new Timer(selectedPos);
-			return selectedPos == null ? new Timer(firstPos)
-				: new Timer(firstPos, selectedPos).b(1, 1, 1);
+				return selectedPos == null ? null : new Box(selectedPos);
+			return selectedPos == null ? new Box(firstPos)
+				: new Box(firstPos, selectedPos).stretch(1, 1, 1);
 		}
-		return new Timer(firstPos, secondPos).b(1, 1, 1);
+		return new Box(firstPos, secondPos).stretch(1, 1, 1);
 	}
 
 	private boolean isActive() {
-		return isPresent() && AllItems.SCHEMATIC_AND_QUILL.isIn(KeyBinding.B().s.dC());
+		return isPresent() && AllItems.SCHEMATIC_AND_QUILL.isIn(MinecraftClient.getInstance().player.getMainHandStack());
 	}
 
 	private boolean isPresent() {
-		return KeyBinding.B() != null && KeyBinding.B().r != null
-			&& KeyBinding.B().y == null;
+		return MinecraftClient.getInstance() != null && MinecraftClient.getInstance().world != null
+			&& MinecraftClient.getInstance().currentScreen == null;
 	}
 
 	public void saveSchematic(String string, boolean convertImmediately) {
-		StructureProcessor t = new StructureProcessor();
-		cqx bb = new cqx(firstPos, secondPos);
-		BlockPos origin = new BlockPos(bb.a, bb.b, bb.c);
-		BlockPos bounds = new BlockPos(bb.d(), bb.e(), bb.f());
+		Structure t = new Structure();
+		BlockBox bb = new BlockBox(firstPos, secondPos);
+		BlockPos origin = new BlockPos(bb.minX, bb.minY, bb.minZ);
+		BlockPos bounds = new BlockPos(bb.getBlockCountX(), bb.getBlockCountY(), bb.getBlockCountZ());
 
-		t.a(KeyBinding.B().r, origin, bounds, true, BellBlock.FACING);
+		t.saveFromWorld(MinecraftClient.getInstance().world, origin, bounds, true, Blocks.AIR);
 
 		if (string.isEmpty())
 			string = Lang.translate("schematicAndQuill.fallbackName").getString();
@@ -222,7 +224,7 @@ public class SchematicAndQuillHandler {
 		OutputStream outputStream = null;
 		try {
 			outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE);
-			CompoundTag nbttagcompound = t.a(new CompoundTag());
+			CompoundTag nbttagcompound = t.toTag(new CompoundTag());
 			NbtIo.writeCompressed(nbttagcompound, outputStream);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -232,7 +234,7 @@ public class SchematicAndQuillHandler {
 		}
 		firstPos = null;
 		secondPos = null;
-		Lang.sendStatus(KeyBinding.B().s, "schematicAndQuill.saved", filepath);
+		Lang.sendStatus(MinecraftClient.getInstance().player, "schematicAndQuill.saved", filepath);
 
 		if (!convertImmediately)
 			return;

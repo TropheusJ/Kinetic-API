@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.content.logistics.block.chute;
+package com.simibubi.create.content.logistics.block.chute;
 
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 
 public class ChuteItemHandler implements IItemHandler {
@@ -17,23 +17,23 @@ public class ChuteItemHandler implements IItemHandler {
 	}
 
 	@Override
-	public ItemCooldownManager getStackInSlot(int slot) {
+	public ItemStack getStackInSlot(int slot) {
 		return te.item;
 	}
 
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
-		if (!te.item.a())
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+		if (!te.canAcceptItem(stack))
 			return stack;
 		if (!simulate) 
 			te.setItem(stack);
-		return ItemCooldownManager.tick;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
-		ItemCooldownManager remainder = te.item.i();
-		ItemCooldownManager split = remainder.a(amount);
+	public ItemStack extractItem(int slot, int amount, boolean simulate) {
+		ItemStack remainder = te.item.copy();
+		ItemStack split = remainder.split(amount);
 		if (!simulate) 
 			te.setItem(remainder);
 		return split;
@@ -41,11 +41,11 @@ public class ChuteItemHandler implements IItemHandler {
 
 	@Override
 	public int getSlotLimit(int slot) {
-		return Math.min(64, getStackInSlot(slot).c());
+		return Math.min(64, getStackInSlot(slot).getMaxCount());
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		return true;
 	}
 

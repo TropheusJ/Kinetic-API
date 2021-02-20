@@ -1,83 +1,85 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.pipes;
+package com.simibubi.create.content.contraptions.fluids.pipes;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import bnx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.schematics.ISpecialBlockItemRequirement;
-import com.simibubi.kinetic_api.content.schematics.ItemRequirement;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.schematics.ISpecialBlockItemRequirement;
+import com.simibubi.create.content.schematics.ItemRequirement;
 
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.SeagrassBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.potion.PotionUtil;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Waterloggable;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class GlassFluidPipeBlock extends AxisPipeBlock implements SeagrassBlock, ISpecialBlockItemRequirement {
+public class GlassFluidPipeBlock extends AxisPipeBlock implements Waterloggable, ISpecialBlockItemRequirement {
 
-	public static final BedPart ALT = BedPart.a("alt");
+	public static final BooleanProperty ALT = BooleanProperty.of("alt");
 
-	public GlassFluidPipeBlock(c p_i48339_1_) {
+	public GlassFluidPipeBlock(Settings p_i48339_1_) {
 		super(p_i48339_1_);
-		j(n().a(ALT, false).a(BambooLeaves.C, false));
+		setDefaultState(getDefaultState().with(ALT, false).with(Properties.WATERLOGGED, false));
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> p_206840_1_) {
-		super.a(p_206840_1_.a(ALT, BambooLeaves.C));
+	protected void appendProperties(Builder<Block, BlockState> p_206840_1_) {
+		super.appendProperties(p_206840_1_.add(ALT, Properties.WATERLOGGED));
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.GLASS_FLUID_PIPE.create();
 	}
 
 	@Override
-	public Difficulty onWrenched(PistonHandler state, bnx context) {
+	public ActionResult onWrenched(BlockState state, ItemUsageContext context) {
 		if (tryRemoveBracket(context))
-			return Difficulty.SUCCESS;
-		PistonHandler newState;
-		GameMode world = context.p();
-		BlockPos pos = context.a();
-		newState = toRegularPipe(world, pos, state).a(BambooLeaves.C, state.c(BambooLeaves.C));
-		world.a(pos, newState, 3);
-		return Difficulty.SUCCESS;
+			return ActionResult.SUCCESS;
+		BlockState newState;
+		World world = context.getWorld();
+		BlockPos pos = context.getBlockPos();
+		newState = toRegularPipe(world, pos, state).with(Properties.WATERLOGGED, state.get(Properties.WATERLOGGED));
+		world.setBlockState(pos, newState, 3);
+		return ActionResult.SUCCESS;
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		EmptyFluid ifluidstate = context.p()
-			.b(context.a());
-		PistonHandler state = super.a(context);
-		return state == null ? null : state.a(BambooLeaves.C,
-			ifluidstate.a() == FlowableFluid.c);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		FluidState ifluidstate = context.getWorld()
+			.getFluidState(context.getBlockPos());
+		BlockState state = super.getPlacementState(context);
+		return state == null ? null : state.with(Properties.WATERLOGGED,
+			ifluidstate.getFluid() == Fluids.WATER);
 	}
 
 	@Override
-	public EmptyFluid d(PistonHandler state) {
-		return state.c(BambooLeaves.C) ? FlowableFluid.c.a(false)
-			: FlowableFluid.FALLING.h();
+	public FluidState getFluidState(BlockState state) {
+		return state.get(Properties.WATERLOGGED) ? Fluids.WATER.getStill(false)
+			: Fluids.EMPTY.getDefaultState();
 	}
 	
 	@Override
-	public ItemRequirement getRequiredItems(PistonHandler state) {
+	public ItemRequirement getRequiredItems(BlockState state) {
 		return ItemRequirement.of(AllBlocks.FLUID_PIPE.getDefaultState());
 	}
 }

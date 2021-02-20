@@ -1,62 +1,63 @@
-package com.simibubi.kinetic_api.content.logistics.block.mechanicalArm;
+package com.simibubi.create.content.logistics.block.mechanicalArm;
 
 import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.crafter.MechanicalCrafterBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.crafter.MechanicalCrafterTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.deployer.DeployerBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.saw.SawBlock;
-import com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock;
-import com.simibubi.kinetic_api.content.logistics.block.belts.tunnel.BeltTunnelBlock;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.FunnelBlock;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.FunnelTileEntity;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Basin;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Belt;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.BlazeBurner;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Chute;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Crafter;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.CrushingWheels;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Deployer;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Depot;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Funnel;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Jukebox;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Millstone;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Mode;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Saw;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.item.SmartInventory;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.components.crafter.MechanicalCrafterBlock;
+import com.simibubi.create.content.contraptions.components.crafter.MechanicalCrafterTileEntity;
+import com.simibubi.create.content.contraptions.components.deployer.DeployerBlock;
+import com.simibubi.create.content.contraptions.components.saw.SawBlock;
+import com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock;
+import com.simibubi.create.content.logistics.block.belts.tunnel.BeltTunnelBlock;
+import com.simibubi.create.content.logistics.block.chute.AbstractChuteBlock;
+import com.simibubi.create.content.logistics.block.funnel.FunnelBlock;
+import com.simibubi.create.content.logistics.block.funnel.FunnelTileEntity;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Basin;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Belt;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.BlazeBurner;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Chute;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Crafter;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.CrushingWheels;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Deployer;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Depot;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Funnel;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Jukebox;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Millstone;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Mode;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Saw;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.item.SmartInventory;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour;
+import com.simibubi.create.foundation.utility.NBTHelper;
+import com.simibubi.create.foundation.utility.VecHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.InfestedBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.Hopper;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.PotionItem;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.JukeboxBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.JukeboxBlockEntity;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.MusicDiscItem;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.LocalDifficulty;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.LazyOptional;
@@ -71,7 +72,7 @@ public abstract class ArmInteractionPoint {
 	}
 
 	BlockPos pos;
-	PistonHandler state;
+	BlockState state;
 	Mode mode;
 
 	private LazyOptional<IItemHandler> cachedHandler;
@@ -98,7 +99,7 @@ public abstract class ArmInteractionPoint {
 	}
 
 	@Environment(EnvType.CLIENT)
-	void transformFlag(BufferVertexConsumer stack) {}
+	void transformFlag(MatrixStack stack) {}
 
 	AllBlockPartials getFlagType() {
 		return mode == Mode.TAKE ? AllBlockPartials.FLAG_LONG_OUT : AllBlockPartials.FLAG_LONG_IN;
@@ -108,7 +109,7 @@ public abstract class ArmInteractionPoint {
 		mode = mode == Mode.DEPOSIT ? Mode.TAKE : Mode.DEPOSIT;
 	}
 
-	EntityHitResult getInteractionPositionVector() {
+	Vec3d getInteractionPositionVector() {
 		return VecHelper.getCenterOf(pos);
 	}
 
@@ -116,13 +117,13 @@ public abstract class ArmInteractionPoint {
 		return Direction.DOWN;
 	}
 
-	boolean isStillValid(MobSpawnerLogic reader) {
-		return isValid(reader, pos, reader.d_(pos));
+	boolean isStillValid(BlockView reader) {
+		return isValid(reader, pos, reader.getBlockState(pos));
 	}
 
-	abstract boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state);
+	abstract boolean isValid(BlockView reader, BlockPos pos, BlockState state);
 
-	static boolean isInteractable(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
+	static boolean isInteractable(BlockView reader, BlockPos pos, BlockState state) {
 		for (ArmInteractionPoint armInteractionPoint : POINTS.keySet())
 			if (armInteractionPoint.isValid(reader, pos, state))
 				return true;
@@ -137,9 +138,9 @@ public abstract class ArmInteractionPoint {
 	}
 
 	@Nullable
-	IItemHandler getHandler(GameMode world) {
+	IItemHandler getHandler(World world) {
 		if (!cachedHandler.isPresent()) {
-			BeehiveBlockEntity te = world.c(pos);
+			BlockEntity te = world.getBlockEntity(pos);
 			if (te == null)
 				return null;
 			cachedHandler = te.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, Direction.UP);
@@ -147,25 +148,25 @@ public abstract class ArmInteractionPoint {
 		return cachedHandler.orElse(null);
 	}
 
-	ItemCooldownManager insert(GameMode world, ItemCooldownManager stack, boolean simulate) {
+	ItemStack insert(World world, ItemStack stack, boolean simulate) {
 		IItemHandler handler = getHandler(world);
 		if (handler == null)
 			return stack;
 		return ItemHandlerHelper.insertItem(handler, stack, simulate);
 	}
 
-	ItemCooldownManager extract(GameMode world, int slot, int amount, boolean simulate) {
+	ItemStack extract(World world, int slot, int amount, boolean simulate) {
 		IItemHandler handler = getHandler(world);
 		if (handler == null)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		return handler.extractItem(slot, amount, simulate);
 	}
 
-	ItemCooldownManager extract(GameMode world, int slot, boolean simulate) {
+	ItemStack extract(World world, int slot, boolean simulate) {
 		return extract(world, slot, 64, simulate);
 	}
 
-	int getSlotCount(GameMode world) {
+	int getSlotCount(World world) {
 		IItemHandler handler = getHandler(world);
 		if (handler == null)
 			return 0;
@@ -173,8 +174,8 @@ public abstract class ArmInteractionPoint {
 	}
 
 	@Nullable
-	static ArmInteractionPoint createAt(MobSpawnerLogic world, BlockPos pos) {
-		PistonHandler state = world.d_(pos);
+	static ArmInteractionPoint createAt(BlockView world, BlockPos pos) {
+		BlockState state = world.getBlockState(pos);
 		ArmInteractionPoint point = null;
 
 		for (ArmInteractionPoint armInteractionPoint : POINTS.keySet())
@@ -198,7 +199,7 @@ public abstract class ArmInteractionPoint {
 		return nbt;
 	}
 
-	static ArmInteractionPoint deserialize(MobSpawnerLogic world, BlockPos anchor, CompoundTag nbt) {
+	static ArmInteractionPoint deserialize(BlockView world, BlockPos anchor, CompoundTag nbt) {
 		BlockPos pos = NbtHelper.toBlockPos(nbt.getCompound("Pos"));
 		ArmInteractionPoint interactionPoint = createAt(world, pos.add(anchor));
 		if (interactionPoint == null)
@@ -210,8 +211,8 @@ public abstract class ArmInteractionPoint {
 	static abstract class TopFaceArmInteractionPoint extends ArmInteractionPoint {
 
 		@Override
-		EntityHitResult getInteractionPositionVector() {
-			return EntityHitResult.b(pos).b(.5f, 1, .5f);
+		Vec3d getInteractionPositionVector() {
+			return Vec3d.of(pos).add(.5f, 1, .5f);
 		}
 
 	}
@@ -219,12 +220,12 @@ public abstract class ArmInteractionPoint {
 	static class Depot extends ArmInteractionPoint {
 
 		@Override
-		EntityHitResult getInteractionPositionVector() {
-			return EntityHitResult.b(pos).b(.5f, 14 / 16f, .5f);
+		Vec3d getInteractionPositionVector() {
+			return Vec3d.of(pos).add(.5f, 14 / 16f, .5f);
 		}
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
 			return AllBlocks.DEPOT.has(state);
 		}
 
@@ -233,9 +234,9 @@ public abstract class ArmInteractionPoint {
 	static class Saw extends Depot {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
-			return AllBlocks.MECHANICAL_SAW.has(state) && state.c(SawBlock.FACING) == Direction.UP
-				&& ((KineticTileEntity) reader.c(pos)).getSpeed() != 0;
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
+			return AllBlocks.MECHANICAL_SAW.has(state) && state.get(SawBlock.FACING) == Direction.UP
+				&& ((KineticTileEntity) reader.getBlockEntity(pos)).getSpeed() != 0;
 		}
 
 	}
@@ -243,7 +244,7 @@ public abstract class ArmInteractionPoint {
 	static class Millstone extends ArmInteractionPoint {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
 			return AllBlocks.MILLSTONE.has(state);
 		}
 
@@ -252,7 +253,7 @@ public abstract class ArmInteractionPoint {
 	static class CrushingWheels extends TopFaceArmInteractionPoint {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
 			return AllBlocks.CRUSHING_WHEEL_CONTROLLER.has(state);
 		}
 
@@ -261,20 +262,20 @@ public abstract class ArmInteractionPoint {
 	static class Deployer extends ArmInteractionPoint {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
 			return AllBlocks.DEPLOYER.has(state);
 		}
 
 		@Override
 		Direction getInteractionDirection() {
-			return state.c(DeployerBlock.FACING)
+			return state.get(DeployerBlock.FACING)
 				.getOpposite();
 		}
 
 		@Override
-		EntityHitResult getInteractionPositionVector() {
+		Vec3d getInteractionPositionVector() {
 			return super.getInteractionPositionVector()
-				.e(EntityHitResult.b(getInteractionDirection().getVector()).a(.65f));
+				.add(Vec3d.of(getInteractionDirection().getVector()).multiply(.65f));
 		}
 
 	}
@@ -282,23 +283,27 @@ public abstract class ArmInteractionPoint {
 	static class BlazeBurner extends ArmInteractionPoint {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
 			return AllBlocks.BLAZE_BURNER.has(state);
 		}
 
 		@Override
-		ItemCooldownManager extract(GameMode world, int slot, int amount, boolean simulate) {
-			return ItemCooldownManager.tick;
+		ItemStack extract(World world, int slot, int amount, boolean simulate) {
+			return ItemStack.EMPTY;
 		}
 
 		@Override
-		ItemCooldownManager insert(GameMode world, ItemCooldownManager stack, boolean simulate) {
-			ItemCooldownManager input = stack.i();
-			if (!BlazeBurnerBlock.tryInsert(state, world, pos, input, false, true).b().a()) {
+		ItemStack insert(World world, ItemStack stack, boolean simulate) {
+			ItemStack input = stack.copy();
+			if (!BlazeBurnerBlock.tryInsert(state, world, pos, input, false, true)
+				.getValue()
+				.isEmpty()) {
 				return stack;
 			}
-			LocalDifficulty<ItemCooldownManager> res = BlazeBurnerBlock.tryInsert(state, world, pos, input, false, simulate);
-			return res.getGlobalDifficulty() == Difficulty.SUCCESS ? ItemHandlerHelper.copyStackWithSize(stack, stack.E() - 1) : stack;
+			TypedActionResult<ItemStack> res = BlazeBurnerBlock.tryInsert(state, world, pos, input, false, simulate);
+			return res.getResult() == ActionResult.SUCCESS
+				? ItemHandlerHelper.copyStackWithSize(stack, stack.getCount() - 1)
+				: stack;
 		}
 
 		@Override
@@ -309,33 +314,33 @@ public abstract class ArmInteractionPoint {
 	static class Crafter extends ArmInteractionPoint {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
 			return AllBlocks.MECHANICAL_CRAFTER.has(state);
 		}
 
 		@Override
 		Direction getInteractionDirection() {
-			return state.c(MechanicalCrafterBlock.HORIZONTAL_FACING)
+			return state.get(MechanicalCrafterBlock.HORIZONTAL_FACING)
 				.getOpposite();
 		}
 
 		@Override
-		ItemCooldownManager extract(GameMode world, int slot, int amount, boolean simulate) {
-			BeehiveBlockEntity te = world.c(pos);
+		ItemStack extract(World world, int slot, int amount, boolean simulate) {
+			BlockEntity te = world.getBlockEntity(pos);
 			if (!(te instanceof MechanicalCrafterTileEntity))
-				return ItemCooldownManager.tick;
+				return ItemStack.EMPTY;
 			MechanicalCrafterTileEntity crafter = (MechanicalCrafterTileEntity) te;
 			SmartInventory inventory = crafter.getInventory();
 			inventory.allowExtraction();
-			ItemCooldownManager extract = super.extract(world, slot, amount, simulate);
+			ItemStack extract = super.extract(world, slot, amount, simulate);
 			inventory.forbidExtraction();
 			return extract;
 		}
 
 		@Override
-		EntityHitResult getInteractionPositionVector() {
+		Vec3d getInteractionPositionVector() {
 			return super.getInteractionPositionVector()
-				.e(EntityHitResult.b(getInteractionDirection().getVector()).a(.5f));
+				.add(Vec3d.of(getInteractionDirection().getVector()).multiply(.5f));
 		}
 
 	}
@@ -343,7 +348,7 @@ public abstract class ArmInteractionPoint {
 	static class Basin extends ArmInteractionPoint {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
 			return AllBlocks.BASIN.has(state);
 		}
 
@@ -352,54 +357,54 @@ public abstract class ArmInteractionPoint {
 	static class Jukebox extends TopFaceArmInteractionPoint {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
-			return state.b() instanceof InfestedBlock;
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
+			return state.getBlock() instanceof JukeboxBlock;
 		}
 
 		@Override
-		int getSlotCount(GameMode world) {
+		int getSlotCount(World world) {
 			return 1;
 		}
 
 		@Override
-		ItemCooldownManager insert(GameMode world, ItemCooldownManager stack, boolean simulate) {
-			BeehiveBlockEntity tileEntity = world.c(pos);
-			if (!(tileEntity instanceof Hopper))
+		ItemStack insert(World world, ItemStack stack, boolean simulate) {
+			BlockEntity tileEntity = world.getBlockEntity(pos);
+			if (!(tileEntity instanceof JukeboxBlockEntity))
 				return stack;
-			if (!(state.b() instanceof InfestedBlock))
+			if (!(state.getBlock() instanceof JukeboxBlock))
 				return stack;
-			InfestedBlock jukeboxBlock = (InfestedBlock) state.b();
-			Hopper jukeboxTE = (Hopper) tileEntity;
-			if (!jukeboxTE.d()
-				.a())
+			JukeboxBlock jukeboxBlock = (JukeboxBlock) state.getBlock();
+			JukeboxBlockEntity jukeboxTE = (JukeboxBlockEntity) tileEntity;
+			if (!jukeboxTE.getRecord()
+				.isEmpty())
 				return stack;
-			if (!(stack.b() instanceof PotionItem))
+			if (!(stack.getItem() instanceof MusicDiscItem))
 				return stack;
-			ItemCooldownManager remainder = stack.i();
-			ItemCooldownManager toInsert = remainder.a(1);
-			if (!simulate && !world.v) {
-				jukeboxBlock.a(world, pos, state, toInsert);
-				world.a((PlayerAbilities) null, 1010, pos, HoeItem.a(toInsert.b()));
+			ItemStack remainder = stack.copy();
+			ItemStack toInsert = remainder.split(1);
+			if (!simulate && !world.isClient) {
+				jukeboxBlock.setRecord(world, pos, state, toInsert);
+				world.syncWorldEvent((PlayerEntity) null, 1010, pos, Item.getRawId(toInsert.getItem()));
 				AllTriggers.triggerForNearbyPlayers(AllTriggers.MUSICAL_ARM, world, pos, 10);
 			}
 			return remainder;
 		}
 
 		@Override
-		ItemCooldownManager extract(GameMode world, int slot, int amount, boolean simulate) {
-			BeehiveBlockEntity tileEntity = world.c(pos);
-			if (!(tileEntity instanceof Hopper))
-				return ItemCooldownManager.tick;
-			if (!(state.b() instanceof InfestedBlock))
-				return ItemCooldownManager.tick;
-			Hopper jukeboxTE = (Hopper) tileEntity;
-			ItemCooldownManager itemstack = jukeboxTE.d();
-			if (itemstack.a())
-				return ItemCooldownManager.tick;
-			if (!simulate && !world.v) {
+		ItemStack extract(World world, int slot, int amount, boolean simulate) {
+			BlockEntity tileEntity = world.getBlockEntity(pos);
+			if (!(tileEntity instanceof JukeboxBlockEntity))
+				return ItemStack.EMPTY;
+			if (!(state.getBlock() instanceof JukeboxBlock))
+				return ItemStack.EMPTY;
+			JukeboxBlockEntity jukeboxTE = (JukeboxBlockEntity) tileEntity;
+			ItemStack itemstack = jukeboxTE.getRecord();
+			if (itemstack.isEmpty())
+				return ItemStack.EMPTY;
+			if (!simulate && !world.isClient) {
 				world.syncWorldEvent(1010, pos, 0);
-				jukeboxTE.Y_();
-				world.a(pos, state.a(InfestedBlock.regularBlock, false), 2);
+				jukeboxTE.clear();
+				world.setBlockState(pos, state.with(JukeboxBlock.HAS_RECORD, false), 2);
 			}
 			return itemstack;
 		}
@@ -409,37 +414,37 @@ public abstract class ArmInteractionPoint {
 	static class Belt extends Depot {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
-			return AllBlocks.BELT.has(state) && !(reader.d_(pos.up())
-				.b() instanceof BeltTunnelBlock);
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
+			return AllBlocks.BELT.has(state) && !(reader.getBlockState(pos.up())
+				.getBlock() instanceof BeltTunnelBlock);
 		}
 	}
 
 	static class Chute extends TopFaceArmInteractionPoint {
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
-			return AllBlocks.CHUTE.has(state);
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
+			return AbstractChuteBlock.isChute(state);
 		}
 	}
 
 	static class Funnel extends ArmInteractionPoint {
 
 		@Override
-		EntityHitResult getInteractionPositionVector() {
+		Vec3d getInteractionPositionVector() {
 			return VecHelper.getCenterOf(pos)
-				.e(EntityHitResult.b(FunnelBlock.getFunnelFacing(state)
-					.getVector()).a(.5f));
+				.add(Vec3d.of(FunnelBlock.getFunnelFacing(state)
+					.getVector()).multiply(-.15f));
 		}
 
 		@Override
-		int getSlotCount(GameMode world) {
+		int getSlotCount(World world) {
 			return 0;
 		}
 
 		@Override
-		ItemCooldownManager extract(GameMode world, int slot, int amount, boolean simulate) {
-			return ItemCooldownManager.tick;
+		ItemStack extract(World world, int slot, int amount, boolean simulate) {
+			return ItemStack.EMPTY;
 		}
 
 		@Override
@@ -449,11 +454,11 @@ public abstract class ArmInteractionPoint {
 		}
 
 		@Override
-		ItemCooldownManager insert(GameMode world, ItemCooldownManager stack, boolean simulate) {
+		ItemStack insert(World world, ItemStack stack, boolean simulate) {
 			FilteringBehaviour filtering = TileEntityBehaviour.get(world, pos, FilteringBehaviour.TYPE);
 			InvManipulationBehaviour inserter = TileEntityBehaviour.get(world, pos, InvManipulationBehaviour.TYPE);
-			PistonHandler state = world.d_(pos);
-			if (state.d(BambooLeaves.w).orElse(false))
+			BlockState state = world.getBlockState(pos);
+			if (state.method_28500(Properties.POWERED).orElse(false))
 				return stack;
 			if (inserter == null)
 				return stack;
@@ -461,18 +466,22 @@ public abstract class ArmInteractionPoint {
 				return stack;
 			if (simulate)
 				inserter.simulate();
-			ItemCooldownManager insert = inserter.insert(stack);
-			if (!simulate && insert.E() != stack.E()) {
-				BeehiveBlockEntity tileEntity = world.c(pos);
-				if (tileEntity instanceof FunnelTileEntity)
-					((FunnelTileEntity) tileEntity).onTransfer(stack);
+			ItemStack insert = inserter.insert(stack);
+			if (!simulate && insert.getCount() != stack.getCount()) {
+				BlockEntity tileEntity = world.getBlockEntity(pos);
+				if (tileEntity instanceof FunnelTileEntity) {
+					FunnelTileEntity funnelTileEntity = (FunnelTileEntity) tileEntity;
+					funnelTileEntity.onTransfer(stack);
+					if (funnelTileEntity.hasFlap())
+						funnelTileEntity.flap(true);
+				}
 			}
 			return insert;
 		}
 
 		@Override
-		boolean isValid(MobSpawnerLogic reader, BlockPos pos, PistonHandler state) {
-			return state.b() instanceof FunnelBlock;
+		boolean isValid(BlockView reader, BlockPos pos, BlockState state) {
+			return state.getBlock() instanceof FunnelBlock && !state.get(FunnelBlock.EXTRACTING);
 		}
 
 		@Override

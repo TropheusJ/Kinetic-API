@@ -1,11 +1,12 @@
-package com.simibubi.kinetic_api.content.logistics.block.funnel;
+package com.simibubi.create.content.logistics.block.funnel;
 
-import com.simibubi.kinetic_api.foundation.data.SpecialBlockStateGen;
+import com.simibubi.create.foundation.data.SpecialBlockStateGen;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.client.model.generators.ModelFile;
 
@@ -20,21 +21,21 @@ public class BeltFunnelGenerator extends SpecialBlockStateGen {
 	}
 
 	@Override
-	protected int getXRotation(PistonHandler state) {
+	protected int getXRotation(BlockState state) {
 		return 0;
 	}
 
 	@Override
-	protected int getYRotation(PistonHandler state) {
-		return horizontalAngle(state.c(BeltFunnelBlock.aq)) + 180;
+	protected int getYRotation(BlockState state) {
+		return horizontalAngle(state.get(BeltFunnelBlock.FACING)) + 180;
 	}
 
 	@Override
-	public <T extends BeetrootsBlock> ModelFile getModel(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov,
-		PistonHandler state) {
-		boolean powered = state.d(BambooLeaves.w).orElse(false);
-		String shapeName = state.c(BeltFunnelBlock.SHAPE)
-			.a();
+	public <T extends Block> ModelFile getModel(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov,
+		BlockState state) {
+		boolean powered = state.method_28500(Properties.POWERED).orElse(false);
+		String shapeName = state.get(BeltFunnelBlock.SHAPE)
+			.asString();
 		
 		String poweredSuffix = powered ? "_powered" : "";
 		String name = ctx.getName() + "_" + poweredSuffix;

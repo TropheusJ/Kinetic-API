@@ -1,44 +1,46 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.elementary;
+package com.simibubi.create.content.contraptions.relays.elementary;
 
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.PlayerAbilities;
+
+import com.google.common.base.Predicates;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.advancement.SimpleTrigger;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.foundation.utility.NBTHelper;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.world.GameMode;
-import com.google.common.base.Predicates;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.advancement.SimpleTrigger;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
+import net.minecraft.world.World;
 
 public class BracketedTileEntityBehaviour extends TileEntityBehaviour {
 
 	public static BehaviourType<BracketedTileEntityBehaviour> TYPE = new BehaviourType<>();
 
-	private Optional<PistonHandler> bracket;
+	private Optional<BlockState> bracket;
 	private boolean reRender;
 
-	private Predicate<PistonHandler> pred;
-	private Function<PistonHandler, SimpleTrigger> trigger;
+	private Predicate<BlockState> pred;
+	private Function<BlockState, SimpleTrigger> trigger;
 
 	public BracketedTileEntityBehaviour(SmartTileEntity te) {
 		this(te, Predicates.alwaysTrue());
 	}
 
-	public BracketedTileEntityBehaviour(SmartTileEntity te, Predicate<PistonHandler> pred) {
+	public BracketedTileEntityBehaviour(SmartTileEntity te, Predicate<BlockState> pred) {
 		super(te);
 		this.pred = pred;
 		bracket = Optional.empty();
 	}
 	
-	public BracketedTileEntityBehaviour withTrigger(Function<PistonHandler, SimpleTrigger> trigger) {
+	public BracketedTileEntityBehaviour withTrigger(Function<BlockState, SimpleTrigger> trigger) {
 		this.trigger = trigger;
 		return this;
 	}
@@ -48,22 +50,22 @@ public class BracketedTileEntityBehaviour extends TileEntityBehaviour {
 		return TYPE;
 	}
 
-	public void applyBracket(PistonHandler state) {
+	public void applyBracket(BlockState state) {
 		this.bracket = Optional.of(state);
 		reRender = true;
 		tileEntity.notifyUpdate();
 	}
 	
-	public void triggerAdvancements(GameMode world, PlayerAbilities player, PistonHandler state) {
+	public void triggerAdvancements(World world, PlayerEntity player, BlockState state) {
 		if (trigger == null)
 			return;
 		AllTriggers.triggerFor(trigger.apply(state), player);
 	}
 
 	public void removeBracket(boolean inOnReplacedContext) {
-		GameMode world = getWorld();
-		if (!world.v)
-			world.syncWorldEvent(2001, getPos(), BeetrootsBlock.i(getBracket()));
+		World world = getWorld();
+		if (!world.isClient)
+			world.syncWorldEvent(2001, getPos(), Block.getRawIdFromState(getBracket()));
 		this.bracket = Optional.empty();
 		reRender = true;
 		if (inOnReplacedContext)
@@ -73,16 +75,16 @@ public class BracketedTileEntityBehaviour extends TileEntityBehaviour {
 	}
 
 	public boolean isBacketPresent() {
-		return getBracket() != BellBlock.FACING.n();
+		return getBracket() != Blocks.AIR.getDefaultState();
 	}
 
-	public PistonHandler getBracket() {
-		return bracket.orElse(BellBlock.FACING.n());
+	public BlockState getBracket() {
+		return bracket.orElse(Blocks.AIR.getDefaultState());
 	}
 
 	@Override
 	public void write(CompoundTag nbt, boolean clientPacket) {
-		bracket.ifPresent(p -> nbt.put("Bracket", NbtHelper.a(p)));
+		bracket.ifPresent(p -> nbt.put("Bracket", NbtHelper.fromBlockState(p)));
 		if (clientPacket && reRender) {
 			NBTHelper.putMarker(nbt, "Redraw");
 			reRender = false;
@@ -94,14 +96,14 @@ public class BracketedTileEntityBehaviour extends TileEntityBehaviour {
 	public void read(CompoundTag nbt, boolean clientPacket) {
 		bracket = Optional.empty();
 		if (nbt.contains("Bracket"))
-			bracket = Optional.of(NbtHelper.c(nbt.getCompound("Bracket")));
+			bracket = Optional.of(NbtHelper.toBlockState(nbt.getCompound("Bracket")));
 		if (clientPacket && nbt.contains("Redraw"))
-			getWorld().a(getPos(), tileEntity.p(), tileEntity.p(), 16);
+			getWorld().updateListeners(getPos(), tileEntity.getCachedState(), tileEntity.getCachedState(), 16);
 		super.read(nbt, clientPacket);
 	}
 
 	public boolean canHaveBracket() {
-		return pred.test(tileEntity.p());
+		return pred.test(tileEntity.getCachedState());
 	}
 
 }

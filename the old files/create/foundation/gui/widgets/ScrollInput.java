@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.gui.widgets;
+package com.simibubi.create.foundation.gui.widgets;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -6,9 +6,9 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import com.simibubi.kinetic_api.AllKeys;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour.StepContext;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.AllKeys;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour.StepContext;
+import com.simibubi.create.foundation.utility.Lang;
 
 public class ScrollInput extends AbstractSimiWidget {
 
@@ -88,8 +88,8 @@ public class ScrollInput extends AbstractSimiWidget {
 	}
 
 	@Override
-	public boolean a(double mouseX, double mouseY, double delta) {
-		if (!n)
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		if (!hovered)
 			return false;
 
 		StepContext context = new StepContext();

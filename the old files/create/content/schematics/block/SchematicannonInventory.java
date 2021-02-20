@@ -1,8 +1,9 @@
-package com.simibubi.kinetic_api.content.schematics.block;
+package com.simibubi.create.content.schematics.block;
 
-import com.simibubi.kinetic_api.AllItems;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.AliasedBlockItem;
+import com.simibubi.create.AllItems;
+
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraftforge.items.ItemStackHandler;
 
 public class SchematicannonInventory extends ItemStackHandler {
@@ -19,22 +20,22 @@ public class SchematicannonInventory extends ItemStackHandler {
 	@Override
 	protected void onContentsChanged(int slot) {
 		super.onContentsChanged(slot);
-		te.X_();
+		te.markDirty();
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		switch (slot) {
 		case 0: // Blueprint Slot
 			return AllItems.SCHEMATIC.isIn(stack);
 		case 1: // Blueprint output
 			return false;
 		case 2: // Book input
-			return stack.a(new ItemCooldownManager(AliasedBlockItem.mc)) || stack.a(new ItemCooldownManager(AliasedBlockItem.oU));
+			return stack.isItemEqualIgnoreDamage(new ItemStack(Items.BOOK)) || stack.isItemEqualIgnoreDamage(new ItemStack(Items.WRITTEN_BOOK));
 		case 3: // Material List output
 			return false;
 		case 4: // Gunpowder
-			return stack.a(new ItemCooldownManager(AliasedBlockItem.kU));
+			return stack.isItemEqualIgnoreDamage(new ItemStack(Items.GUNPOWDER));
 		default:
 			return super.isItemValid(slot, stack);
 		}

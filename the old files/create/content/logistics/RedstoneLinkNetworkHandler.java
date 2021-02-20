@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.logistics;
+package com.simibubi.create.content.logistics;
 
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -6,45 +6,47 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.HoeItem;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.GameMode;
+
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.linked.LinkBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.WorldHelper;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.tileEntity.behaviour.linked.LinkBehaviour;
+import com.simibubi.create.foundation.utility.WorldHelper;
+
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public class RedstoneLinkNetworkHandler {
 
-	static final Map<GrassColors, Map<Pair<Frequency, Frequency>, Set<LinkBehaviour>>> connections = new IdentityHashMap<>();
+	static final Map<WorldAccess, Map<Pair<Frequency, Frequency>, Set<LinkBehaviour>>> connections = new IdentityHashMap<>();
 
 	public static class Frequency {
-		public static final Frequency EMPTY = new Frequency(ItemCooldownManager.tick);
-		private static final Map<HoeItem, Frequency> simpleFrequencies = new IdentityHashMap<>();
-		private ItemCooldownManager stack;
-		private HoeItem item;
+		public static final Frequency EMPTY = new Frequency(ItemStack.EMPTY);
+		private static final Map<Item, Frequency> simpleFrequencies = new IdentityHashMap<>();
+		private ItemStack stack;
+		private Item item;
 		private int color;
 
-		public static Frequency of(ItemCooldownManager stack) {
-			if (stack.a())
+		public static Frequency of(ItemStack stack) {
+			if (stack.isEmpty())
 				return EMPTY;
-			if (!stack.n())
-				return simpleFrequencies.computeIfAbsent(stack.b(), $ -> new Frequency(stack));
+			if (!stack.hasTag())
+				return simpleFrequencies.computeIfAbsent(stack.getItem(), $ -> new Frequency(stack));
 			return new Frequency(stack);
 		}
 
-		private Frequency(ItemCooldownManager stack) {
+		private Frequency(ItemStack stack) {
 			this.stack = stack;
-			item = stack.b();
-			CompoundTag displayTag = stack.b("display");
+			item = stack.getItem();
+			CompoundTag displayTag = stack.getSubTag("display");
 			color = displayTag != null && displayTag.contains("color") ? displayTag.getInt("color") : -1;
 		}
 
-		public ItemCooldownManager getStack() {
+		public ItemStack getStack() {
 			return stack;
 		}
 
@@ -63,12 +65,12 @@ public class RedstoneLinkNetworkHandler {
 
 	}
 
-	public void onLoadWorld(GrassColors world) {
+	public void onLoadWorld(WorldAccess world) {
 		connections.put(world, new HashMap<>());
 		Create.logger.debug("Prepared Redstone Network Space for " + WorldHelper.getDimensionID(world));
 	}
 
-	public void onUnloadWorld(GrassColors world) {
+	public void onUnloadWorld(WorldAccess world) {
 		connections.remove(world);
 		Create.logger.debug("Removed Redstone Network Space for " + WorldHelper.getDimensionID(world));
 	}
@@ -102,16 +104,16 @@ public class RedstoneLinkNetworkHandler {
 
 		for (Iterator<LinkBehaviour> iterator = network.iterator(); iterator.hasNext();) {
 			LinkBehaviour other = iterator.next();
-			if (other.tileEntity.q()) {
+			if (other.tileEntity.isRemoved()) {
 				iterator.remove();
 				continue;
 			}
-			GameMode world = actor.getWorld();
-			if (!world.p(other.tileEntity.o())) {
+			World world = actor.getWorld();
+			if (!world.canSetBlock(other.tileEntity.getPos())) {
 				iterator.remove();
 				continue;
 			}
-			if (world.c(other.tileEntity.o()) != other.tileEntity) {
+			if (world.getBlockEntity(other.tileEntity.getPos()) != other.tileEntity) {
 				iterator.remove();
 				continue;
 			}
@@ -140,7 +142,7 @@ public class RedstoneLinkNetworkHandler {
 		return from.getPos().isWithinDistance(to.getPos(), AllConfigs.SERVER.logistics.linkRange.get());
 	}
 
-	public Map<Pair<Frequency, Frequency>, Set<LinkBehaviour>> networksIn(GrassColors world) {
+	public Map<Pair<Frequency, Frequency>, Set<LinkBehaviour>> networksIn(WorldAccess world) {
 		if (!connections.containsKey(world)) {
 			Create.logger.warn(
 					"Tried to Access unprepared network space of " + WorldHelper.getDimensionID(world));

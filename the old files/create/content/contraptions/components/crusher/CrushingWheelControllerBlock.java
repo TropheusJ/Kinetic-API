@@ -1,95 +1,98 @@
-package com.simibubi.kinetic_api.content.contraptions.components.crusher;
+package com.simibubi.create.content.contraptions.components.crusher;
 
 import java.util.Random;
-import apx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import com.simibubi.kinetic_api.foundation.item.ItemHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import ddb;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.inventory.Inventories;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.item.ItemHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.ArrayVoxelShape;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
-public class CrushingWheelControllerBlock extends BeetrootsBlock
+public class CrushingWheelControllerBlock extends Block
 		implements ITE<CrushingWheelControllerTileEntity> {
 
-	public CrushingWheelControllerBlock(c p_i48440_1_) {
+	public CrushingWheelControllerBlock(Settings p_i48440_1_) {
 		super(p_i48440_1_);
 	}
 
-	public static final BedPart VALID = BedPart.a("valid");
+	public static final BooleanProperty VALID = BooleanProperty.of("valid");
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public boolean a(PistonHandler state, PotionUtil useContext) {
+	public boolean canReplace(BlockState state, ItemPlacementContext useContext) {
 		return false;
 	}
 
 	@Override
-	public boolean addRunningEffects(PistonHandler state, GameMode world, BlockPos pos, apx entity) {
+	public boolean addRunningEffects(BlockState state, World world, BlockPos pos, Entity entity) {
 		return true;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.CRUSHING_WHEEL_CONTROLLER.create();
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(VALID);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(VALID);
+		super.appendProperties(builder);
 	}
 
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, apx entityIn) {
-		if (!state.c(VALID))
+	public void onEntityCollision(BlockState state, World worldIn, BlockPos pos, Entity entityIn) {
+		if (!state.get(VALID))
 			return;
 		withTileEntityDo(worldIn, pos, te -> {
 			if (te.processingEntity == entityIn)
-				entityIn.a(state, new EntityHitResult(0.25D, (double) 0.05F, 0.25D));
+				entityIn.slowMovement(state, new Vec3d(0.25D, (double) 0.05F, 0.25D));
 		});
 	}
 
 	@Override
-	public void a(MobSpawnerLogic worldIn, apx entityIn) {
-		super.a(worldIn, entityIn);
+	public void onEntityLand(BlockView worldIn, Entity entityIn) {
+		super.onEntityLand(worldIn, entityIn);
 		try {
-			CrushingWheelControllerTileEntity te = getTileEntity(worldIn, entityIn.cA().down());
+			CrushingWheelControllerTileEntity te = getTileEntity(worldIn, entityIn.getBlockPos().down());
 			if (te.crushingspeed == 0)
 				return;
-			if (entityIn instanceof PaintingEntity)
-				((PaintingEntity) entityIn).a(10);
+			if (entityIn instanceof ItemEntity)
+				((ItemEntity) entityIn).setPickupDelay(10);
 			if (te.isOccupied())
 				return;
-			boolean isPlayer = entityIn instanceof PlayerAbilities;
-			if (isPlayer && ((PlayerAbilities) entityIn).b_())
+			boolean isPlayer = entityIn instanceof PlayerEntity;
+			if (isPlayer && ((PlayerEntity) entityIn).isCreative())
 				return;
-			if (isPlayer && entityIn.l.ac() == Inventories.a)
+			if (isPlayer && entityIn.world.getDifficulty() == Difficulty.PEACEFUL)
 				return;
 
 			te.startCrushing(entityIn);
@@ -97,8 +100,8 @@ public class CrushingWheelControllerBlock extends BeetrootsBlock
 	}
 
 	@Override
-	public void a(PistonHandler stateIn, GameMode worldIn, BlockPos pos, Random rand) {
-		if (!stateIn.c(VALID))
+	public void randomDisplayTick(BlockState stateIn, World worldIn, BlockPos pos, Random rand) {
+		if (!stateIn.get(VALID))
 			return;
 		if (rand.nextInt(1) != 0)
 			return;
@@ -109,15 +112,15 @@ public class CrushingWheelControllerBlock extends BeetrootsBlock
 	}
 
 	@Override
-	public PistonHandler a(PistonHandler stateIn, Direction facing, PistonHandler facingState, GrassColors worldIn,
+	public BlockState getStateForNeighborUpdate(BlockState stateIn, Direction facing, BlockState facingState, WorldAccess worldIn,
 			BlockPos currentPos, BlockPos facingPos) {
 		updateSpeed(stateIn, worldIn, currentPos);
 		return stateIn;
 	}
 
-	public void updateSpeed(PistonHandler state, GrassColors world, BlockPos pos) {
+	public void updateSpeed(BlockState state, WorldAccess world, BlockPos pos) {
 		withTileEntityDo(world, pos, te -> {
-			if (!state.c(VALID)) {
+			if (!state.get(VALID)) {
 				if (te.crushingspeed != 0) {
 					te.crushingspeed = 0;
 					te.sendData();
@@ -126,12 +129,12 @@ public class CrushingWheelControllerBlock extends BeetrootsBlock
 			}
 
 			for (Direction d : Iterate.horizontalDirections) {
-				PistonHandler neighbour = world.d_(pos.offset(d));
+				BlockState neighbour = world.getBlockState(pos.offset(d));
 				if (!AllBlocks.CRUSHING_WHEEL.has(neighbour))
 					continue;
-				if (neighbour.c(BambooLeaves.F) == d.getAxis())
+				if (neighbour.get(Properties.AXIS) == d.getAxis())
 					continue;
-				KineticTileEntity wheelTe = (KineticTileEntity) world.c(pos.offset(d));
+				KineticTileEntity wheelTe = (KineticTileEntity) world.getBlockEntity(pos.offset(d));
 				te.crushingspeed = Math.abs(wheelTe.getSpeed() / 50f);
 				te.sendData();
 				break;
@@ -140,40 +143,40 @@ public class CrushingWheelControllerBlock extends BeetrootsBlock
 	}
 
 	@Override
-	public VoxelShapes c(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos,
-			ArrayVoxelShape context) {
-		if (!state.c(VALID))
-			return ddb.b();
+	public VoxelShape getCollisionShape(BlockState state, BlockView worldIn, BlockPos pos,
+			ShapeContext context) {
+		if (!state.get(VALID))
+			return VoxelShapes.fullCube();
 
-		apx entity = context.getEntity();
+		Entity entity = context.getEntity();
 		if (entity != null) {
 			if (entity != null) {
 				CompoundTag data = entity.getPersistentData();
 				if (data.contains("BypassCrushingWheel")) {
 					if (pos.equals(NbtHelper.toBlockPos(data.getCompound("BypassCrushingWheel"))))
-						return ddb.a();
+						return VoxelShapes.empty();
 				}
 			}
 
-			if (new Timer(pos).d(entity.cz()))
-				return ddb.a();
+			if (new Box(pos).contains(entity.getPos()))
+				return VoxelShapes.empty();
 
 			try {
 				CrushingWheelControllerTileEntity te = getTileEntity(worldIn, pos);
 				if (te.processingEntity == entity)
-					return ddb.a();
+					return VoxelShapes.empty();
 			} catch (TileEntityException e) {}
 		}
-		return ddb.b();
+		return VoxelShapes.fullCube();
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, PistonHandler newState, boolean isMoving) {
-		if (!state.hasTileEntity() || state.b() == newState.b())
+	public void onStateReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+		if (!state.hasTileEntity() || state.getBlock() == newState.getBlock())
 			return;
 
 		withTileEntityDo(worldIn, pos, te -> ItemHelper.dropContents(worldIn, pos, te.inventory));
-		worldIn.o(pos);
+		worldIn.removeBlockEntity(pos);
 	}
 
 	@Override

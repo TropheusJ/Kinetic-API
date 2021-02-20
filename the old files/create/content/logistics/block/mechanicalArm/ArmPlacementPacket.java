@@ -1,16 +1,16 @@
-package com.simibubi.kinetic_api.content.logistics.block.mechanicalArm;
+package com.simibubi.create.content.logistics.block.mechanicalArm;
 
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
-import net.minecraft.block.entity.BeehiveBlockEntity;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
 
@@ -51,10 +51,10 @@ public class ArmPlacementPacket extends SimplePacketBase {
 					.getSender();
 				if (player == null)
 					return;
-				GameMode world = player.l;
-				if (world == null || !world.p(pos))
+				World world = player.world;
+				if (world == null || !world.canSetBlock(pos))
 					return;
-				BeehiveBlockEntity tileEntity = world.c(pos);
+				BlockEntity tileEntity = world.getBlockEntity(pos);
 				if (!(tileEntity instanceof ArmTileEntity))
 					return;
 

@@ -1,39 +1,40 @@
-package com.simibubi.kinetic_api.content.logistics.block.mechanicalArm;
+package com.simibubi.create.content.logistics.block.mechanicalArm;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
-import afj;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Jukebox;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmInteractionPoint.Mode;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedAngle;
-import com.simibubi.kinetic_api.foundation.item.TooltipHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.CenteredSideValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Jukebox;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmInteractionPoint.Mode;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedAngle;
+import com.simibubi.create.foundation.item.TooltipHelper;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.CenteredSideValueBoxTransform;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.NBTHelper;
+import com.simibubi.create.foundation.utility.VecHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.InfestedBlock;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.JukeboxBlock;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.text.Text;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.Constants.NBT;
@@ -48,7 +49,7 @@ public class ArmTileEntity extends KineticTileEntity {
 	// Both
 	float chasedPointProgress;
 	int chasedPointIndex;
-	ItemCooldownManager heldItem;
+	ItemStack heldItem;
 	Phase phase;
 
 	// Client
@@ -71,12 +72,12 @@ public class ArmTileEntity extends KineticTileEntity {
 		SEARCH_INPUTS, MOVE_TO_INPUT, SEARCH_OUTPUTS, MOVE_TO_OUTPUT, DANCING
 	}
 
-	public ArmTileEntity(BellBlockEntity<?> typeIn) {
+	public ArmTileEntity(BlockEntityType<?> typeIn) {
 		super(typeIn);
 		inputs = new ArrayList<>();
 		outputs = new ArrayList<>();
 		interactionPointTag = new ListTag();
-		heldItem = ItemCooldownManager.tick;
+		heldItem = ItemStack.EMPTY;
 		phase = Phase.SEARCH_INPUTS;
 		baseAngle = new InterpolatedAngle();
 		lowerArmAngle = new InterpolatedAngle();
@@ -100,33 +101,37 @@ public class ArmTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		initInteractionPoints();
-		tickMovementProgress();
+		boolean targetReached = tickMovementProgress();
 
-		if (d.v)
+		if (world.isClient)
 			return;
 		if (chasedPointProgress < 1)
 			return;
+		
 		if (phase == Phase.MOVE_TO_INPUT)
 			collectItem();
-		if (phase == Phase.MOVE_TO_OUTPUT)
+		else if (phase == Phase.MOVE_TO_OUTPUT)
 			depositItem();
+		else if (phase == Phase.SEARCH_INPUTS || phase == Phase.DANCING)
+			searchForItem();
+		
+		if (targetReached)
+			lazyTick();
 	}
 
 	@Override
 	public void lazyTick() {
 		super.lazyTick();
 
-		if (d.v)
+		if (world.isClient)
 			return;
 		if (chasedPointProgress < .5f)
 			return;
-		if (phase == Phase.SEARCH_INPUTS || phase == Phase.DANCING) {
+		if (phase == Phase.SEARCH_INPUTS || phase == Phase.DANCING) 
 			checkForMusic();
-			searchForItem();
-		}
 		if (phase == Phase.SEARCH_OUTPUTS)
 			searchForDestination();
 	}
@@ -135,39 +140,40 @@ public class ArmTileEntity extends KineticTileEntity {
 		boolean hasMusic = checkForMusicAmong(inputs) || checkForMusicAmong(outputs);
 		if (hasMusic != (phase == Phase.DANCING)) {
 			phase = hasMusic ? Phase.DANCING : Phase.SEARCH_INPUTS;
-			X_();
+			markDirty();
 			sendData();
 		}
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public Timer getRenderBoundingBox() {
-		return super.getRenderBoundingBox().g(3);
+	public Box makeRenderBoundingBox() {
+		return super.makeRenderBoundingBox().expand(3);
 	}
 
 	private boolean checkForMusicAmong(List<ArmInteractionPoint> list) {
 		for (ArmInteractionPoint armInteractionPoint : list) {
 			if (!(armInteractionPoint instanceof Jukebox))
 				continue;
-			PistonHandler state = d.d_(armInteractionPoint.pos);
-			if (state.d(InfestedBlock.regularBlock).orElse(false))
+			BlockState state = world.getBlockState(armInteractionPoint.pos);
+			if (state.method_28500(JukeboxBlock.HAS_RECORD).orElse(false))
 				return true;
 		}
 		return false;
 	}
 
-	private void tickMovementProgress() {
+	private boolean tickMovementProgress() {
+		boolean targetReachedPreviously = chasedPointProgress >= 1; 
 		chasedPointProgress += Math.min(256, Math.abs(getSpeed())) / 1024f;
 		if (chasedPointProgress > 1)
 			chasedPointProgress = 1;
-		if (!d.v)
-			return;
+		if (!world.isClient)
+			return !targetReachedPreviously && chasedPointProgress >= 1;
 
 		ArmInteractionPoint targetedInteractionPoint = getTargetedInteractionPoint();
 		ArmAngleTarget previousTarget = this.previousTarget;
 		ArmAngleTarget target = targetedInteractionPoint == null ? ArmAngleTarget.NO_TARGET
-			: targetedInteractionPoint.getTargetAngles(e, isOnCeiling());
+			: targetedInteractionPoint.getTargetAngles(pos, isOnCeiling());
 
 		baseAngle.set(AngleHelper.angleLerp(chasedPointProgress, previousBaseAngle,
 			target == ArmAngleTarget.NO_TARGET ? previousBaseAngle : target.baseAngle));
@@ -179,15 +185,16 @@ public class ArmTileEntity extends KineticTileEntity {
 			previousTarget = ArmAngleTarget.NO_TARGET;
 		float progress = chasedPointProgress == 1 ? 1 : (chasedPointProgress % .5f) * 2;
 
-		lowerArmAngle.set(afj.g(progress, previousTarget.lowerArmAngle, target.lowerArmAngle));
-		upperArmAngle.set(afj.g(progress, previousTarget.upperArmAngle, target.upperArmAngle));
+		lowerArmAngle.set(MathHelper.lerp(progress, previousTarget.lowerArmAngle, target.lowerArmAngle));
+		upperArmAngle.set(MathHelper.lerp(progress, previousTarget.upperArmAngle, target.upperArmAngle));
 
 		headAngle.set(AngleHelper.angleLerp(progress, previousTarget.headAngle % 360, target.headAngle % 360));
+		return false;
 	}
 
 	protected boolean isOnCeiling() {
-		PistonHandler state = p();
-		return n() && state.d(ArmBlock.CEILING).orElse(false);
+		BlockState state = getCachedState();
+		return hasWorld() && state.method_28500(ArmBlock.CEILING).orElse(false);
 	}
 
 	@Nullable
@@ -218,9 +225,9 @@ public class ArmTileEntity extends KineticTileEntity {
 
 		InteractionPoints: for (int i = startIndex; i < scanRange; i++) {
 			ArmInteractionPoint armInteractionPoint = inputs.get(i);
-			if (!armInteractionPoint.isStillValid(d))
+			if (!armInteractionPoint.isStillValid(world))
 				continue;
-			for (int j = 0; j < armInteractionPoint.getSlotCount(d); j++) {
+			for (int j = 0; j < armInteractionPoint.getSlotCount(world); j++) {
 				if (getDistributableAmount(armInteractionPoint, j) == 0)
 					continue;
 
@@ -241,7 +248,7 @@ public class ArmTileEntity extends KineticTileEntity {
 	}
 
 	protected void searchForDestination() {
-		ItemCooldownManager held = heldItem.i();
+		ItemStack held = heldItem.copy();
 
 		boolean foundOutput = false;
 		// for round robin, we start looking after the last used index, for default we
@@ -256,10 +263,10 @@ public class ArmTileEntity extends KineticTileEntity {
 
 		for (int i = startIndex; i < scanRange; i++) {
 			ArmInteractionPoint armInteractionPoint = outputs.get(i);
-			if (!armInteractionPoint.isStillValid(d))
+			if (!armInteractionPoint.isStillValid(world))
 				continue;
 
-			ItemCooldownManager remainder = armInteractionPoint.insert(d, held, true);
+			ItemStack remainder = armInteractionPoint.insert(world, held, true);
 			if (remainder.equals(heldItem, false))
 				continue;
 
@@ -289,46 +296,46 @@ public class ArmTileEntity extends KineticTileEntity {
 		else
 			lastOutputIndex = index;
 		sendData();
-		X_();
+		markDirty();
 	}
 
 	protected int getDistributableAmount(ArmInteractionPoint armInteractionPoint, int i) {
-		ItemCooldownManager stack = armInteractionPoint.extract(d, i, true);
-		ItemCooldownManager remainder = simulateInsertion(stack);
-		return stack.E() - remainder.E();
+		ItemStack stack = armInteractionPoint.extract(world, i, true);
+		ItemStack remainder = simulateInsertion(stack);
+		return stack.getCount() - remainder.getCount();
 	}
 
 	protected void depositItem() {
 		ArmInteractionPoint armInteractionPoint = getTargetedInteractionPoint();
 		if (armInteractionPoint != null) {
-			ItemCooldownManager toInsert = heldItem.i();
-			ItemCooldownManager remainder = armInteractionPoint.insert(d, toInsert, false);
+			ItemStack toInsert = heldItem.copy();
+			ItemStack remainder = armInteractionPoint.insert(world, toInsert, false);
 			heldItem = remainder;
 		}
-		phase = heldItem.a() ? Phase.SEARCH_INPUTS : Phase.SEARCH_OUTPUTS;
+		phase = heldItem.isEmpty() ? Phase.SEARCH_INPUTS : Phase.SEARCH_OUTPUTS;
 		chasedPointProgress = 0;
 		chasedPointIndex = -1;
 		sendData();
-		X_();
+		markDirty();
 
-		if (!d.v)
-			AllTriggers.triggerForNearbyPlayers(AllTriggers.MECHANICAL_ARM, d, e, 10);
+		if (!world.isClient)
+			AllTriggers.triggerForNearbyPlayers(AllTriggers.MECHANICAL_ARM, world, pos, 10);
 	}
 
 	protected void collectItem() {
 		ArmInteractionPoint armInteractionPoint = getTargetedInteractionPoint();
 		if (armInteractionPoint != null)
-			for (int i = 0; i < armInteractionPoint.getSlotCount(d); i++) {
+			for (int i = 0; i < armInteractionPoint.getSlotCount(world); i++) {
 				int amountExtracted = getDistributableAmount(armInteractionPoint, i);
 				if (amountExtracted == 0)
 					continue;
 
-				heldItem = armInteractionPoint.extract(d, i, amountExtracted, false);
+				heldItem = armInteractionPoint.extract(world, i, amountExtracted, false);
 				phase = Phase.SEARCH_OUTPUTS;
 				chasedPointProgress = 0;
 				chasedPointIndex = -1;
 				sendData();
-				X_();
+				markDirty();
 				return;
 			}
 
@@ -336,22 +343,22 @@ public class ArmTileEntity extends KineticTileEntity {
 		chasedPointProgress = 0;
 		chasedPointIndex = -1;
 		sendData();
-		X_();
+		markDirty();
 	}
 
-	private ItemCooldownManager simulateInsertion(ItemCooldownManager stack) {
+	private ItemStack simulateInsertion(ItemStack stack) {
 		for (ArmInteractionPoint armInteractionPoint : outputs) {
-			stack = armInteractionPoint.insert(d, stack, true);
-			if (stack.a())
+			stack = armInteractionPoint.insert(world, stack, true);
+			if (stack.isEmpty())
 				break;
 		}
 		return stack;
 	}
 
 	public void redstoneUpdate() {
-		if (d.v)
+		if (world.isClient)
 			return;
-		boolean blockPowered = d.r(e);
+		boolean blockPowered = world.isReceivingRedstonePower(pos);
 		if (blockPowered == redstoneLocked)
 			return;
 		redstoneLocked = blockPowered;
@@ -363,14 +370,14 @@ public class ArmTileEntity extends KineticTileEntity {
 	protected void initInteractionPoints() {
 		if (!updateInteractionPoints || interactionPointTag == null)
 			return;
-		if (!d.isAreaLoaded(e, getRange() + 1))
+		if (!world.isAreaLoaded(pos, getRange() + 1))
 			return;
 		inputs.clear();
 		outputs.clear();
 
 		boolean hasBlazeBurner = false;
 		for (Tag inbt : interactionPointTag) {
-			ArmInteractionPoint point = ArmInteractionPoint.deserialize(d, e, (CompoundTag) inbt);
+			ArmInteractionPoint point = ArmInteractionPoint.deserialize(world, pos, (CompoundTag) inbt);
 			if (point == null)
 				continue;
 			if (point.mode == Mode.DEPOSIT)
@@ -380,16 +387,16 @@ public class ArmTileEntity extends KineticTileEntity {
 			hasBlazeBurner |= point instanceof ArmInteractionPoint.BlazeBurner;
 		}
 
-		if (!d.v) {
+		if (!world.isClient) {
 			if (outputs.size() >= 10)
-				AllTriggers.triggerForNearbyPlayers(AllTriggers.ARM_MANY_TARGETS, d, e, 5);
+				AllTriggers.triggerForNearbyPlayers(AllTriggers.ARM_MANY_TARGETS, world, pos, 5);
 			if (hasBlazeBurner)
-				AllTriggers.triggerForNearbyPlayers(AllTriggers.ARM_BLAZE_BURNER, d, e, 5);
+				AllTriggers.triggerForNearbyPlayers(AllTriggers.ARM_BLAZE_BURNER, world, pos, 5);
 		}
 
 		updateInteractionPoints = false;
 		sendData();
-		X_();
+		markDirty();
 	}
 
 	@Override
@@ -402,10 +409,10 @@ public class ArmTileEntity extends KineticTileEntity {
 		} else {
 			ListTag pointsNBT = new ListTag();
 			inputs.stream()
-				.map(aip -> aip.serialize(e))
+				.map(aip -> aip.serialize(pos))
 				.forEach(pointsNBT::add);
 			outputs.stream()
-				.map(aip -> aip.serialize(e))
+				.map(aip -> aip.serialize(pos))
 				.forEach(pointsNBT::add);
 			compound.put("InteractionPoints", pointsNBT);
 		}
@@ -418,13 +425,13 @@ public class ArmTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		int previousIndex = chasedPointIndex;
 		Phase previousPhase = phase;
 		ListTag interactionPointTagBefore = interactionPointTag;
 
 		super.fromTag(state, compound, clientPacket);
-		heldItem = ItemCooldownManager.a(compound.getCompound("HeldItem"));
+		heldItem = ItemStack.fromTag(compound.getCompound("HeldItem"));
 		phase = NBTHelper.readEnum(compound, "Phase", Phase.class);
 		chasedPointIndex = compound.getInt("TargetPointIndex");
 		chasedPointProgress = compound.getFloat("MovementProgress");
@@ -444,9 +451,9 @@ public class ArmTileEntity extends KineticTileEntity {
 			if (previousPhase == Phase.MOVE_TO_OUTPUT && previousIndex < outputs.size())
 				previousPoint = outputs.get(previousIndex);
 			previousTarget =
-				previousPoint == null ? ArmAngleTarget.NO_TARGET : previousPoint.getTargetAngles(e, ceiling);
+				previousPoint == null ? ArmAngleTarget.NO_TARGET : previousPoint.getTargetAngles(pos, ceiling);
 			if (previousPoint != null)
-				previousBaseAngle = previousPoint.getTargetAngles(e, ceiling).baseAngle;
+				previousBaseAngle = previousPoint.getTargetAngles(pos, ceiling).baseAngle;
 		}
 	}
 
@@ -469,6 +476,11 @@ public class ArmTileEntity extends KineticTileEntity {
 		return true;
 	}
 
+	@Override
+	public boolean shouldRenderAsTE() {
+		return true;
+	}
+
 	private class SelectionModeValueBox extends CenteredSideValueBoxTransform {
 
 		public SelectionModeValueBox() {
@@ -476,9 +488,9 @@ public class ArmTileEntity extends KineticTileEntity {
 		}
 
 		@Override
-		protected EntityHitResult getLocalOffset(PistonHandler state) {
-			int yPos = state.c(ArmBlock.CEILING) ? 16 - 3 : 3;
-			EntityHitResult location = VecHelper.voxelSpace(8, yPos, 14.5);
+		protected Vec3d getLocalOffset(BlockState state) {
+			int yPos = state.get(ArmBlock.CEILING) ? 16 - 3 : 3;
+			Vec3d location = VecHelper.voxelSpace(8, yPos, 14.5);
 			location = VecHelper.rotateCentered(location, AngleHelper.horizontalAngle(getSide()), Direction.Axis.Y);
 			return location;
 		}

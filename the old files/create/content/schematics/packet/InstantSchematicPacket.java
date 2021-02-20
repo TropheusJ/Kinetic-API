@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.content.schematics.packet;
+package com.simibubi.create.content.schematics.packet;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
@@ -42,7 +42,7 @@ public class InstantSchematicPacket extends SimplePacketBase {
 					.getSender();
 				if (player == null)
 					return;
-				Create.schematicReceiver.handleInstantSchematic(player, name, player.l, origin, bounds);
+				Create.schematicReceiver.handleInstantSchematic(player, name, player.world, origin, bounds);
 			});
 		context.get()
 			.setPacketHandled(true);

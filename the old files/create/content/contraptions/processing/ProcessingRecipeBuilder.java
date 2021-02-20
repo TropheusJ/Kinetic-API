@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,22 +6,22 @@ import java.util.function.Consumer;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import com.simibubi.kinetic_api.foundation.fluid.FluidIngredient;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
-import cut;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+import com.simibubi.create.foundation.fluid.FluidIngredient;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.Pair;
 import net.minecraft.data.server.recipe.RecipeJsonProvider;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.HoeItem;
-import net.minecraft.recipe.FireworkRocketRecipe;
-import net.minecraft.recipe.MapExtendingRecipe;
-import net.minecraft.tag.RequiredTagList;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.Ingredient;
+import net.minecraft.recipe.RecipeSerializer;
+import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.world.GameRules;
 import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.common.crafting.conditions.ICondition;
 import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
@@ -40,16 +40,16 @@ public class ProcessingRecipeBuilder<T extends ProcessingRecipe<?>> {
 		this.factory = factory;
 	}
 
-	public ProcessingRecipeBuilder<T> withItemIngredients(FireworkRocketRecipe... ingredients) {
-		return withItemIngredients(DefaultedList.copyOf(FireworkRocketRecipe.PAPER, ingredients));
+	public ProcessingRecipeBuilder<T> withItemIngredients(Ingredient... ingredients) {
+		return withItemIngredients(DefaultedList.copyOf(Ingredient.EMPTY, ingredients));
 	}
 
-	public ProcessingRecipeBuilder<T> withItemIngredients(DefaultedList<FireworkRocketRecipe> ingredients) {
+	public ProcessingRecipeBuilder<T> withItemIngredients(DefaultedList<Ingredient> ingredients) {
 		params.ingredients = ingredients;
 		return this;
 	}
 
-	public ProcessingRecipeBuilder<T> withSingleItemOutput(ItemCooldownManager output) {
+	public ProcessingRecipeBuilder<T> withSingleItemOutput(ItemStack output) {
 		return withItemOutputs(new ProcessingOutput(output, 1));
 	}
 
@@ -104,24 +104,24 @@ public class ProcessingRecipeBuilder<T extends ProcessingRecipe<?>> {
 
 	// Datagen shortcuts
 
-	public ProcessingRecipeBuilder<T> require(RequiredTagList.e<HoeItem> tag) {
-		return require(FireworkRocketRecipe.a(tag));
+	public ProcessingRecipeBuilder<T> require(Tag.Identified<Item> tag) {
+		return require(Ingredient.fromTag(tag));
 	}
 
-	public ProcessingRecipeBuilder<T> require(GameRules item) {
-		return require(FireworkRocketRecipe.a(item));
+	public ProcessingRecipeBuilder<T> require(ItemConvertible item) {
+		return require(Ingredient.ofItems(item));
 	}
 
-	public ProcessingRecipeBuilder<T> require(FireworkRocketRecipe ingredient) {
+	public ProcessingRecipeBuilder<T> require(Ingredient ingredient) {
 		params.ingredients.add(ingredient);
 		return this;
 	}
 
-	public ProcessingRecipeBuilder<T> require(cut fluid, int amount) {
+	public ProcessingRecipeBuilder<T> require(Fluid fluid, int amount) {
 		return require(FluidIngredient.fromFluid(fluid, amount));
 	}
 
-	public ProcessingRecipeBuilder<T> require(RequiredTagList.e<cut> fluidTag, int amount) {
+	public ProcessingRecipeBuilder<T> require(Tag.Identified<Fluid> fluidTag, int amount) {
 		return require(FluidIngredient.fromTag(fluidTag, amount));
 	}
 
@@ -130,27 +130,27 @@ public class ProcessingRecipeBuilder<T extends ProcessingRecipe<?>> {
 		return this;
 	}
 
-	public ProcessingRecipeBuilder<T> output(GameRules item) {
+	public ProcessingRecipeBuilder<T> output(ItemConvertible item) {
 		return output(item, 1);
 	}
 
-	public ProcessingRecipeBuilder<T> output(float chance, GameRules item) {
+	public ProcessingRecipeBuilder<T> output(float chance, ItemConvertible item) {
 		return output(chance, item, 1);
 	}
 
-	public ProcessingRecipeBuilder<T> output(GameRules item, int amount) {
+	public ProcessingRecipeBuilder<T> output(ItemConvertible item, int amount) {
 		return output(1, item, amount);
 	}
 
-	public ProcessingRecipeBuilder<T> output(float chance, GameRules item, int amount) {
-		return output(chance, new ItemCooldownManager(item, amount));
+	public ProcessingRecipeBuilder<T> output(float chance, ItemConvertible item, int amount) {
+		return output(chance, new ItemStack(item, amount));
 	}
 
-	public ProcessingRecipeBuilder<T> output(ItemCooldownManager output) {
+	public ProcessingRecipeBuilder<T> output(ItemStack output) {
 		return output(1, output);
 	}
 
-	public ProcessingRecipeBuilder<T> output(float chance, ItemCooldownManager output) {
+	public ProcessingRecipeBuilder<T> output(float chance, ItemStack output) {
 		params.results.add(new ProcessingOutput(output, chance));
 		return this;
 	}
@@ -160,7 +160,7 @@ public class ProcessingRecipeBuilder<T extends ProcessingRecipe<?>> {
 		return this;
 	}
 
-	public ProcessingRecipeBuilder<T> output(cut fluid, int amount) {
+	public ProcessingRecipeBuilder<T> output(Fluid fluid, int amount) {
 		fluid = FluidHelper.convertToStill(fluid);
 		return output(new FluidStack(fluid, amount));
 	}
@@ -193,7 +193,7 @@ public class ProcessingRecipeBuilder<T extends ProcessingRecipe<?>> {
 	public static class ProcessingRecipeParams {
 
 		Identifier id;
-		DefaultedList<FireworkRocketRecipe> ingredients;
+		DefaultedList<Ingredient> ingredients;
 		DefaultedList<ProcessingOutput> results;
 		DefaultedList<FluidIngredient> fluidIngredients;
 		DefaultedList<FluidStack> fluidResults;
@@ -229,9 +229,9 @@ public class ProcessingRecipeBuilder<T extends ProcessingRecipe<?>> {
 			if (!(recipeType.serializer instanceof ProcessingRecipeSerializer))
 				throw new IllegalStateException("Cannot datagen ProcessingRecipe of type: " + typeName);
 
-			this.id = Create.asResource(typeName + "/" + recipe.f()
+			this.id = Create.asResource(typeName + "/" + recipe.getId()
 				.getPath());
-			this.serializer = (ProcessingRecipeSerializer<S>) recipe.ag_();
+			this.serializer = (ProcessingRecipeSerializer<S>) recipe.getSerializer();
 		}
 
 		@Override
@@ -251,7 +251,7 @@ public class ProcessingRecipeBuilder<T extends ProcessingRecipe<?>> {
 		}
 
 		@Override
-		public MapExtendingRecipe<?> c() {
+		public RecipeSerializer<?> getSerializer() {
 			return serializer;
 		}
 

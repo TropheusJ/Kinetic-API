@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -6,29 +6,30 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import com.simibubi.kinetic_api.AllTags.AllFluidTags;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import cqx;
-import cut;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.fluid.EmptyFluid;
+import com.simibubi.create.AllTags.AllFluidTags;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.MusicSound;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.tag.BlockTags;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
 public abstract class FluidManipulationBehaviour extends TileEntityBehaviour {
@@ -43,7 +44,7 @@ public abstract class FluidManipulationBehaviour extends TileEntityBehaviour {
 		}
 	}
 
-	cqx affectedArea;
+	BlockBox affectedArea;
 	BlockPos rootPos;
 	boolean infinite;
 	protected boolean counterpartActed;
@@ -101,20 +102,20 @@ public abstract class FluidManipulationBehaviour extends TileEntityBehaviour {
 	}
 
 	protected void scheduleUpdatesInAffectedArea() {
-		GameMode world = getWorld();
-		BlockPos.stream(new BlockPos(affectedArea.a - 1, affectedArea.b - 1, affectedArea.c - 1), new BlockPos(affectedArea.d + 1, affectedArea.e + 1, affectedArea.f + 1))
+		World world = getWorld();
+		BlockPos.stream(new BlockPos(affectedArea.minX - 1, affectedArea.minY - 1, affectedArea.minZ - 1), new BlockPos(affectedArea.maxX + 1, affectedArea.maxY + 1, affectedArea.maxZ + 1))
 			.forEach(pos -> {
-				EmptyFluid nextFluidState = world.b(pos);
-				if (nextFluidState.c())
+				FluidState nextFluidState = world.getFluidState(pos);
+				if (nextFluidState.isEmpty())
 					return;
-				world.H()
-					.a(pos, nextFluidState.a(), world.getRandom()
+				world.getFluidTickScheduler()
+					.schedule(pos, nextFluidState.getFluid(), world.getRandom()
 						.nextInt(5));
 			});
 	}
 
 	protected int comparePositions(BlockPosEntry e1, BlockPosEntry e2) {
-		EntityHitResult centerOfRoot = VecHelper.getCenterOf(rootPos);
+		Vec3d centerOfRoot = VecHelper.getCenterOf(rootPos);
 		BlockPos pos2 = e2.pos;
 		BlockPos pos1 = e1.pos;
 		if (pos1.getY() != pos2.getY())
@@ -123,14 +124,14 @@ public abstract class FluidManipulationBehaviour extends TileEntityBehaviour {
 		if (compareDistance != 0)
 			return compareDistance;
 		return Double.compare(VecHelper.getCenterOf(pos2)
-			.g(centerOfRoot),
+			.squaredDistanceTo(centerOfRoot),
 			VecHelper.getCenterOf(pos1)
-				.g(centerOfRoot));
+				.squaredDistanceTo(centerOfRoot));
 	}
 
-	protected cut search(cut fluid, List<BlockPosEntry> frontier, Set<BlockPos> visited,
+	protected Fluid search(Fluid fluid, List<BlockPosEntry> frontier, Set<BlockPos> visited,
 		BiConsumer<BlockPos, Integer> add, boolean searchDownward) {
-		GameMode world = getWorld();
+		World world = getWorld();
 		int maxBlocks = maxBlocks();
 		int maxRange = canDrainInfinitely(fluid) ? maxRange() : maxRange() / 2;
 		int maxRangeSq = maxRange * maxRange;
@@ -144,14 +145,14 @@ public abstract class FluidManipulationBehaviour extends TileEntityBehaviour {
 				continue;
 			visited.add(currentPos);
 
-			EmptyFluid fluidState = world.b(currentPos);
-			if (fluidState.c())
+			FluidState fluidState = world.getFluidState(currentPos);
+			if (fluidState.isEmpty())
 				continue;
 
-			cut currentFluid = FluidHelper.convertToStill(fluidState.a());
+			Fluid currentFluid = FluidHelper.convertToStill(fluidState.getFluid());
 			if (fluid == null)
 				fluid = currentFluid;
-			if (!currentFluid.a(fluid))
+			if (!currentFluid.matchesType(fluid))
 				continue;
 
 			add.accept(currentPos, entry.distance);
@@ -166,10 +167,10 @@ public abstract class FluidManipulationBehaviour extends TileEntityBehaviour {
 				if (offsetPos.getSquaredDistance(rootPos) > maxRangeSq)
 					continue;
 
-				EmptyFluid nextFluidState = world.b(offsetPos);
-				if (nextFluidState.c())
+				FluidState nextFluidState = world.getFluidState(offsetPos);
+				if (nextFluidState.isEmpty())
 					continue;
-				cut nextFluid = nextFluidState.a();
+				Fluid nextFluid = nextFluidState.getFluid();
 				if (nextFluid == FluidHelper.convertToFlowing(nextFluid) && side == Direction.UP
 					&& !VecHelper.onSameAxis(rootPos, offsetPos, Axis.Y))
 					continue;
@@ -181,25 +182,25 @@ public abstract class FluidManipulationBehaviour extends TileEntityBehaviour {
 		return fluid;
 	}
 
-	protected void playEffect(GameMode world, BlockPos pos, cut fluid, boolean fillSound) {
-		BlockPos splooshPos = pos == null ? tileEntity.o() : pos;
+	protected void playEffect(World world, BlockPos pos, Fluid fluid, boolean fillSound) {
+		BlockPos splooshPos = pos == null ? tileEntity.getPos() : pos;
 
-		MusicSound soundevent = fillSound ? fluid.getAttributes()
+		SoundEvent soundevent = fillSound ? fluid.getAttributes()
 			.getFillSound()
 			: fluid.getAttributes()
 				.getEmptySound();
 		if (soundevent == null)
-			soundevent = fluid.a(BlockTags.field_15471)
-				? fillSound ? MusicType.bo : MusicType.bl
-				: fillSound ? MusicType.bm : MusicType.bj;
+			soundevent = fluid.isIn(FluidTags.LAVA)
+				? fillSound ? SoundEvents.ITEM_BUCKET_FILL_LAVA : SoundEvents.ITEM_BUCKET_EMPTY_LAVA
+				: fillSound ? SoundEvents.ITEM_BUCKET_FILL : SoundEvents.ITEM_BUCKET_EMPTY;
 
-		world.a(null, splooshPos, soundevent, SoundEvent.e, 0.3F, 1.0F);
+		world.playSound(null, splooshPos, soundevent, SoundCategory.BLOCKS, 0.3F, 1.0F);
 		if (world instanceof ServerWorld)
 			AllPackets.sendToNear(world, splooshPos, 10, new FluidSplashPacket(splooshPos, new FluidStack(fluid, 1)));
 	}
 	
-	protected boolean canDrainInfinitely(cut fluid) {
-		return maxBlocks() != -1 && !AllFluidTags.NO_INFINITE_DRAINING.matches(fluid);
+	protected boolean canDrainInfinitely(Fluid fluid) {
+		return maxBlocks() != -1; //  && !AllFluidTags.NO_INFINITE_DRAINING.matches(fluid);
 	}
 
 	@Override
@@ -208,9 +209,9 @@ public abstract class FluidManipulationBehaviour extends TileEntityBehaviour {
 			nbt.put("LastPos", NbtHelper.fromBlockPos(rootPos));
 		if (affectedArea != null) {
 			nbt.put("AffectedAreaFrom",
-				NbtHelper.fromBlockPos(new BlockPos(affectedArea.a, affectedArea.b, affectedArea.c)));
+				NbtHelper.fromBlockPos(new BlockPos(affectedArea.minX, affectedArea.minY, affectedArea.minZ)));
 			nbt.put("AffectedAreaTo",
-				NbtHelper.fromBlockPos(new BlockPos(affectedArea.d, affectedArea.e, affectedArea.f)));
+				NbtHelper.fromBlockPos(new BlockPos(affectedArea.maxX, affectedArea.maxY, affectedArea.maxZ)));
 		}
 		super.write(nbt, clientPacket);
 	}
@@ -220,7 +221,7 @@ public abstract class FluidManipulationBehaviour extends TileEntityBehaviour {
 		if (nbt.contains("LastPos"))
 			rootPos = NbtHelper.toBlockPos(nbt.getCompound("LastPos"));
 		if (nbt.contains("AffectedAreaFrom") && nbt.contains("AffectedAreaTo"))
-			affectedArea = new cqx(NbtHelper.toBlockPos(nbt.getCompound("AffectedAreaFrom")),
+			affectedArea = new BlockBox(NbtHelper.toBlockPos(nbt.getCompound("AffectedAreaFrom")),
 				NbtHelper.toBlockPos(nbt.getCompound("AffectedAreaTo")));
 		super.read(nbt, clientPacket);
 	}

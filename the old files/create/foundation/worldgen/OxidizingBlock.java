@@ -1,60 +1,62 @@
-package com.simibubi.kinetic_api.foundation.worldgen;
+package com.simibubi.create.foundation.worldgen;
 
 import java.util.LinkedList;
 import java.util.OptionalDouble;
 import java.util.Random;
 
-import com.simibubi.kinetic_api.content.curiosities.tools.SandPaperItem;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import dcg;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.PlayerAbilities;
+import com.simibubi.create.content.curiosities.tools.SandPaperItem;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
-public class OxidizingBlock extends BeetrootsBlock {
+public class OxidizingBlock extends Block {
 
-	public static final DoubleBlockHalf OXIDIZATION = DoubleBlockHalf.of("oxidization", 0, 7);
+	public static final IntProperty OXIDIZATION = IntProperty.of("oxidization", 0, 7);
 	private float chance;
 
-	public OxidizingBlock(c properties, float chance) {
+	public OxidizingBlock(Settings properties, float chance) {
 		super(properties);
 		this.chance = chance;
-		j(n().a(OXIDIZATION, 0));
+		setDefaultState(getDefaultState().with(OXIDIZATION, 0));
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		super.a(builder.a(OXIDIZATION));
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		super.appendProperties(builder.add(OXIDIZATION));
 	}
 
 	@Override
-	public boolean a_(PistonHandler state) {
-		return super.a_(state) || state.c(OXIDIZATION) < 7;
+	public boolean hasRandomTicks(BlockState state) {
+		return super.hasRandomTicks(state) || state.get(OXIDIZATION) < 7;
 	}
 
 	@Override
-	public void b(PistonHandler state, ServerWorld worldIn, BlockPos pos, Random random) {
+	public void randomTick(BlockState state, ServerWorld worldIn, BlockPos pos, Random random) {
 		if (worldIn.getRandom().nextFloat() <= chance) {
-			int currentState = state.c(OXIDIZATION);
+			int currentState = state.get(OXIDIZATION);
 			boolean canIncrease = false;
 			LinkedList<Integer> neighbors = new LinkedList<>();
 			for (Direction facing : Iterate.directions) {
 				BlockPos neighbourPos = pos.offset(facing);
 				if (!worldIn.isAreaLoaded(neighbourPos, 0))
 					continue;
-				if (!worldIn.p(neighbourPos))
+				if (!worldIn.canSetBlock(neighbourPos))
 					continue;
-				PistonHandler neighborState = worldIn.d_(neighbourPos);
-				if (BlockHelper.hasBlockStateProperty(neighborState, OXIDIZATION) && neighborState.c(OXIDIZATION) != 0) {
-					neighbors.add(neighborState.c(OXIDIZATION));
+				BlockState neighborState = worldIn.getBlockState(neighbourPos);
+				if (BlockHelper.hasBlockStateProperty(neighborState, OXIDIZATION) && neighborState.get(OXIDIZATION) != 0) {
+					neighbors.add(neighborState.get(OXIDIZATION));
 				}
 				if (BlockHelper.hasBlockSolidSide(neighborState, worldIn, neighbourPos, facing.getOpposite())) {
 					continue;
@@ -64,20 +66,20 @@ public class OxidizingBlock extends BeetrootsBlock {
 			if (canIncrease) {
 				OptionalDouble average = neighbors.stream().mapToInt(v -> v).average();
 				if (average.orElse(7d) >= currentState)
-					worldIn.a(pos, state.a(OXIDIZATION, Math.min(currentState + 1, 7)));
+					worldIn.setBlockState(pos, state.with(OXIDIZATION, Math.min(currentState + 1, 7)));
 			}
 		}
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode world, BlockPos pos,
-			PlayerAbilities player, ItemScatterer hand, dcg blockRayTraceResult) {
-		if(state.c(OXIDIZATION) > 0 && player.b(hand).b() instanceof SandPaperItem) {
-			if(!player.b_())
-				player.b(hand).a(1, player, p -> p.d(p.dW()));
-			world.a(pos, state.a(OXIDIZATION, 0));
-			return Difficulty.SUCCESS;
+	public ActionResult onUse(BlockState state, World world, BlockPos pos,
+			PlayerEntity player, Hand hand, BlockHitResult blockRayTraceResult) {
+		if(state.get(OXIDIZATION) > 0 && player.getStackInHand(hand).getItem() instanceof SandPaperItem) {
+			if(!player.isCreative())
+				player.getStackInHand(hand).damage(1, player, p -> p.sendToolBreakStatus(p.getActiveHand()));
+			world.setBlockState(pos, state.with(OXIDIZATION, 0));
+			return ActionResult.SUCCESS;
 		}
-		return Difficulty.PASS;
+		return ActionResult.PASS;
 	}
 }

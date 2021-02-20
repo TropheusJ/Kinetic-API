@@ -1,35 +1,36 @@
-package com.simibubi.kinetic_api.content.schematics.client.tools;
+package com.simibubi.create.content.schematics.client.tools;
 
 import java.util.Arrays;
 import java.util.List;
-import com.simibubi.kinetic_api.AllKeys;
-import com.simibubi.kinetic_api.AllSpecialTextures;
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.content.schematics.client.SchematicHandler;
-import com.simibubi.kinetic_api.content.schematics.client.SchematicTransformation;
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import com.simibubi.kinetic_api.foundation.utility.RaycastHelper;
-import com.simibubi.kinetic_api.foundation.utility.RaycastHelper.PredicateTraceResult;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import com.simibubi.kinetic_api.foundation.utility.outliner.AABBOutline;
-import dcg;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.particle.FishingParticle;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.AllKeys;
+import com.simibubi.create.AllSpecialTextures;
+import com.simibubi.create.CreateClient;
+import com.simibubi.create.content.schematics.client.SchematicHandler;
+import com.simibubi.create.content.schematics.client.SchematicTransformation;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.RaycastHelper;
+import com.simibubi.create.foundation.utility.RaycastHelper.PredicateTraceResult;
+import com.simibubi.create.foundation.utility.VecHelper;
+import com.simibubi.create.foundation.utility.outliner.AABBOutline;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult.Type;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box.a;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Vec3d;
 
 public abstract class SchematicToolBase implements ISchematicTool {
 
 	protected SchematicHandler schematicHandler;
 
 	protected BlockPos selectedPos;
-	protected EntityHitResult chasingSelectedPos;
-	protected EntityHitResult lastChasingSelectedPos;
+	protected Vec3d chasingSelectedPos;
+	protected Vec3d lastChasingSelectedPos;
 
 	protected boolean selectIgnoreBlocks;
 	protected int selectionRange;
@@ -46,8 +47,8 @@ public abstract class SchematicToolBase implements ISchematicTool {
 		selectedPos = null;
 		selectedFace = null;
 		schematicSelected = false;
-		chasingSelectedPos = EntityHitResult.a;
-		lastChasingSelectedPos = EntityHitResult.a;
+		chasingSelectedPos = Vec3d.ZERO;
+		lastChasingSelectedPos = Vec3d.ZERO;
 	}
 
 	@Override
@@ -57,29 +58,29 @@ public abstract class SchematicToolBase implements ISchematicTool {
 		if (selectedPos == null)
 			return;
 		lastChasingSelectedPos = chasingSelectedPos;
-		EntityHitResult target = EntityHitResult.b(selectedPos);
-		if (target.f(chasingSelectedPos) < 1 / 512f) {
+		Vec3d target = Vec3d.of(selectedPos);
+		if (target.distanceTo(chasingSelectedPos) < 1 / 512f) {
 			chasingSelectedPos = target;
 			return;
 		}
 
-		chasingSelectedPos = chasingSelectedPos.e(target.d(chasingSelectedPos)
-			.a(1 / 2f));
+		chasingSelectedPos = chasingSelectedPos.add(target.subtract(chasingSelectedPos)
+			.multiply(1 / 2f));
 	}
 
 	public void updateTargetPos() {
-		FishingParticle player = KeyBinding.B().s;
+		ClientPlayerEntity player = MinecraftClient.getInstance().player;
 
 		// Select Blueprint
 		if (schematicHandler.isDeployed()) {
 			SchematicTransformation transformation = schematicHandler.getTransformation();
-			Timer localBounds = schematicHandler.getBounds();
+			Box localBounds = schematicHandler.getBounds();
 
-			EntityHitResult traceOrigin = RaycastHelper.getTraceOrigin(player);
-			EntityHitResult start = transformation.toLocalSpace(traceOrigin);
-			EntityHitResult end = transformation.toLocalSpace(RaycastHelper.getTraceTarget(player, 70, traceOrigin));
+			Vec3d traceOrigin = RaycastHelper.getTraceOrigin(player);
+			Vec3d start = transformation.toLocalSpace(traceOrigin);
+			Vec3d end = transformation.toLocalSpace(RaycastHelper.getTraceTarget(player, 70, traceOrigin));
 			PredicateTraceResult result =
-				RaycastHelper.rayTraceUntil(start, end, pos -> localBounds.d(VecHelper.getCenterOf(pos)));
+				RaycastHelper.rayTraceUntil(start, end, pos -> localBounds.contains(VecHelper.getCenterOf(pos)));
 
 			schematicSelected = !result.missed();
 			selectedFace = schematicSelected ? result.getFacing() : null;
@@ -89,47 +90,46 @@ public abstract class SchematicToolBase implements ISchematicTool {
 
 		// Select location at distance
 		if (selectIgnoreBlocks) {
-			float pt = KeyBinding.B()
-				.ai();
-			selectedPos = new BlockPos(player.j(pt)
-				.e(player.bg()
-					.a(selectionRange)));
+			float pt = AnimationTickHolder.getPartialTicks();
+			selectedPos = new BlockPos(player.getCameraPosVec(pt)
+				.add(player.getRotationVector()
+					.multiply(selectionRange)));
 			if (snap)
-				lastChasingSelectedPos = chasingSelectedPos = EntityHitResult.b(selectedPos);
+				lastChasingSelectedPos = chasingSelectedPos = Vec3d.of(selectedPos);
 			return;
 		}
 
 		// Select targeted Block
 		selectedPos = null;
-		dcg trace = RaycastHelper.rayTraceRange(player.l, player, 75);
-		if (trace == null || trace.c() != a.b)
+		BlockHitResult trace = RaycastHelper.rayTraceRange(player.world, player, 75);
+		if (trace == null || trace.getType() != Type.BLOCK)
 			return;
 
-		BlockPos hit = new BlockPos(trace.e());
-		boolean replaceable = player.l.d_(hit)
-			.c()
-			.e();
-		if (trace.b()
+		BlockPos hit = new BlockPos(trace.getPos());
+		boolean replaceable = player.world.getBlockState(hit)
+			.getMaterial()
+			.isReplaceable();
+		if (trace.getSide()
 			.getAxis()
 			.isVertical() && !replaceable)
-			hit = hit.offset(trace.b());
+			hit = hit.offset(trace.getSide());
 		selectedPos = hit;
 		if (snap)
-			lastChasingSelectedPos = chasingSelectedPos = EntityHitResult.b(selectedPos);
+			lastChasingSelectedPos = chasingSelectedPos = Vec3d.of(selectedPos);
 	}
 
 	@Override
-	public void renderTool(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {}
+	public void renderTool(MatrixStack ms, SuperRenderTypeBuffer buffer) {}
 
 	@Override
-	public void renderOverlay(BufferVertexConsumer ms, BackgroundRenderer buffer) {}
+	public void renderOverlay(MatrixStack ms, VertexConsumerProvider buffer) {}
 
 	@Override
-	public void renderOnSchematic(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
+	public void renderOnSchematic(MatrixStack ms, SuperRenderTypeBuffer buffer) {
 		if (!schematicHandler.isDeployed())
 			return;
 
-		ms.a();
+		ms.push();
 		AABBOutline outline = schematicHandler.getOutline();
 		if (renderSelectedFace) {
 			outline.getParams()
@@ -144,7 +144,7 @@ public abstract class SchematicToolBase implements ISchematicTool {
 		outline.render(ms, buffer);
 		outline.getParams()
 			.clearTextures();
-		ms.b();
+		ms.pop();
 	}
 
 }

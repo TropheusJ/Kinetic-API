@@ -1,39 +1,71 @@
-package com.simibubi.kinetic_api.foundation.utility.placement;
+package com.simibubi.create.foundation.utility.placement;
 
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.item.BannerItem;
+import java.util.function.Function;
+import net.minecraft.advancement.criterion.Criteria;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.stat.Stats;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.GameMode;
-import java.util.function.Function;
+import net.minecraft.world.World;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.BlockSnapshot;
+import net.minecraftforge.event.world.BlockEvent;
 
 public class PlacementOffset {
 
 	private final boolean success;
-	private final Vec3i pos;
-	private final Function<PistonHandler, PistonHandler> stateTransform;
+	private Vec3i pos;
+	private Function<BlockState, BlockState> stateTransform;
+	private BlockState ghostState;
 
-	private PlacementOffset(boolean success, Vec3i pos, Function<PistonHandler, PistonHandler> transform) {
+	private PlacementOffset(boolean success) {
 		this.success = success;
-		this.pos = pos;
-		this.stateTransform = transform == null ? Function.identity() : transform;
+		this.pos = BlockPos.ORIGIN;
+		this.stateTransform = Function.identity();
+		this.ghostState = null;
 	}
 
 	public static PlacementOffset fail() {
-		return new PlacementOffset(false, Vec3i.ZERO, null);
+		return new PlacementOffset(false);
+	}
+
+	public static PlacementOffset success() {
+		return new PlacementOffset(true);
 	}
 
 	public static PlacementOffset success(Vec3i pos) {
-		return new PlacementOffset(true, pos, null);
+		return success().at(pos);
 	}
 
-	public static PlacementOffset success(Vec3i pos, Function<PistonHandler, PistonHandler> transform) {
-		return new PlacementOffset(true, pos, transform);
+	public static PlacementOffset success(Vec3i pos, Function<BlockState, BlockState> transform) {
+		return success().at(pos).withTransform(transform);
+	}
+
+	public PlacementOffset at(Vec3i pos) {
+		this.pos = pos;
+		return this;
+	}
+
+	public PlacementOffset withTransform(Function<BlockState, BlockState> stateTransform) {
+		this.stateTransform = stateTransform;
+		return this;
+	}
+
+	public PlacementOffset withGhostState(BlockState ghostState) {
+		this.ghostState = ghostState;
+		return this;
 	}
 
 	public boolean isSuccessful() {
@@ -44,35 +76,73 @@ public class PlacementOffset {
 		return pos;
 	}
 
-	public Function<PistonHandler, PistonHandler> getTransform() {
+	public BlockPos getBlockPos() {
+		if (pos instanceof BlockPos)
+			return (BlockPos) pos;
+
+		return new BlockPos(pos);
+	}
+
+	public Function<BlockState, BlockState> getTransform() {
 		return stateTransform;
 	}
 
-	public boolean isReplaceable(GameMode world) {
+	public boolean hasGhostState() {
+		return ghostState != null;
+	}
+
+	public BlockState getGhostState() {
+		return ghostState;
+	}
+
+	public boolean isReplaceable(World world) {
 		if (!success)
 			return false;
 
-		return world.d_(new BlockPos(pos)).c().e();
-	}
-
-	public void placeInWorld(GameMode world, BannerItem blockItem, PlayerAbilities player, ItemCooldownManager item) {
-		placeInWorld(world, blockItem.e().n(), player, item);
+		return world.getBlockState(new BlockPos(pos)).getMaterial().isReplaceable();
 	}
 	
-	public void placeInWorld(GameMode world, PistonHandler defaultState, PlayerAbilities player, ItemCooldownManager item) {
-		if (world.v)
-			return;
+	public ActionResult placeInWorld(World world, BlockItem blockItem, PlayerEntity player, Hand hand, BlockHitResult ray) {
 
+		if (!isReplaceable(world))
+			return ActionResult.PASS;
+
+		ItemUsageContext context = new ItemUsageContext(player, hand, ray);
 		BlockPos newPos = new BlockPos(pos);
-		PistonHandler state = stateTransform.apply(defaultState);
-		if (state.b(BambooLeaves.C)) {
-			EmptyFluid fluidState = world.b(newPos);
-			state = state.a(BambooLeaves.C, fluidState.a() == FlowableFluid.c);
+
+		if (!world.canPlayerModifyAt(player, newPos))
+			return ActionResult.PASS;
+
+		BlockState state = stateTransform.apply(blockItem.getBlock().getDefaultState());
+		if (state.contains(Properties.WATERLOGGED)) {
+			FluidState fluidState = world.getFluidState(newPos);
+			state = state.with(Properties.WATERLOGGED, fluidState.getFluid() == Fluids.WATER);
 		}
 
-		world.a(newPos, state);
+		BlockSnapshot snapshot = BlockSnapshot.create(world.getRegistryKey(), world, newPos);
+		world.setBlockState(newPos, state);
 
-		if (!player.b_())
-			item.g(1);
+		BlockEvent.EntityPlaceEvent event = new BlockEvent.EntityPlaceEvent(snapshot, IPlacementHelper.ID, player);
+		if (MinecraftForge.EVENT_BUS.post(event)) {
+			snapshot.restore(true, false);
+			return ActionResult.FAIL;
+		}
+
+		BlockState newState = world.getBlockState(newPos);
+		BlockSoundGroup soundtype = newState.getSoundType(world, newPos, player);
+		world.playSound(player, newPos, soundtype.getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
+
+		player.incrementStat(Stats.USED.getOrCreateStat(blockItem));
+
+		if (world.isClient)
+			return ActionResult.SUCCESS;
+
+		if (player instanceof ServerPlayerEntity)
+			Criteria.PLACED_BLOCK.trigger((ServerPlayerEntity) player, newPos, context.getStack());
+
+		if (!player.isCreative())
+			context.getStack().decrement(1);
+
+		return ActionResult.SUCCESS;
 	}
 }

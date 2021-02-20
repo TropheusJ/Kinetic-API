@@ -1,14 +1,14 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper;
+package com.simibubi.create.content.curiosities.zapper.blockzapper;
 
 import java.util.Collections;
 import java.util.List;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllSpecialTextures;
-import com.simibubi.kinetic_api.CreateClient;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.particle.FishingParticle;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllSpecialTextures;
+import com.simibubi.create.CreateClient;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 
@@ -28,14 +28,14 @@ public class BlockzapperRenderHandler {
 	}
 
 	protected static void gatherSelectedBlocks() {
-		FishingParticle player = KeyBinding.B().s;
-		ItemCooldownManager heldMain = player.dC();
-		ItemCooldownManager heldOff = player.dD();
+		ClientPlayerEntity player = MinecraftClient.getInstance().player;
+		ItemStack heldMain = player.getMainHandStack();
+		ItemStack heldOff = player.getOffHandStack();
 		boolean zapperInMain = AllItems.BLOCKZAPPER.isIn(heldMain);
 		boolean zapperInOff = AllItems.BLOCKZAPPER.isIn(heldOff);
 
 		if (zapperInMain) {
-			CompoundTag tag = heldMain.p();
+			CompoundTag tag = heldMain.getOrCreateTag();
 			if (!tag.contains("_Swap") || !zapperInOff) {
 				createOutline(player, heldMain);
 				return;
@@ -50,12 +50,12 @@ public class BlockzapperRenderHandler {
 		renderedShape = Collections.emptyList();
 	}
 
-	private static void createOutline(FishingParticle player, ItemCooldownManager held) {
-		if (!held.p().contains("BlockUsed")) {
+	private static void createOutline(ClientPlayerEntity player, ItemStack held) {
+		if (!held.getOrCreateTag().contains("BlockUsed")) {
 			renderedShape = Collections.emptyList();
 			return;
 		}
-		renderedShape = BlockzapperItem.getSelectedBlocks(held, player.l, player);
+		renderedShape = BlockzapperItem.getSelectedBlocks(held, player.world, player);
 	}
 
 }

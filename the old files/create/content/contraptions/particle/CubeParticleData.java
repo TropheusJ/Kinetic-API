@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.particle;
+package com.simibubi.create.content.contraptions.particle;
 
 import java.util.Locale;
 
@@ -6,10 +6,10 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.simibubi.kinetic_api.AllParticleTypes;
+import com.simibubi.create.AllParticleTypes;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.particle.LargeFireSmokeParticle;
+import net.minecraft.client.particle.ParticleFactory;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
@@ -84,7 +84,7 @@ public class CubeParticleData implements ParticleEffect, ICustomParticleData<Cub
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public LargeFireSmokeParticle<CubeParticleData> getFactory() {
+	public ParticleFactory<CubeParticleData> getFactory() {
 		return new CubeParticle.Factory();
 	}
 

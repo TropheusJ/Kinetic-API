@@ -1,40 +1,40 @@
-package com.simibubi.kinetic_api.content.schematics.block;
+package com.simibubi.create.content.schematics.block;
 
-import bfs;
-import com.simibubi.kinetic_api.AllContainerTypes;
-import com.simibubi.kinetic_api.AllItems;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.FoodComponent;
+import com.simibubi.create.AllContainerTypes;
+import com.simibubi.create.AllItems;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.screen.ShulkerBoxScreenHandler;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
 import net.minecraftforge.items.SlotItemHandler;
 
-public class SchematicTableContainer extends FoodComponent {
+public class SchematicTableContainer extends ScreenHandler {
 
 	private SchematicTableTileEntity te;
-	private ShulkerBoxScreenHandler inputSlot;
-	private ShulkerBoxScreenHandler outputSlot;
-	private PlayerAbilities player;
+	private Slot inputSlot;
+	private Slot outputSlot;
+	private PlayerEntity player;
 
-	public SchematicTableContainer(int id, bfs inv, PacketByteBuf extraData) {
+	public SchematicTableContainer(int id, PlayerInventory inv, PacketByteBuf extraData) {
 		super(AllContainerTypes.SCHEMATIC_TABLE.type, id);
-		player = inv.e;
-		DragonHeadEntityModel world = KeyBinding.B().r;
-		BeehiveBlockEntity tileEntity = world.c(extraData.readBlockPos());
+		player = inv.player;
+		ClientWorld world = MinecraftClient.getInstance().world;
+		BlockEntity tileEntity = world.getBlockEntity(extraData.readBlockPos());
 		if (tileEntity instanceof SchematicTableTileEntity) {
 			this.te = (SchematicTableTileEntity) tileEntity;
-			this.te.handleUpdateTag(te.p(), extraData.readCompoundTag());
+			this.te.handleUpdateTag(te.getCachedState(), extraData.readCompoundTag());
 			init();
 		}
 	}
 
-	public SchematicTableContainer(int id, bfs inv, SchematicTableTileEntity te) {
+	public SchematicTableContainer(int id, PlayerInventory inv, SchematicTableTileEntity te) {
 		super(AllContainerTypes.SCHEMATIC_TABLE.type, id);
-		this.player = inv.e;
+		this.player = inv.player;
 		this.te = te;
 		init();
 	}
@@ -42,7 +42,7 @@ public class SchematicTableContainer extends FoodComponent {
 	protected void init() {
 		inputSlot = new SlotItemHandler(te.inventory, 0, -35, 41) {
 			@Override
-			public boolean a(ItemCooldownManager stack) {
+			public boolean canInsert(ItemStack stack) {
 				return AllItems.EMPTY_SCHEMATIC.isIn(stack) || AllItems.SCHEMATIC_AND_QUILL.isIn(stack)
 					|| AllItems.SCHEMATIC.isIn(stack);
 			}
@@ -50,50 +50,50 @@ public class SchematicTableContainer extends FoodComponent {
 
 		outputSlot = new SlotItemHandler(te.inventory, 1, 110, 41) {
 			@Override
-			public boolean a(ItemCooldownManager stack) {
+			public boolean canInsert(ItemStack stack) {
 				return false;
 			}
 		};
 
-		a(inputSlot);
-		a(outputSlot);
+		addSlot(inputSlot);
+		addSlot(outputSlot);
 
 		// player Slots
 		for (int row = 0; row < 3; ++row) {
 			for (int col = 0; col < 9; ++col) {
-				this.a(new ShulkerBoxScreenHandler(player.bm, col + row * 9 + 9, 12 + col * 18, 102 + row * 18));
+				this.addSlot(new Slot(player.inventory, col + row * 9 + 9, 12 + col * 18, 102 + row * 18));
 			}
 		}
 
 		for (int hotbarSlot = 0; hotbarSlot < 9; ++hotbarSlot) {
-			this.a(new ShulkerBoxScreenHandler(player.bm, hotbarSlot, 12 + hotbarSlot * 18, 160));
+			this.addSlot(new Slot(player.inventory, hotbarSlot, 12 + hotbarSlot * 18, 160));
 		}
 
-		c();
+		sendContentUpdates();
 	}
 
 	public boolean canWrite() {
-		return inputSlot.f() && !outputSlot.f();
+		return inputSlot.hasStack() && !outputSlot.hasStack();
 	}
 
 	@Override
-	public boolean a(PlayerAbilities playerIn) {
+	public boolean canUse(PlayerEntity playerIn) {
 		return true;
 	}
 
 	@Override
-	public ItemCooldownManager b(PlayerAbilities playerIn, int index) {
-		ShulkerBoxScreenHandler clickedSlot = a(index);
-		if (!clickedSlot.f())
-			return ItemCooldownManager.tick;
+	public ItemStack transferSlot(PlayerEntity playerIn, int index) {
+		Slot clickedSlot = getSlot(index);
+		if (!clickedSlot.hasStack())
+			return ItemStack.EMPTY;
 
-		ItemCooldownManager stack = clickedSlot.e();
+		ItemStack stack = clickedSlot.getStack();
 		if (index < 2)
-			a(stack, 2, hunger.size(), false);
+			insertItem(stack, 2, slots.size(), false);
 		else
-			a(stack, 0, 1, false);
+			insertItem(stack, 0, 1, false);
 
-		return ItemCooldownManager.tick;
+		return ItemStack.EMPTY;
 	}
 
 	public SchematicTableTileEntity getTileEntity() {

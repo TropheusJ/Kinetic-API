@@ -1,32 +1,35 @@
-package com.simibubi.kinetic_api.content.curiosities.tools;
+package com.simibubi.create.content.curiosities.tools;
 
 import java.util.UUID;
-import apx;
-import bcm;
+
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import dcg;
-import dch;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.particle.FishingParticle;
-import net.minecraft.client.util.NetworkUtils;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.SpawnRestriction;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.damage.DamageRecord;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.entity.projectile.FireballEntity;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.SkullItem;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.decoration.ItemFrameEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.ProjectileUtil;
+import net.minecraft.item.Item;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Lazy;
+import net.minecraft.util.Rarity;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.hit.HitResult.Type;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.InputEvent.ClickInputEvent;
@@ -40,44 +43,44 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
-public class ExtendoGripItem extends HoeItem {
-	private static DamageRecord lastActiveDamageSource;
+public class ExtendoGripItem extends Item {
+	private static DamageSource lastActiveDamageSource;
 
-	static NetworkUtils<Multimap<SpawnRestriction, EntityAttribute>> rangeModifier = 
-		new NetworkUtils<Multimap<SpawnRestriction, EntityAttribute>>(() -> 
+	static Lazy<Multimap<EntityAttribute, EntityAttributeModifier>> rangeModifier = 
+		new Lazy<Multimap<EntityAttribute, EntityAttributeModifier>>(() -> 
 			// Holding an ExtendoGrip
 			ImmutableMultimap.of(
 				ForgeMod.REACH_DISTANCE.get(),
-				new EntityAttribute(UUID.fromString("7f7dbdb2-0d0d-458a-aa40-ac7633691f66"), "Range modifier", 3,
-					EntityAttribute.a.a))
+				new EntityAttributeModifier(UUID.fromString("7f7dbdb2-0d0d-458a-aa40-ac7633691f66"), "Range modifier", 3,
+					EntityAttributeModifier.Operation.ADDITION))
 		);
 
-	static NetworkUtils<Multimap<SpawnRestriction, EntityAttribute>> doubleRangeModifier = 
-		new NetworkUtils<Multimap<SpawnRestriction, EntityAttribute>>(() -> 
+	static Lazy<Multimap<EntityAttribute, EntityAttributeModifier>> doubleRangeModifier = 
+		new Lazy<Multimap<EntityAttribute, EntityAttributeModifier>>(() -> 
 			// Holding two ExtendoGrips o.O
 			ImmutableMultimap.of(
 				ForgeMod.REACH_DISTANCE.get(),
-				new EntityAttribute(UUID.fromString("8f7dbdb2-0d0d-458a-aa40-ac7633691f66"), "Range modifier", 5,
-					EntityAttribute.a.a))
+				new EntityAttributeModifier(UUID.fromString("8f7dbdb2-0d0d-458a-aa40-ac7633691f66"), "Range modifier", 5,
+					EntityAttributeModifier.Operation.ADDITION))
 		);
 
-	public ExtendoGripItem(a properties) {
-		super(properties.a(1)
-			.a(SkullItem.b));
+	public ExtendoGripItem(Settings properties) {
+		super(properties.maxCount(1)
+			.rarity(Rarity.UNCOMMON));
 	}
 
 	@SubscribeEvent
 	public static void holdingExtendoGripIncreasesRange(LivingUpdateEvent event) {
-		if (!(event.getEntity() instanceof PlayerAbilities))
+		if (!(event.getEntity() instanceof PlayerEntity))
 			return;
 
-		PlayerAbilities player = (PlayerAbilities) event.getEntityLiving();
+		PlayerEntity player = (PlayerEntity) event.getEntityLiving();
 		String marker = "createExtendo";
 		String dualMarker = "createDualExtendo";
 
 		CompoundTag persistentData = player.getPersistentData();
-		boolean inOff = AllItems.EXTENDO_GRIP.isIn(player.dD());
-		boolean inMain = AllItems.EXTENDO_GRIP.isIn(player.dC());
+		boolean inOff = AllItems.EXTENDO_GRIP.isIn(player.getOffHandStack());
+		boolean inMain = AllItems.EXTENDO_GRIP.isIn(player.getMainHandStack());
 		boolean holdingDualExtendo = inOff && inMain;
 		boolean holdingExtendo = inOff ^ inMain;
 		holdingExtendo &= !holdingDualExtendo;
@@ -86,27 +89,27 @@ public class ExtendoGripItem extends HoeItem {
 
 		if (holdingExtendo != wasHoldingExtendo) {
 			if (!holdingExtendo) {
-				player.dA().a(rangeModifier.a());
+				player.getAttributes().removeModifiers(rangeModifier.get());
 				persistentData.remove(marker);
 			} else {
 				if (player instanceof ServerPlayerEntity)
 					AllTriggers.EXTENDO.trigger((ServerPlayerEntity) player);
-				player.dA()
-					.b(rangeModifier.a());
+				player.getAttributes()
+					.addTemporaryModifiers(rangeModifier.get());
 				persistentData.putBoolean(marker, true);
 			}
 		}
 
 		if (holdingDualExtendo != wasHoldingDualExtendo) {
 			if (!holdingDualExtendo) {
-				player.dA()
-					.a(doubleRangeModifier.a());
+				player.getAttributes()
+					.removeModifiers(doubleRangeModifier.get());
 				persistentData.remove(dualMarker);
 			} else {
 				if (player instanceof ServerPlayerEntity)
 					AllTriggers.GIGA_EXTENDO.trigger((ServerPlayerEntity) player);
-				player.dA()
-					.b(doubleRangeModifier.a());
+				player.getAttributes()
+					.addTemporaryModifiers(doubleRangeModifier.get());
 				persistentData.putBoolean(dualMarker, true);
 			}
 		}
@@ -116,38 +119,38 @@ public class ExtendoGripItem extends HoeItem {
 	@SubscribeEvent
 	@Environment(EnvType.CLIENT)
 	public static void dontMissEntitiesWhenYouHaveHighReachDistance(ClickInputEvent event) {
-		KeyBinding mc = KeyBinding.B();
-		FishingParticle player = mc.s;
-		if (mc.r == null || player == null)
+		MinecraftClient mc = MinecraftClient.getInstance();
+		ClientPlayerEntity player = mc.player;
+		if (mc.world == null || player == null)
 			return;
 		if (!isHoldingExtendoGrip(player))
 			return;
-		if (mc.v instanceof dcg && mc.v.c() != net.minecraft.util.math.Box.a.a)
+		if (mc.crosshairTarget instanceof BlockHitResult && mc.crosshairTarget.getType() != Type.MISS)
 			return;
 
 		// Modified version of GameRenderer#getMouseOver
-		double d0 = player.a(ForgeMod.REACH_DISTANCE.get())
-			.f();
-		if (!player.b_())
+		double d0 = player.getAttributeInstance(ForgeMod.REACH_DISTANCE.get())
+			.getValue();
+		if (!player.isCreative())
 			d0 -= 0.5f;
-		EntityHitResult Vector3d = player.j(mc.ai());
-		EntityHitResult Vector3d1 = player.f(1.0F);
-		EntityHitResult Vector3d2 = Vector3d.b(Vector3d1.entity * d0, Vector3d1.c * d0, Vector3d1.d * d0);
-		Timer axisalignedbb = player.cb()
-			.b(Vector3d1.a(d0))
-			.c(1.0D, 1.0D, 1.0D);
-		dch entityraytraceresult =
-			FireballEntity.a(player, Vector3d, Vector3d2, axisalignedbb, (e) -> {
-				return !e.a_() && e.aS();
+		Vec3d vec3d = player.getCameraPosVec(AnimationTickHolder.getPartialTicks());
+		Vec3d vec3d1 = player.getRotationVec(1.0F);
+		Vec3d vec3d2 = vec3d.add(vec3d1.x * d0, vec3d1.y * d0, vec3d1.z * d0);
+		Box axisalignedbb = player.getBoundingBox()
+			.stretch(vec3d1.multiply(d0))
+			.expand(1.0D, 1.0D, 1.0D);
+		EntityHitResult entityraytraceresult =
+			ProjectileUtil.raycast(player, vec3d, vec3d2, axisalignedbb, (e) -> {
+				return !e.isSpectator() && e.collides();
 			}, d0 * d0);
 		if (entityraytraceresult != null) {
-			apx entity1 = entityraytraceresult.a();
-			EntityHitResult Vector3d3 = entityraytraceresult.e();
-			double d2 = Vector3d.g(Vector3d3);
-			if (d2 < d0 * d0 || mc.v == null || mc.v.c() == net.minecraft.util.math.Box.a.a) {
-				mc.v = entityraytraceresult;
-				if (entity1 instanceof SaddledComponent || entity1 instanceof bcm)
-					mc.u = entity1;
+			Entity entity1 = entityraytraceresult.getEntity();
+			Vec3d Vector3d3 = entityraytraceresult.getPos();
+			double d2 = vec3d.squaredDistanceTo(Vector3d3);
+			if (d2 < d0 * d0 || mc.crosshairTarget == null || mc.crosshairTarget.getType() == Type.MISS) {
+				mc.crosshairTarget = entityraytraceresult;
+				if (entity1 instanceof LivingEntity || entity1 instanceof ItemFrameEntity)
+					mc.targetedEntity = entity1;
 			}
 		}
 	}
@@ -162,22 +165,22 @@ public class ExtendoGripItem extends HoeItem {
 	public static void attacksByExtendoGripHaveMoreKnockback(LivingKnockBackEvent event) {
 		if (lastActiveDamageSource == null)
 			return;
-		apx entity = lastActiveDamageSource.j();
-		if (!(entity instanceof PlayerAbilities))
+		Entity entity = lastActiveDamageSource.getSource();
+		if (!(entity instanceof PlayerEntity))
 			return;
-		PlayerAbilities player = (PlayerAbilities) entity;
+		PlayerEntity player = (PlayerEntity) entity;
 		if (!isHoldingExtendoGrip(player))
 			return;
 		event.setStrength(event.getStrength() + 2);
 	}
 
-	private static boolean isUncaughtClientInteraction(apx entity, apx target) {
+	private static boolean isUncaughtClientInteraction(Entity entity, Entity target) {
 		// Server ignores entity interaction further than 6m
-		if (entity.h(target) < 36)
+		if (entity.squaredDistanceTo(target) < 36)
 			return false;
-		if (!entity.l.v)
+		if (!entity.world.isClient)
 			return false;
-		if (!(entity instanceof PlayerAbilities))
+		if (!(entity instanceof PlayerEntity))
 			return false;
 		return true;
 	}
@@ -185,11 +188,11 @@ public class ExtendoGripItem extends HoeItem {
 	@SubscribeEvent
 	@Environment(EnvType.CLIENT)
 	public static void notifyServerOfLongRangeAttacks(AttackEntityEvent event) {
-		apx entity = event.getEntity();
-		apx target = event.getTarget();
+		Entity entity = event.getEntity();
+		Entity target = event.getTarget();
 		if (!isUncaughtClientInteraction(entity, target))
 			return;
-		PlayerAbilities player = (PlayerAbilities) entity;
+		PlayerEntity player = (PlayerEntity) entity;
 		if (isHoldingExtendoGrip(player))
 			AllPackets.channel.sendToServer(new ExtendoGripInteractionPacket(target));
 	}
@@ -197,11 +200,11 @@ public class ExtendoGripItem extends HoeItem {
 	@SubscribeEvent
 	@Environment(EnvType.CLIENT)
 	public static void notifyServerOfLongRangeInteractions(PlayerInteractEvent.EntityInteract event) {
-		apx entity = event.getEntity();
-		apx target = event.getTarget();
+		Entity entity = event.getEntity();
+		Entity target = event.getTarget();
 		if (!isUncaughtClientInteraction(entity, target))
 			return;
-		PlayerAbilities player = (PlayerAbilities) entity;
+		PlayerEntity player = (PlayerEntity) entity;
 		if (isHoldingExtendoGrip(player))
 			AllPackets.channel.sendToServer(new ExtendoGripInteractionPacket(target, event.getHand()));
 	}
@@ -209,19 +212,19 @@ public class ExtendoGripItem extends HoeItem {
 	@SubscribeEvent
 	@Environment(EnvType.CLIENT)
 	public static void notifyServerOfLongRangeSpecificInteractions(PlayerInteractEvent.EntityInteractSpecific event) {
-		apx entity = event.getEntity();
-		apx target = event.getTarget();
+		Entity entity = event.getEntity();
+		Entity target = event.getTarget();
 		if (!isUncaughtClientInteraction(entity, target))
 			return;
-		PlayerAbilities player = (PlayerAbilities) entity;
+		PlayerEntity player = (PlayerEntity) entity;
 		if (isHoldingExtendoGrip(player))
 			AllPackets.channel
 				.sendToServer(new ExtendoGripInteractionPacket(target, event.getHand(), event.getLocalPos()));
 	}
 
-	public static boolean isHoldingExtendoGrip(PlayerAbilities player) {
-		boolean inOff = AllItems.EXTENDO_GRIP.isIn(player.dD());
-		boolean inMain = AllItems.EXTENDO_GRIP.isIn(player.dC());
+	public static boolean isHoldingExtendoGrip(PlayerEntity player) {
+		boolean inOff = AllItems.EXTENDO_GRIP.isIn(player.getOffHandStack());
+		boolean inMain = AllItems.EXTENDO_GRIP.isIn(player.getMainHandStack());
 		boolean holdingGrip = inOff || inMain;
 		return holdingGrip;
 	}

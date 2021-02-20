@@ -1,19 +1,20 @@
-package com.simibubi.kinetic_api.content.logistics.block.inventories;
+package com.simibubi.create.content.logistics.block.inventories;
 
-import bfs;
-import com.simibubi.kinetic_api.AllBlocks;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.FoodComponent;
+import com.simibubi.create.AllBlocks;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
@@ -21,7 +22,7 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 
-public class AdjustableCrateTileEntity extends CrateTileEntity implements ActionResult {
+public class AdjustableCrateTileEntity extends CrateTileEntity implements NamedScreenHandlerFactory {
 
 	public class Inv extends ItemStackHandler {
 		public Inv() {
@@ -38,7 +39,7 @@ public class AdjustableCrateTileEntity extends CrateTileEntity implements Action
 		}
 
 		@Override
-		public boolean isItemValid(int slot, ItemCooldownManager stack) {
+		public boolean isItemValid(int slot, ItemStack stack) {
 			if (slot > allowedAmount / 64)
 				return false;
 			return super.isItemValid(slot, stack);
@@ -47,11 +48,11 @@ public class AdjustableCrateTileEntity extends CrateTileEntity implements Action
 		@Override
 		protected void onContentsChanged(int slot) {
 			super.onContentsChanged(slot);
-			X_();
+			markDirty();
 
 			itemCount = 0;
 			for (int i = 0; i < getSlots(); i++) {
-				itemCount += getStackInSlot(i).E();
+				itemCount += getStackInSlot(i).getCount();
 			}
 		}
 	}
@@ -61,7 +62,7 @@ public class AdjustableCrateTileEntity extends CrateTileEntity implements Action
 	public int itemCount;
 	protected LazyOptional<IItemHandler> invHandler;
 
-	public AdjustableCrateTileEntity(BellBlockEntity<?> type) {
+	public AdjustableCrateTileEntity(BlockEntityType<?> type) {
 		super(type);
 		allowedAmount = 512;
 		itemCount = 10;
@@ -70,14 +71,14 @@ public class AdjustableCrateTileEntity extends CrateTileEntity implements Action
 	}
 
 	@Override
-	public FoodComponent createMenu(int id, bfs inventory, PlayerAbilities player) {
+	public ScreenHandler createMenu(int id, PlayerInventory inventory, PlayerEntity player) {
 		return new AdjustableCrateContainer(id, inventory, this);
 	}
 
 	public AdjustableCrateTileEntity getOtherCrate() {
-		if (!AllBlocks.ADJUSTABLE_CRATE.has(p()))
+		if (!AllBlocks.ADJUSTABLE_CRATE.has(getCachedState()))
 			return null;
-		BeehiveBlockEntity tileEntity = d.c(e.offset(getFacing()));
+		BlockEntity tileEntity = world.getBlockEntity(pos.offset(getFacing()));
 		if (tileEntity instanceof AdjustableCrateTileEntity)
 			return (AdjustableCrateTileEntity) tileEntity;
 		return null;
@@ -100,10 +101,10 @@ public class AdjustableCrateTileEntity extends CrateTileEntity implements Action
 
 		other.allowedAmount = Math.max(1, allowedAmount - 1024);
 		for (int slot = 0; slot < other.inventory.getSlots(); slot++)
-			other.inventory.setStackInSlot(slot, ItemCooldownManager.tick);
+			other.inventory.setStackInSlot(slot, ItemStack.EMPTY);
 		for (int slot = 16; slot < inventory.getSlots(); slot++) {
 			other.inventory.setStackInSlot(slot - 16, inventory.getStackInSlot(slot));
-			inventory.setStackInSlot(slot, ItemCooldownManager.tick);
+			inventory.setStackInSlot(slot, ItemStack.EMPTY);
 		}
 		allowedAmount = Math.min(1024, allowedAmount);
 
@@ -125,7 +126,7 @@ public class AdjustableCrateTileEntity extends CrateTileEntity implements Action
 		if (this == main) {
 			for (int slot = 0; slot < inventory.getSlots(); slot++) {
 				other.inventory.setStackInSlot(slot, inventory.getStackInSlot(slot));
-				inventory.setStackInSlot(slot, ItemCooldownManager.tick);
+				inventory.setStackInSlot(slot, ItemStack.EMPTY);
 			}
 			other.allowedAmount = Math.min(1024, allowedAmount);
 		}
@@ -138,7 +139,7 @@ public class AdjustableCrateTileEntity extends CrateTileEntity implements Action
 	}
 
 	private void drop(int slot) {
-		Inventory.a(d, e.getX(), e.getY(), e.getZ(), inventory.getStackInSlot(slot));
+		ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), inventory.getStackInSlot(slot));
 	}
 
 	@Override
@@ -150,26 +151,26 @@ public class AdjustableCrateTileEntity extends CrateTileEntity implements Action
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		allowedAmount = compound.getInt("AllowedAmount");
 		inventory.deserializeNBT(compound.getCompound("Inventory"));
 		super.fromTag(state, compound, clientPacket);
 	}
 
 	@Override
-	public Text d() {
-		return new LiteralText(u().getRegistryName()
+	public Text getDisplayName() {
+		return new LiteralText(getType().getRegistryName()
 			.toString());
 	}
 
 	public void sendToContainer(PacketByteBuf buffer) {
-		buffer.writeBlockPos(o());
-		buffer.writeCompoundTag(b());
+		buffer.writeBlockPos(getPos());
+		buffer.writeCompoundTag(toInitialChunkDataTag());
 	}
 
 	@Override
-	public void al_() {
-		super.al_();
+	public void markRemoved() {
+		super.markRemoved();
 		invHandler.invalidate();
 	}
 

@@ -1,30 +1,44 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.piston;
+package com.simibubi.create.content.contraptions.components.structureMovement.piston;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AllContraptionTypes;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.BlockMovementTraits;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.TranslatingContraption;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.WitherSkullBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.BlockHalf;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.structure.processor.StructureProcessor.c;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.timer.Timer;
-import org.apache.commons.lang3.tuple.Pair;
+import static com.simibubi.create.AllBlocks.MECHANICAL_PISTON_HEAD;
+import static com.simibubi.create.AllBlocks.PISTON_EXTENSION_POLE;
+import static com.simibubi.create.content.contraptions.components.structureMovement.piston.MechanicalPistonBlock.isExtensionPole;
+import static com.simibubi.create.content.contraptions.components.structureMovement.piston.MechanicalPistonBlock.isPiston;
+import static com.simibubi.create.content.contraptions.components.structureMovement.piston.MechanicalPistonBlock.isPistonHead;
+import static com.simibubi.create.content.contraptions.components.structureMovement.piston.MechanicalPistonBlock.isStickyPiston;
+import static net.minecraft.state.properties.BlockStateProperties.FACING;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 
-import static com.simibubi.kinetic_api.AllBlocks.MECHANICAL_PISTON_HEAD;
-import static com.simibubi.kinetic_api.AllBlocks.PISTON_EXTENSION_POLE;
-import static net.minecraft.block.enums.BambooLeaves.M;
+import org.apache.commons.lang3.tuple.Pair;
+
+import com.simibubi.create.content.contraptions.components.structureMovement.AssemblyException;
+import com.simibubi.create.content.contraptions.components.structureMovement.BlockMovementTraits;
+import com.simibubi.create.content.contraptions.components.structureMovement.ContraptionLighter;
+import com.simibubi.create.content.contraptions.components.structureMovement.ContraptionType;
+import com.simibubi.create.content.contraptions.components.structureMovement.TranslatingContraption;
+import com.simibubi.create.content.contraptions.components.structureMovement.piston.MechanicalPistonBlock.PistonState;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.utility.VecHelper;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.CarpetBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.PistonType;
+import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.state.property.Properties;
+import net.minecraft.structure.Structure.StructureBlockInfo;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class PistonContraption extends TranslatingContraption {
 
@@ -32,12 +46,12 @@ public class PistonContraption extends TranslatingContraption {
 	protected int initialExtensionProgress;
 	protected Direction orientation;
 
-	private Timer pistonExtensionCollisionBox;
+	private Box pistonExtensionCollisionBox;
 	private boolean retract;
 
 	@Override
-	protected AllContraptionTypes getType() {
-		return AllContraptionTypes.PISTON;
+	protected ContraptionType getType() {
+		return ContraptionType.PISTON;
 	}
 
 	public PistonContraption() {}
@@ -48,7 +62,7 @@ public class PistonContraption extends TranslatingContraption {
 	}
 
 	@Override
-	public boolean assemble(GameMode world, BlockPos pos) {
+	public boolean assemble(World world, BlockPos pos) throws AssemblyException {
 		if (!collectExtensions(world, pos, orientation))
 			return false;
 		int count = blocks.size();
@@ -57,78 +71,78 @@ public class PistonContraption extends TranslatingContraption {
 		if (blocks.size() == count) { // no new blocks added
 			bounds = pistonExtensionCollisionBox;
 		} else {
-			bounds = bounds.b(pistonExtensionCollisionBox);
+			bounds = bounds.union(pistonExtensionCollisionBox);
 		}
 		startMoving(world);
 		return true;
 	}
 
-	private boolean collectExtensions(GameMode world, BlockPos pos, Direction direction) {
-		List<c> poles = new ArrayList<>();
+	private boolean collectExtensions(World world, BlockPos pos, Direction direction) throws AssemblyException {
+		List<StructureBlockInfo> poles = new ArrayList<>();
 		BlockPos actualStart = pos;
-		PistonHandler nextBlock = world.d_(actualStart.offset(direction));
+		BlockState nextBlock = world.getBlockState(actualStart.offset(direction));
 		int extensionsInFront = 0;
-		PistonHandler blockState = world.d_(pos);
+		BlockState blockState = world.getBlockState(pos);
 		boolean sticky = isStickyPiston(blockState);
 
 		if (!isPiston(blockState))
 			return false;
 
-		if (blockState.c(MechanicalPistonBlock.STATE) == PistonState.EXTENDED) {
-			while (PistonExtensionPoleBlock.PlacementHelper.get().matchesAxis(nextBlock, direction.getAxis()) || isPistonHead(nextBlock) && nextBlock.c(M) == direction) {
+		if (blockState.get(MechanicalPistonBlock.STATE) == PistonState.EXTENDED) {
+			while (PistonExtensionPoleBlock.PlacementHelper.get().matchesAxis(nextBlock, direction.getAxis()) || isPistonHead(nextBlock) && nextBlock.get(FACING) == direction) {
 
 				actualStart = actualStart.offset(direction);
-				poles.add(new c(actualStart, nextBlock.a(M, direction), null));
+				poles.add(new StructureBlockInfo(actualStart, nextBlock.with(FACING, direction), null));
 				extensionsInFront++;
 
 				if (isPistonHead(nextBlock))
 					break;
 
-				nextBlock = world.d_(actualStart.offset(direction));
+				nextBlock = world.getBlockState(actualStart.offset(direction));
 				if (extensionsInFront > MechanicalPistonBlock.maxAllowedPistonPoles())
-					return false;
+					throw AssemblyException.tooManyPistonPoles();
 			}
 		}
 
 		if (extensionsInFront == 0)
-			poles.add(new c(pos, MECHANICAL_PISTON_HEAD.getDefaultState()
-				.a(M, direction)
-				.a(BambooLeaves.aJ, sticky ? BlockHalf.STICKY : BlockHalf.DEFAULT), null));
+			poles.add(new StructureBlockInfo(pos, MECHANICAL_PISTON_HEAD.getDefaultState()
+				.with(FACING, direction)
+				.with(Properties.PISTON_TYPE, sticky ? PistonType.STICKY : PistonType.DEFAULT), null));
 		else
-			poles.add(new c(pos, PISTON_EXTENSION_POLE.getDefaultState()
-				.a(M, direction), null));
+			poles.add(new StructureBlockInfo(pos, PISTON_EXTENSION_POLE.getDefaultState()
+				.with(FACING, direction), null));
 
 		BlockPos end = pos;
-		nextBlock = world.d_(end.offset(direction.getOpposite()));
+		nextBlock = world.getBlockState(end.offset(direction.getOpposite()));
 		int extensionsInBack = 0;
 
 		while (PistonExtensionPoleBlock.PlacementHelper.get().matchesAxis(nextBlock, direction.getAxis())) {
 			end = end.offset(direction.getOpposite());
-			poles.add(new c(end, nextBlock.a(M, direction), null));
+			poles.add(new StructureBlockInfo(end, nextBlock.with(FACING, direction), null));
 			extensionsInBack++;
-			nextBlock = world.d_(end.offset(direction.getOpposite()));
+			nextBlock = world.getBlockState(end.offset(direction.getOpposite()));
 
 			if (extensionsInFront + extensionsInBack > MechanicalPistonBlock.maxAllowedPistonPoles())
-				return false;
+				throw AssemblyException.tooManyPistonPoles();
 		}
 
 		anchor = pos.offset(direction, initialExtensionProgress + 1);
 		extensionLength = extensionsInBack + extensionsInFront;
 		initialExtensionProgress = extensionsInFront;
-		pistonExtensionCollisionBox = new Timer(
+		pistonExtensionCollisionBox = new Box(
 				BlockPos.ORIGIN.offset(direction, -1),
-				BlockPos.ORIGIN.offset(direction, -extensionLength - 1)).b(1,
+				BlockPos.ORIGIN.offset(direction, -extensionLength - 1)).stretch(1,
 						1, 1);
 
 		if (extensionLength == 0)
-			return false;
+			throw AssemblyException.noPistonPoles();
 
-		bounds = new Timer(0, 0, 0, 0, 0, 0);
+		bounds = new Box(0, 0, 0, 0, 0, 0);
 
-		for (c pole : poles) {
-			BlockPos relPos = pole.a.offset(direction, -extensionsInFront);
+		for (StructureBlockInfo pole : poles) {
+			BlockPos relPos = pole.pos.offset(direction, -extensionsInFront);
 			BlockPos localPos = relPos.subtract(anchor);
-			getBlocks().put(localPos, new c(localPos, pole.b, null));
+			getBlocks().put(localPos, new StructureBlockInfo(localPos, pole.state, null));
 			//pistonExtensionCollisionBox = pistonExtensionCollisionBox.union(new AxisAlignedBB(localPos));
 		}
 
@@ -137,13 +151,13 @@ public class PistonContraption extends TranslatingContraption {
 
 	@Override
 	protected boolean isAnchoringBlockAt(BlockPos pos) {
-		return pistonExtensionCollisionBox.d(VecHelper.getCenterOf(pos.subtract(anchor)));
+		return pistonExtensionCollisionBox.contains(VecHelper.getCenterOf(pos.subtract(anchor)));
 	}
 
 	@Override
-	protected boolean addToInitialFrontier(GameMode world, BlockPos pos, Direction direction, List<BlockPos> frontier) {
+	protected boolean addToInitialFrontier(World world, BlockPos pos, Direction direction, Queue<BlockPos> frontier) throws AssemblyException {
 		frontier.clear();
-		boolean sticky = isStickyPiston(world.d_(pos.offset(orientation, -1)));
+		boolean sticky = isStickyPiston(world.getBlockState(pos.offset(orientation, -1)));
 		boolean retracting = direction != orientation;
 		if (retracting && !sticky)
 			return true;
@@ -151,17 +165,24 @@ public class PistonContraption extends TranslatingContraption {
 			if (offset == 1 && retracting)
 				return true;
 			BlockPos currentPos = pos.offset(orientation, offset + initialExtensionProgress);
-			if (!world.p(currentPos))
-				return false;
-			if (!BlockMovementTraits.movementNecessary(world, currentPos))
+			if (retracting && World.isOutOfBuildLimitVertically(currentPos))
 				return true;
-			PistonHandler state = world.d_(currentPos);
-			if (BlockMovementTraits.isBrittle(state) && !(state.b() instanceof WitherSkullBlock))
+			if (!world.canSetBlock(currentPos))
+				throw AssemblyException.unloadedChunk(currentPos);
+			BlockState state = world.getBlockState(currentPos);
+			if (!BlockMovementTraits.movementNecessary(state, world, currentPos))
 				return true;
-			if (isPistonHead(state) && state.c(M) == direction.getOpposite())
+			if (BlockMovementTraits.isBrittle(state) && !(state.getBlock() instanceof CarpetBlock))
 				return true;
-			if (!BlockMovementTraits.movementAllowed(world, currentPos))
-				return retracting;
+			if (isPistonHead(state) && state.get(FACING) == direction.getOpposite())
+				return true;
+			if (!BlockMovementTraits.movementAllowed(state, world, currentPos))
+				if (retracting)
+					return true;
+				else
+					throw AssemblyException.unmovableBlock(currentPos, state);
+			if (retracting && state.getPistonBehavior() == PistonBehavior.PUSH_ONLY)
+				return true;
 			frontier.add(currentPos);
 			if (BlockMovementTraits.notSupportive(state, orientation))
 				return true;
@@ -170,7 +191,7 @@ public class PistonContraption extends TranslatingContraption {
 	}
 
 	@Override
-	public void addBlock(BlockPos pos, Pair<c, BeehiveBlockEntity> capture) {
+	public void addBlock(BlockPos pos, Pair<StructureBlockInfo, BlockEntity> capture) {
 		super.addBlock(pos.offset(orientation, -initialExtensionProgress), capture);
 	}
 
@@ -181,15 +202,15 @@ public class PistonContraption extends TranslatingContraption {
 	}
 
 	@Override
-	protected boolean customBlockPlacement(GrassColors world, BlockPos pos, PistonHandler state) {
+	protected boolean customBlockPlacement(WorldAccess world, BlockPos pos, BlockState state) {
 		BlockPos pistonPos = anchor.offset(orientation, -1);
-		PistonHandler pistonState = world.d_(pistonPos);
-		BeehiveBlockEntity te = world.c(pistonPos);
+		BlockState pistonState = world.getBlockState(pistonPos);
+		BlockEntity te = world.getBlockEntity(pistonPos);
 		if (pos.equals(pistonPos)) {
-			if (te == null || te.q())
+			if (te == null || te.isRemoved())
 				return true;
 			if (!isExtensionPole(state) && isPiston(pistonState))
-				world.a(pistonPos, pistonState.a(MechanicalPistonBlock.STATE, PistonState.RETRACTED),
+				world.setBlockState(pistonPos, pistonState.with(MechanicalPistonBlock.STATE, PistonState.RETRACTED),
 					3 | 16);
 			return true;
 		}
@@ -197,18 +218,18 @@ public class PistonContraption extends TranslatingContraption {
 	}
 
 	@Override
-	protected boolean customBlockRemoval(GrassColors world, BlockPos pos, PistonHandler state) {
+	protected boolean customBlockRemoval(WorldAccess world, BlockPos pos, BlockState state) {
 		BlockPos pistonPos = anchor.offset(orientation, -1);
-		PistonHandler blockState = world.d_(pos);
+		BlockState blockState = world.getBlockState(pos);
 		if (pos.equals(pistonPos) && isPiston(blockState)) {
-			world.a(pos, blockState.a(MechanicalPistonBlock.STATE, PistonState.MOVING), 66 | 16);
+			world.setBlockState(pos, blockState.with(MechanicalPistonBlock.STATE, PistonState.MOVING), 66 | 16);
 			return true;
 		}
 		return false;
 	}
 
 	@Override
-	public void readNBT(GameMode world, CompoundTag nbt, boolean spawnData) {
+	public void readNBT(World world, CompoundTag nbt, boolean spawnData) {
 		super.readNBT(world, nbt, spawnData);
 		initialExtensionProgress = nbt.getInt("InitialLength");
 		extensionLength = nbt.getInt("ExtensionLength");
@@ -224,4 +245,9 @@ public class PistonContraption extends TranslatingContraption {
 		return tag;
 	}
 
+	@Environment(EnvType.CLIENT)
+	@Override
+	public ContraptionLighter<?> makeLighter() {
+		return new PistonLighter(this);
+	}
 }

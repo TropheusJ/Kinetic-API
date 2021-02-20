@@ -1,21 +1,23 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.pipes;
+package com.simibubi.create.content.contraptions.fluids.pipes;
 
 import java.util.List;
-import bqx;
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidTransportBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.relays.elementary.BracketedTileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+
+import com.simibubi.create.content.contraptions.fluids.FluidTransportBehaviour;
+import com.simibubi.create.content.contraptions.relays.elementary.BracketedTileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.world.BlockRenderView;
 
 public class StraightPipeTileEntity extends SmartTileEntity {
 
-	public StraightPipeTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public StraightPipeTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 	}
 
@@ -32,24 +34,24 @@ public class StraightPipeTileEntity extends SmartTileEntity {
 		}
 
 		@Override
-		public boolean canHaveFlowToward(PistonHandler state, Direction direction) {
-			return state.b(AxisPipeBlock.e) && state.c(AxisPipeBlock.e) == direction.getAxis();
+		public boolean canHaveFlowToward(BlockState state, Direction direction) {
+			return state.contains(AxisPipeBlock.AXIS) && state.get(AxisPipeBlock.AXIS) == direction.getAxis();
 		}
 
 		@Override
-		public AttachmentTypes getRenderedRimAttachment(bqx world, BlockPos pos, PistonHandler state,
+		public AttachmentTypes getRenderedRimAttachment(BlockRenderView world, BlockPos pos, BlockState state,
 			Direction direction) {
 			AttachmentTypes attachment = super.getRenderedRimAttachment(world, pos, state, direction);
-			PistonHandler otherState = world.d_(pos.offset(direction));
+			BlockState otherState = world.getBlockState(pos.offset(direction));
 
 			Axis axis = IAxisPipe.getAxisOf(state);
 			Axis otherAxis = IAxisPipe.getAxisOf(otherState);
 
 			if (axis == otherAxis && axis != null)
-				if (state.b() == otherState.b() || direction.getDirection() == AxisDirection.POSITIVE)
+				if (state.getBlock() == otherState.getBlock() || direction.getDirection() == AxisDirection.POSITIVE)
 					return AttachmentTypes.NONE;
 
-			if (otherState.b() instanceof FluidValveBlock
+			if (otherState.getBlock() instanceof FluidValveBlock
 				&& FluidValveBlock.getPipeAxis(otherState) == direction.getAxis())
 				return AttachmentTypes.NONE;
 

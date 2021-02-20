@@ -1,40 +1,41 @@
-package com.simibubi.kinetic_api.content.contraptions.components.clock;
+package com.simibubi.create.content.contraptions.components.clock;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntityRenderer;
-import com.simibubi.kinetic_api.content.contraptions.components.clock.CuckooClockTileEntity.Animation;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.gl.JsonGlProgram;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.base.KineticTileEntityRenderer;
+import com.simibubi.create.content.contraptions.components.clock.CuckooClockTileEntity.Animation;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 
 public class CuckooClockRenderer extends KineticTileEntityRenderer {
 
-	public CuckooClockRenderer(ebv dispatcher) {
+	public CuckooClockRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(KineticTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(KineticTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
 		super.renderSafe(te, partialTicks, ms, buffer, light, overlay);
 		if (!(te instanceof CuckooClockTileEntity))
 			return;
 
 		CuckooClockTileEntity clock = (CuckooClockTileEntity) te;
-		PistonHandler blockState = te.p();
-		int packedLightmapCoords = JsonGlProgram.a(te.v(), blockState, te.o());
-		Direction direction = blockState.c(CuckooClockBlock.HORIZONTAL_FACING);
+		BlockState blockState = te.getCachedState();
+		int packedLightmapCoords = WorldRenderer.getLightmapCoordinates(te.getWorld(), blockState, te.getPos());
+		Direction direction = blockState.get(CuckooClockBlock.HORIZONTAL_FACING);
 
-		OverlayVertexConsumer vb = buffer.getBuffer(VertexConsumerProvider.c());
+		VertexConsumer vb = buffer.getBuffer(RenderLayer.getSolid());
 
 		// Render Hands
 		SuperByteBuffer hourHand = AllBlockPartials.CUCKOO_HOUR_HAND.renderOn(blockState);
@@ -60,11 +61,11 @@ public class CuckooClockRenderer extends KineticTileEntityRenderer {
 				if (local < -step / 3)
 					continue;
 				else if (local < 0)
-					angle = afj.g(((value - (phase - 5)) / 5), 0, 135);
+					angle = MathHelper.lerp(((value - (phase - 5)) / 5), 0, 135);
 				else if (local < step / 3)
 					angle = 135;
 				else if (local < 2 * step / 3)
-					angle = afj.g(((value - (phase + 5)) / 5), 135, 0);
+					angle = MathHelper.lerp(((value - (phase + 5)) / 5), 135, 0);
 
 			}
 		}
@@ -94,8 +95,8 @@ public class CuckooClockRenderer extends KineticTileEntityRenderer {
 	}
 
 	private SuperByteBuffer transform(AllBlockPartials partial, KineticTileEntity te) {
-		return partial.renderOnDirectionalSouth(te.p(), te.p()
-			.c(CuckooClockBlock.HORIZONTAL_FACING)
+		return partial.renderOnDirectionalSouth(te.getCachedState(), te.getCachedState()
+			.get(CuckooClockBlock.HORIZONTAL_FACING)
 			.getOpposite());
 	}
 

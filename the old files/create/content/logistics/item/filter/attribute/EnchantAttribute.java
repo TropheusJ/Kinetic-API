@@ -1,14 +1,15 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter.attribute;
+package com.simibubi.create.content.logistics.item.filter.attribute;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.content.logistics.item.filter.ItemAttribute;
-import net.minecraft.enchantment.DamageEnchantment;
-import net.minecraft.enchantment.EfficiencyEnchantment;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.logistics.item.filter.ItemAttribute;
+
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
@@ -17,20 +18,20 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class EnchantAttribute implements ItemAttribute {
     public static final EnchantAttribute EMPTY = new EnchantAttribute(null);
 
-    private final DamageEnchantment enchantment;
+    private final Enchantment enchantment;
 
-    public EnchantAttribute(@Nullable DamageEnchantment enchantment) {
+    public EnchantAttribute(@Nullable Enchantment enchantment) {
         this.enchantment = enchantment;
     }
 
     @Override
-    public boolean appliesTo(ItemCooldownManager itemStack) {
-        return EfficiencyEnchantment.a(itemStack).containsKey(enchantment);
+    public boolean appliesTo(ItemStack itemStack) {
+        return EnchantmentHelper.get(itemStack).containsKey(enchantment);
     }
 
     @Override
-    public List<ItemAttribute> listAttributesOf(ItemCooldownManager itemStack) {
-        return EfficiencyEnchantment.a(itemStack).keySet().stream().map(EnchantAttribute::new).collect(Collectors.toList());
+    public List<ItemAttribute> listAttributesOf(ItemStack itemStack) {
+        return EnchantmentHelper.get(itemStack).keySet().stream().map(EnchantAttribute::new).collect(Collectors.toList());
     }
 
     @Override
@@ -42,7 +43,7 @@ public class EnchantAttribute implements ItemAttribute {
     public Object[] getTranslationParameters() {
         String parameter = "";
         if(enchantment != null)
-            parameter = new TranslatableText(enchantment.g()).getString();
+            parameter = new TranslatableText(enchantment.getTranslationKey()).getString();
         return new Object[] { parameter };
     }
 

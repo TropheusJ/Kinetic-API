@@ -1,15 +1,15 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors.dispenser;
+package com.simibubi.create.content.contraptions.components.actors.dispenser;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import com.simibubi.kinetic_api.foundation.item.ItemHelper;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.util.Clearable;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementBehaviour;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.foundation.item.ItemHelper;
+import net.minecraft.inventory.Inventories;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 
@@ -28,43 +28,43 @@ public class DropperMovementBehaviour extends MovementBehaviour {
 
 	@Override
 	public void visitNewPosition(MovementContext context, BlockPos pos) {
-		if (context.world.v)
+		if (context.world.isClient)
 			return;
 		collectItems(context);
 		activate(context, pos);
 	}
 
 	private void collectItems(MovementContext context) {
-		getStacks(context).stream().filter(itemStack -> !itemStack.a() && itemStack.b() != AliasedBlockItem.a && itemStack.c() > itemStack.E()).forEach(itemStack -> itemStack.f(
-			ItemHelper.extract(context.contraption.inventory, itemStack::a, ItemHelper.ExtractionCountMode.UPTO, itemStack.c() - itemStack.E(), false).E()));
+		getStacks(context).stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR && itemStack.getMaxCount() > itemStack.getCount()).forEach(itemStack -> itemStack.increment(
+			ItemHelper.extract(context.contraption.inventory, itemStack::isItemEqualIgnoreDamage, ItemHelper.ExtractionCountMode.UPTO, itemStack.getMaxCount() - itemStack.getCount(), false).getCount()));
 	}
 
 	private void updateTemporaryData(MovementContext context) {
 		if (!(context.temporaryData instanceof DefaultedList) && context.world != null) {
-			DefaultedList<ItemCooldownManager> stacks = DefaultedList.ofSize(getInvSize(), ItemCooldownManager.tick);
-			Clearable.b(context.tileData, stacks);
+			DefaultedList<ItemStack> stacks = DefaultedList.ofSize(getInvSize(), ItemStack.EMPTY);
+			Inventories.fromTag(context.tileData, stacks);
 			context.temporaryData = stacks;
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	private DefaultedList<ItemCooldownManager> getStacks(MovementContext context) {
+	private DefaultedList<ItemStack> getStacks(MovementContext context) {
 		updateTemporaryData(context);
-		return (DefaultedList<ItemCooldownManager>) context.temporaryData;
+		return (DefaultedList<ItemStack>) context.temporaryData;
 	}
 
 	private ArrayList<DispenseItemLocation> getUseableLocations(MovementContext context) {
 		ArrayList<DispenseItemLocation> useable = new ArrayList<>();
 		for (int slot = 0; slot < getInvSize(); slot++) {
 			DispenseItemLocation location = new DispenseItemLocation(true, slot);
-			ItemCooldownManager testStack = getItemStackAt(location, context);
-			if (testStack == null || testStack.a())
+			ItemStack testStack = getItemStackAt(location, context);
+			if (testStack == null || testStack.isEmpty())
 				continue;
-			if (testStack.c() == 1) {
-				location = new DispenseItemLocation(false, ItemHelper.findFirstMatchingSlotIndex(context.contraption.inventory, testStack::a));
-				if (!getItemStackAt(location, context).a())
+			if (testStack.getMaxCount() == 1) {
+				location = new DispenseItemLocation(false, ItemHelper.findFirstMatchingSlotIndex(context.contraption.inventory, testStack::isItemEqualIgnoreDamage));
+				if (!getItemStackAt(location, context).isEmpty())
 					useable.add(location);
-			} else if (testStack.E() >= 2)
+			} else if (testStack.getCount() >= 2)
 				useable.add(location);
 		}
 		return useable;
@@ -72,10 +72,10 @@ public class DropperMovementBehaviour extends MovementBehaviour {
 
 	@Override
 	public void writeExtraData(MovementContext context) {
-		DefaultedList<ItemCooldownManager> stacks = getStacks(context);
+		DefaultedList<ItemStack> stacks = getStacks(context);
 		if (stacks == null)
 			return;
-		Clearable.a(context.tileData, stacks);
+		Inventories.toTag(context.tileData, stacks);
 	}
 
 	@Override
@@ -99,7 +99,7 @@ public class DropperMovementBehaviour extends MovementBehaviour {
 			return useableLocations.get(i);
 	}
 
-	protected ItemCooldownManager getItemStackAt(DispenseItemLocation location, MovementContext context) {
+	protected ItemStack getItemStackAt(DispenseItemLocation location, MovementContext context) {
 		if (location.isInternal()) {
 			return getStacks(context).get(location.getSlot());
 		} else {
@@ -107,7 +107,7 @@ public class DropperMovementBehaviour extends MovementBehaviour {
 		}
 	}
 
-	protected void setItemStackAt(DispenseItemLocation location, ItemCooldownManager stack, MovementContext context) {
+	protected void setItemStackAt(DispenseItemLocation location, ItemStack stack, MovementContext context) {
 		if (location.isInternal()) {
 			getStacks(context).set(location.getSlot(), stack);
 		} else {

@@ -1,162 +1,163 @@
-package com.simibubi.kinetic_api.content.contraptions.processing.burner;
+package com.simibubi.create.content.contraptions.processing.burner;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import bcx;
-import bnx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.utility.VecHelper;
 
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.HoeItem;
+import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.MobSpawnerBlockEntity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.BlazeEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.GravityField;
-import net.minecraft.village.TradeOfferList;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.MobSpawnerEntry;
+import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class BlazeBurnerBlockItem extends BannerItem {
+public class BlazeBurnerBlockItem extends BlockItem {
 
 	private final boolean capturedBlaze;
 
-	public static BlazeBurnerBlockItem empty(a properties) {
+	public static BlazeBurnerBlockItem empty(Settings properties) {
 		return new BlazeBurnerBlockItem(AllBlocks.BLAZE_BURNER.get(), properties, false);
 	}
 
-	public static BlazeBurnerBlockItem withBlaze(BeetrootsBlock block, a properties) {
+	public static BlazeBurnerBlockItem withBlaze(Block block, Settings properties) {
 		return new BlazeBurnerBlockItem(block, properties, true);
 	}
 	
 	@Override
-	public void a(Map<BeetrootsBlock, HoeItem> p_195946_1_, HoeItem p_195946_2_) {
+	public void appendBlocks(Map<Block, Item> p_195946_1_, Item p_195946_2_) {
 		if (!hasCapturedBlaze())
 			return;
-		super.a(p_195946_1_, p_195946_2_);
+		super.appendBlocks(p_195946_1_, p_195946_2_);
 	}
 
-	private BlazeBurnerBlockItem(BeetrootsBlock block, a properties, boolean capturedBlaze) {
+	private BlazeBurnerBlockItem(Block block, Settings properties, boolean capturedBlaze) {
 		super(block, properties);
 		this.capturedBlaze = capturedBlaze;
 	}
 
 	@Override
-	public void a(ChorusFruitItem p_150895_1_, DefaultedList<ItemCooldownManager> p_150895_2_) {
+	public void appendStacks(ItemGroup p_150895_1_, DefaultedList<ItemStack> p_150895_2_) {
 		if (!hasCapturedBlaze())
 			return;
-		super.a(p_150895_1_, p_150895_2_);
+		super.appendStacks(p_150895_1_, p_150895_2_);
 	}
 
 	@Override
-	public String a() {
-		return hasCapturedBlaze() ? super.a() : "item.kinetic_api." + getRegistryName().getPath();
+	public String getTranslationKey() {
+		return hasCapturedBlaze() ? super.getTranslationKey() : "item.create." + getRegistryName().getPath();
 	}
 
 	@Override
-	public Difficulty a(bnx context) {
+	public ActionResult useOnBlock(ItemUsageContext context) {
 		if (hasCapturedBlaze())
-			return super.a(context);
+			return super.useOnBlock(context);
 
-		GameMode world = context.p();
-		BlockPos pos = context.a();
-		BeehiveBlockEntity te = world.c(pos);
-		PlayerAbilities player = context.n();
+		World world = context.getWorld();
+		BlockPos pos = context.getBlockPos();
+		BlockEntity te = world.getBlockEntity(pos);
+		PlayerEntity player = context.getPlayer();
 
-		if (!(te instanceof SignBlockEntity))
-			return super.a(context);
+		if (!(te instanceof MobSpawnerBlockEntity))
+			return super.useOnBlock(context);
 
-		TradeOfferList spawner = ((SignBlockEntity) te).d();
-		List<GravityField> possibleSpawns =
-			ObfuscationReflectionHelper.getPrivateValue(TradeOfferList.class, spawner, "field_98285_e");
+		MobSpawnerLogic spawner = ((MobSpawnerBlockEntity) te).getLogic();
+		List<MobSpawnerEntry> possibleSpawns =
+			ObfuscationReflectionHelper.getPrivateValue(MobSpawnerLogic.class, spawner, "field_98285_e");
 		if (possibleSpawns.isEmpty()) {
 			possibleSpawns = new ArrayList<>();
 			possibleSpawns
-				.add(ObfuscationReflectionHelper.getPrivateValue(TradeOfferList.class, spawner, "field_98282_f"));
+				.add(ObfuscationReflectionHelper.getPrivateValue(MobSpawnerLogic.class, spawner, "field_98282_f"));
 		}
 
-		Identifier blazeId = EntityDimensions.f.getRegistryName();
-		for (GravityField e : possibleSpawns) {
-			Identifier spawnerEntityId = new Identifier(e.b()
+		Identifier blazeId = EntityType.BLAZE.getRegistryName();
+		for (MobSpawnerEntry e : possibleSpawns) {
+			Identifier spawnerEntityId = new Identifier(e.getEntityTag()
 				.getString("id"));
 			if (!spawnerEntityId.equals(blazeId))
 				continue;
 
 			spawnCaptureEffects(world, VecHelper.getCenterOf(pos));
-			if (world.v || player == null)
-				return Difficulty.SUCCESS;
+			if (world.isClient || player == null)
+				return ActionResult.SUCCESS;
 
-			giveBurnerItemTo(player, context.m(), context.o());
-			return Difficulty.SUCCESS;
+			giveBurnerItemTo(player, context.getStack(), context.getHand());
+			return ActionResult.SUCCESS;
 		}
 
-		return super.a(context);
+		return super.useOnBlock(context);
 	}
 
 	@Override
-	public Difficulty a(ItemCooldownManager heldItem, PlayerAbilities player, SaddledComponent entity, ItemScatterer hand) {
+	public ActionResult useOnEntity(ItemStack heldItem, PlayerEntity player, LivingEntity entity, Hand hand) {
 		if (hasCapturedBlaze())
-			return Difficulty.PASS;
-		if (!(entity instanceof bcx))
-			return Difficulty.PASS;
+			return ActionResult.PASS;
+		if (!(entity instanceof BlazeEntity))
+			return ActionResult.PASS;
 
-		GameMode world = player.l;
-		spawnCaptureEffects(world, entity.cz());
-		if (world.v)
-			return Difficulty.FAIL;
+		World world = player.world;
+		spawnCaptureEffects(world, entity.getPos());
+		if (world.isClient)
+			return ActionResult.FAIL;
 
 		giveBurnerItemTo(player, heldItem, hand);
-		entity.ac();
-		return Difficulty.FAIL;
+		entity.remove();
+		return ActionResult.FAIL;
 	}
 
-	protected void giveBurnerItemTo(PlayerAbilities player, ItemCooldownManager heldItem, ItemScatterer hand) {
-		ItemCooldownManager filled = AllBlocks.BLAZE_BURNER.asStack();
-		if (!player.b_())
-			heldItem.g(1);
-		if (heldItem.a()) {
-			player.a(hand, filled);
+	protected void giveBurnerItemTo(PlayerEntity player, ItemStack heldItem, Hand hand) {
+		ItemStack filled = AllBlocks.BLAZE_BURNER.asStack();
+		if (!player.isCreative())
+			heldItem.decrement(1);
+		if (heldItem.isEmpty()) {
+			player.setStackInHand(hand, filled);
 			return;
 		}
-		player.bm.a(player.l, filled);
+		player.inventory.offerOrDrop(player.world, filled);
 	}
 
-	private void spawnCaptureEffects(GameMode world, EntityHitResult vec) {
-		if (world.v) {
+	private void spawnCaptureEffects(World world, Vec3d vec) {
+		if (world.isClient) {
 			for (int i = 0; i < 40; i++) {
-				EntityHitResult motion = VecHelper.offsetRandomly(EntityHitResult.a, world.t, .125f);
-				world.addParticle(ParticleTypes.FLAME, vec.entity, vec.c, vec.d, motion.entity, motion.c, motion.d);
-				EntityHitResult circle = motion.d(1, 0, 1)
-					.d()
-					.a(.5f);
-				world.addParticle(ParticleTypes.SMOKE, circle.entity, vec.c, circle.d, 0, -0.125, 0);
+				Vec3d motion = VecHelper.offsetRandomly(Vec3d.ZERO, world.random, .125f);
+				world.addParticle(ParticleTypes.FLAME, vec.x, vec.y, vec.z, motion.x, motion.y, motion.z);
+				Vec3d circle = motion.multiply(1, 0, 1)
+					.normalize()
+					.multiply(.5f);
+				world.addParticle(ParticleTypes.SMOKE, circle.x, vec.y, circle.z, 0, -0.125, 0);
 			}
 			return;
 		}
 
 		BlockPos soundPos = new BlockPos(vec);
-		world.a(null, soundPos, MusicType.aO, SoundEvent.f, .25f, .75f);
-		world.a(null, soundPos, MusicType.ej, SoundEvent.f, .5f, .75f);
+		world.playSound(null, soundPos, SoundEvents.ENTITY_BLAZE_HURT, SoundCategory.HOSTILE, .25f, .75f);
+		world.playSound(null, soundPos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.HOSTILE, .5f, .75f);
 	}
 
 	public boolean hasCapturedBlaze() {

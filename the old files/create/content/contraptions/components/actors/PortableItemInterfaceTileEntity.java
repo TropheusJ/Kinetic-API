@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
-import com.simibubi.kinetic_api.content.contraptions.components.actors.PortableItemInterfaceTileEntity.InterfaceItemHandler;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.Contraption;
-import com.simibubi.kinetic_api.foundation.item.ItemHandlerWrapper;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.contraptions.components.actors.PortableItemInterfaceTileEntity.InterfaceItemHandler;
+import com.simibubi.create.content.contraptions.components.structureMovement.Contraption;
+import com.simibubi.create.foundation.item.ItemHandlerWrapper;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
@@ -15,7 +15,7 @@ public class PortableItemInterfaceTileEntity extends PortableStorageInterfaceTil
 
 	protected LazyOptional<IItemHandlerModifiable> capability;
 
-	public PortableItemInterfaceTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public PortableItemInterfaceTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		capability = LazyOptional.empty();
 	}
@@ -54,20 +54,20 @@ public class PortableItemInterfaceTileEntity extends PortableStorageInterfaceTil
 		}
 
 		@Override
-		public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
+		public ItemStack extractItem(int slot, int amount, boolean simulate) {
 			if (!isConnected())
-				return ItemCooldownManager.tick;
-			ItemCooldownManager extractItem = super.extractItem(slot, amount, simulate);
-			if (!simulate && !extractItem.a())
+				return ItemStack.EMPTY;
+			ItemStack extractItem = super.extractItem(slot, amount, simulate);
+			if (!simulate && !extractItem.isEmpty())
 				onContentTransferred();
 			return extractItem;
 		}
 
 		@Override
-		public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
+		public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
 			if (!isConnected())
 				return stack;
-			ItemCooldownManager insertItem = super.insertItem(slot, stack, simulate);
+			ItemStack insertItem = super.insertItem(slot, stack, simulate);
 			if (!simulate && !insertItem.equals(stack, false))
 				onContentTransferred();
 			return insertItem;

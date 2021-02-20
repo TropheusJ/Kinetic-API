@@ -1,10 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.advanced.sequencer;
+package com.simibubi.create.content.contraptions.relays.advanced.sequencer;
 
 import java.util.Vector;
 
-import com.simibubi.kinetic_api.content.contraptions.relays.encased.SplitShaftTileEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.content.contraptions.relays.encased.SplitShaftTileEntity;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.Direction;
 import net.minecraftforge.common.util.Constants.NBT;
@@ -16,7 +17,7 @@ public class SequencedGearshiftTileEntity extends SplitShaftTileEntity {
 	int currentInstructionDuration;
 	int timer;
 
-	public SequencedGearshiftTileEntity(BellBlockEntity<? extends SequencedGearshiftTileEntity> type) {
+	public SequencedGearshiftTileEntity(BlockEntityType<? extends SequencedGearshiftTileEntity> type) {
 		super(type);
 		instructions = Instruction.createDefault();
 		currentInstruction = -1;
@@ -25,12 +26,12 @@ public class SequencedGearshiftTileEntity extends SplitShaftTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 
 		if (isIdle())
 			return;
-		if (d.v)
+		if (world.isClient)
 			return;
 		if (timer < currentInstructionDuration) {
 			timer++;
@@ -66,8 +67,8 @@ public class SequencedGearshiftTileEntity extends SplitShaftTileEntity {
 	public void onRedstoneUpdate() {
 		if (!isIdle())
 			return;
-		if (!d.r(e)) {
-			d.a(e, p().a(SequencedGearshiftBlock.STATE, 0), 3);
+		if (!world.isReceivingRedstonePower(pos)) {
+			world.setBlockState(pos, getCachedState().with(SequencedGearshiftBlock.STATE, 0), 3);
 			return;
 		}
 		if (getSpeed() == 0)
@@ -83,8 +84,8 @@ public class SequencedGearshiftTileEntity extends SplitShaftTileEntity {
 			currentInstruction = -1;
 			currentInstructionDuration = -1;
 			timer = 0;
-			if (!d.r(e))
-				d.a(e, p().a(SequencedGearshiftBlock.STATE, 0), 3);
+			if (!world.isReceivingRedstonePower(pos))
+				world.setBlockState(pos, getCachedState().with(SequencedGearshiftBlock.STATE, 0), 3);
 			else
 				sendData();
 			return;
@@ -94,7 +95,7 @@ public class SequencedGearshiftTileEntity extends SplitShaftTileEntity {
 		currentInstructionDuration = instruction.getDuration(0, getTheoreticalSpeed());
 		currentInstruction = instructionIndex;
 		timer = 0;
-		d.a(e, p().a(SequencedGearshiftBlock.STATE, instructionIndex + 1), 3);
+		world.setBlockState(pos, getCachedState().with(SequencedGearshiftBlock.STATE, instructionIndex + 1), 3);
 	}
 
 	public Instruction getInstruction(int instructionIndex) {
@@ -112,7 +113,7 @@ public class SequencedGearshiftTileEntity extends SplitShaftTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		currentInstruction = compound.getInt("InstructionIndex");
 		currentInstructionDuration = compound.getInt("InstructionDuration");
 		timer = compound.getInt("Timer");

@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.foundation.block.connected;
+package com.simibubi.create.foundation.block.connected;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.block.render.SpriteShifter;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.block.render.SpriteShifter;
 import net.minecraft.util.Identifier;
 
 public class CTSpriteShifter extends SpriteShifter {

@@ -1,48 +1,52 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing;
+package com.simibubi.create.content.contraptions.components.structureMovement.bearing;
 
-import apx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.foundation.block.ProperDirectionalBlock;
-import com.simibubi.kinetic_api.foundation.utility.DyeHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import com.simibubi.kinetic_api.foundation.utility.placement.IPlacementHelper;
-import com.simibubi.kinetic_api.foundation.utility.placement.PlacementHelpers;
-import com.simibubi.kinetic_api.foundation.utility.placement.PlacementOffset;
-import dcg;
-import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.*;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import javax.annotation.Nullable;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.foundation.block.ProperDirectionalBlock;
+import com.simibubi.create.foundation.utility.DyeHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.placement.IPlacementHelper;
+import com.simibubi.create.foundation.utility.placement.PlacementHelpers;
+import com.simibubi.create.foundation.utility.placement.PlacementOffset;
+
+import mcp.MethodsReturnNonnullByDefault;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ShearsItem;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.DyeColor;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+
 public class SailBlock extends ProperDirectionalBlock {
 
-	public static SailBlock frame(c properties) {
+	public static SailBlock frame(Settings properties) {
 		return new SailBlock(properties, true);
 	}
 
-	public static SailBlock withCanvas(c properties) {
+	public static SailBlock withCanvas(Settings properties) {
 		return new SailBlock(properties, false);
 	}
 
@@ -50,88 +54,70 @@ public class SailBlock extends ProperDirectionalBlock {
 
 	private final boolean frame;
 
-	protected SailBlock(c p_i48415_1_, boolean frame) {
+	protected SailBlock(Settings p_i48415_1_, boolean frame) {
 		super(p_i48415_1_);
 		this.frame = frame;
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		PistonHandler state = super.a(context);
-		return state.a(SHAPE, state.c(SHAPE).getOpposite());
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		BlockState state = super.getPlacementState(context);
+		return state.with(FACING, state.get(FACING).getOpposite());
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode world, BlockPos pos, PlayerAbilities player, ItemScatterer hand, dcg ray) {
-		ItemCooldownManager heldItem = player.b(hand);
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult ray) {
+		ItemStack heldItem = player.getStackInHand(hand);
 
-		if (AllBlocks.SAIL.isIn(heldItem) || AllBlocks.SAIL_FRAME.isIn(heldItem)) {
-			IPlacementHelper placementHelper = PlacementHelpers.get(placementHelperId);
-			PlacementOffset offset = placementHelper.getOffset(world, state, pos, ray);
+		IPlacementHelper placementHelper = PlacementHelpers.get(placementHelperId);
+		if (placementHelper.matchesItem(heldItem))
+			return placementHelper.getOffset(world, state, pos, ray).placeInWorld(world, (BlockItem) heldItem.getItem(), player, hand, ray);
 
-			if (!offset.isReplaceable(world))
-				return Difficulty.PASS;
-
-			offset.placeInWorld(world, ((BannerItem) heldItem.b()).e().n(), player, heldItem);
-
-			/*BlockState blockState = ((BlockItem) heldItem.getItem()).getBlock()
-					.getDefaultState()
-					.with(FACING, state.get(FACING));
-			BlockPos offsetPos = new BlockPos(offset.getPos());
-			if (!world.isRemote && world.getBlockState(offsetPos).getMaterial().isReplaceable()) {
-				world.setBlockState(offsetPos, blockState);
-				if (!player.isCreative())
-					heldItem.shrink(1);
-			}*/
-
-			return Difficulty.SUCCESS;
-		}
-
-		if (heldItem.b() instanceof SaddleItem) {
-			if (!world.v)
+		if (heldItem.getItem() instanceof ShearsItem) {
+			if (!world.isClient)
 				applyDye(state, world, pos, null);
-			return Difficulty.SUCCESS;
+			return ActionResult.SUCCESS;
 		}
 
 		if (frame)
-			return Difficulty.PASS;
+			return ActionResult.PASS;
 
-		for (DebugStickItem color : DebugStickItem.values()) {
-			if (!heldItem.b()
-					.a(DyeHelper.getTagOfDye(color)))
+		for (DyeColor color : DyeColor.values()) {
+			if (!heldItem.getItem()
+					.isIn(DyeHelper.getTagOfDye(color)))
 				continue;
-			if (!world.v)
+			if (!world.isClient)
 				applyDye(state, world, pos, color);
-			return Difficulty.SUCCESS;
+			return ActionResult.SUCCESS;
 		}
 
-		return Difficulty.PASS;
+		return ActionResult.PASS;
 	}
 
-	protected void applyDye(PistonHandler state, GameMode world, BlockPos pos, @Nullable DebugStickItem color) {
-		PistonHandler newState =
+	protected void applyDye(BlockState state, World world, BlockPos pos, @Nullable DyeColor color) {
+		BlockState newState =
 				(color == null ? AllBlocks.SAIL_FRAME : AllBlocks.DYED_SAILS[color.ordinal()]).getDefaultState()
-						.a(SHAPE, state.c(SHAPE));
+						.with(FACING, state.get(FACING));
 
 		// Dye the block itself
 		if (state != newState) {
-			world.a(pos, newState);
+			world.setBlockState(pos, newState);
 			return;
 		}
 
 		// Dye all adjacent
 		for (Direction d : Iterate.directions) {
-			if (d.getAxis() == state.c(SHAPE)
+			if (d.getAxis() == state.get(FACING)
 					.getAxis())
 				continue;
 			BlockPos offset = pos.offset(d);
-			PistonHandler adjacentState = world.d_(offset);
-			BeetrootsBlock block = adjacentState.b();
+			BlockState adjacentState = world.getBlockState(offset);
+			Block block = adjacentState.getBlock();
 			if (!(block instanceof SailBlock) || ((SailBlock) block).frame)
 				continue;
 			if (state == adjacentState)
 				continue;
-			world.a(offset, newState);
+			world.setBlockState(offset, newState);
 			return;
 		}
 
@@ -148,18 +134,18 @@ public class SailBlock extends ProperDirectionalBlock {
 			visited.add(currentPos);
 
 			for (Direction d : Iterate.directions) {
-				if (d.getAxis() == state.c(SHAPE)
+				if (d.getAxis() == state.get(FACING)
 						.getAxis())
 					continue;
 				BlockPos offset = currentPos.offset(d);
 				if (visited.contains(offset))
 					continue;
-				PistonHandler adjacentState = world.d_(offset);
-				BeetrootsBlock block = adjacentState.b();
+				BlockState adjacentState = world.getBlockState(offset);
+				Block block = adjacentState.getBlock();
 				if (!(block instanceof SailBlock) || ((SailBlock) block).frame && color != null)
 					continue;
 				if (state != adjacentState)
-					world.a(offset, newState);
+					world.setBlockState(offset, newState);
 				frontier.add(offset);
 				visited.add(offset);
 			}
@@ -167,45 +153,45 @@ public class SailBlock extends ProperDirectionalBlock {
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic p_220053_2_, BlockPos p_220053_3_, ArrayVoxelShape p_220053_4_) {
-		return (frame ? AllShapes.SAIL_FRAME : AllShapes.SAIL).get(state.c(SHAPE));
+	public VoxelShape getOutlineShape(BlockState state, BlockView p_220053_2_, BlockPos p_220053_3_, ShapeContext p_220053_4_) {
+		return (frame ? AllShapes.SAIL_FRAME : AllShapes.SAIL).get(state.get(FACING));
 	}
 
 	@Override
-	public VoxelShapes c(PistonHandler state, MobSpawnerLogic p_220071_2_, BlockPos p_220071_3_, ArrayVoxelShape p_220071_4_) {
+	public VoxelShape getCollisionShape(BlockState state, BlockView p_220071_2_, BlockPos p_220071_3_, ShapeContext p_220071_4_) {
 		if (frame)
-			return AllShapes.SAIL_FRAME_COLLISION.get(state.c(SHAPE));
-		return b(state, p_220071_2_, p_220071_3_, p_220071_4_);
+			return AllShapes.SAIL_FRAME_COLLISION.get(state.get(FACING));
+		return getOutlineShape(state, p_220071_2_, p_220071_3_, p_220071_4_);
 	}
 
 	@Override
-	public ItemCooldownManager getPickBlock(PistonHandler state, Box target, MobSpawnerLogic world, BlockPos pos, PlayerAbilities player) {
-		ItemCooldownManager pickBlock = super.getPickBlock(state, target, world, pos, player);
-		if (pickBlock.a())
+	public ItemStack getPickBlock(BlockState state, HitResult target, BlockView world, BlockPos pos, PlayerEntity player) {
+		ItemStack pickBlock = super.getPickBlock(state, target, world, pos, player);
+		if (pickBlock.isEmpty())
 			return AllBlocks.SAIL.get()
 					.getPickBlock(state, target, world, pos, player);
 		return pickBlock;
 	}
 
-	public void a(GameMode p_180658_1_, BlockPos p_180658_2_, apx p_180658_3_, float p_180658_4_) {
+	public void onLandedUpon(World p_180658_1_, BlockPos p_180658_2_, Entity p_180658_3_, float p_180658_4_) {
 		if (frame)
-			super.a(p_180658_1_, p_180658_2_, p_180658_3_, p_180658_4_);
-		super.a(p_180658_1_, p_180658_2_, p_180658_3_, 0);
+			super.onLandedUpon(p_180658_1_, p_180658_2_, p_180658_3_, p_180658_4_);
+		super.onLandedUpon(p_180658_1_, p_180658_2_, p_180658_3_, 0);
 	}
 
-	public void a(MobSpawnerLogic p_176216_1_, apx p_176216_2_) {
-		if (frame || p_176216_2_.bv()) {
-			super.a(p_176216_1_, p_176216_2_);
+	public void onEntityLand(BlockView p_176216_1_, Entity p_176216_2_) {
+		if (frame || p_176216_2_.bypassesLandingEffects()) {
+			super.onEntityLand(p_176216_1_, p_176216_2_);
 		} else {
 			this.bounce(p_176216_2_);
 		}
 	}
 
-	private void bounce(apx p_226860_1_) {
-		EntityHitResult vec3d = p_226860_1_.cB();
-		if (vec3d.c < 0.0D) {
-			double d0 = p_226860_1_ instanceof SaddledComponent ? 1.0D : 0.8D;
-			p_226860_1_.n(vec3d.entity, -vec3d.c * (double) 0.26F * d0, vec3d.d);
+	private void bounce(Entity p_226860_1_) {
+		Vec3d Vector3d = p_226860_1_.getVelocity();
+		if (Vector3d.y < 0.0D) {
+			double d0 = p_226860_1_ instanceof LivingEntity ? 1.0D : 0.8D;
+			p_226860_1_.setVelocity(Vector3d.x, -Vector3d.y * (double) 0.26F * d0, Vector3d.z);
 		}
 
 	}
@@ -213,29 +199,30 @@ public class SailBlock extends ProperDirectionalBlock {
 	@MethodsReturnNonnullByDefault
 	private static class PlacementHelper implements IPlacementHelper {
 		@Override
-		public Predicate<ItemCooldownManager> getItemPredicate() {
+		public Predicate<ItemStack> getItemPredicate() {
 			return i -> AllBlocks.SAIL.isIn(i) || AllBlocks.SAIL_FRAME.isIn(i);
 		}
 
 		@Override
-		public Predicate<PistonHandler> getStatePredicate() {
-			return s -> s.b() instanceof SailBlock;
+		public Predicate<BlockState> getStatePredicate() {
+			return s -> s.getBlock() instanceof SailBlock;
 		}
 
 		@Override
-		public PlacementOffset getOffset(GameMode world, PistonHandler state, BlockPos pos, dcg ray) {
-			List<Direction> directions = IPlacementHelper.orderedByDistanceExceptAxis(pos, ray.e(), state.c(SailBlock.SHAPE).getAxis(), dir -> world.d_(pos.offset(dir)).c().e());
+		public PlacementOffset getOffset(World world, BlockState state, BlockPos pos, BlockHitResult ray) {
+			List<Direction> directions = IPlacementHelper.orderedByDistanceExceptAxis(pos, ray.getPos(), state.get(SailBlock.FACING).getAxis(), dir -> world.getBlockState(pos.offset(dir)).getMaterial().isReplaceable());
 
 			if (directions.isEmpty())
 				return PlacementOffset.fail();
 			else {
-				return PlacementOffset.success(pos.offset(directions.get(0)), s -> s.a(SHAPE, state.c(SHAPE)));
+				return PlacementOffset.success(pos.offset(directions.get(0)), s -> s.with(FACING, state.get(FACING)));
 			}
 		}
 
 		@Override
-		public void renderAt(BlockPos pos, PistonHandler state, dcg ray, PlacementOffset offset) {
-			IPlacementHelper.renderArrow(VecHelper.getCenterOf(pos), VecHelper.getCenterOf(offset.getPos()), state.c(SHAPE));
+		public void renderAt(BlockPos pos, BlockState state, BlockHitResult ray, PlacementOffset offset) {
+			//IPlacementHelper.renderArrow(VecHelper.getCenterOf(pos), VecHelper.getCenterOf(offset.getPos()), state.get(FACING));
+			displayGhost(offset);
 		}
 	}
 }

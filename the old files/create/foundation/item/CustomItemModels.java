@@ -1,33 +1,34 @@
-package com.simibubi.kinetic_api.foundation.item;
+package com.simibubi.create.foundation.item;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import net.minecraft.item.HoeItem;
+
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.tterrag.registrate.util.nullness.NonNullBiConsumer;
 import com.tterrag.registrate.util.nullness.NonNullFunction;
-import elg;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.item.Item;
 
 public class CustomItemModels {
 
-	private List<Pair<Supplier<? extends HoeItem>, NonNullFunction<elg, ? extends elg>>> registered;
-	private Map<HoeItem, NonNullFunction<elg, ? extends elg>> customModels;
+	private List<Pair<Supplier<? extends Item>, NonNullFunction<BakedModel, ? extends BakedModel>>> registered;
+	private Map<Item, NonNullFunction<BakedModel, ? extends BakedModel>> customModels;
 	
 	public CustomItemModels() {
 		registered = new ArrayList<>();
 		customModels = new IdentityHashMap<>();
 	}
 
-	public void register(Supplier<? extends HoeItem> entry,
-		NonNullFunction<elg, ? extends elg> behaviour) {
+	public void register(Supplier<? extends Item> entry,
+		NonNullFunction<BakedModel, ? extends BakedModel> behaviour) {
 		registered.add(Pair.of(entry, behaviour));
 	}
 	
-	public void foreach(NonNullBiConsumer<HoeItem, NonNullFunction<elg, ? extends elg>> consumer) {
+	public void foreach(NonNullBiConsumer<Item, NonNullFunction<BakedModel, ? extends BakedModel>> consumer) {
 		loadEntriesIfMissing();
 		customModels.forEach(consumer);
 	}

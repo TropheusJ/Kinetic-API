@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.foundation.fluid;
+package com.simibubi.create.foundation.fluid;
 
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Iterate;
 
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;

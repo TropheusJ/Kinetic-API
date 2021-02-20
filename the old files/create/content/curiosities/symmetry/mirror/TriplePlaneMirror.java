@@ -1,28 +1,29 @@
-package com.simibubi.kinetic_api.content.curiosities.symmetry.mirror;
+package com.simibubi.create.content.curiosities.symmetry.mirror;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.util.SmoothUtil;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.text.Text;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 public class TriplePlaneMirror extends SymmetryMirror {
 
-	public TriplePlaneMirror(EntityHitResult pos) {
+	public TriplePlaneMirror(Vec3d pos) {
 		super(pos);
 		orientationIndex = 0;
 	}
 
 	@Override
-	public Map<BlockPos, PistonHandler> process(BlockPos position, PistonHandler block) {
-		Map<BlockPos, PistonHandler> result = new HashMap<>();
+	public Map<BlockPos, BlockState> process(BlockPos position, BlockState block) {
+		Map<BlockPos, BlockState> result = new HashMap<>();
 
 		result.put(flipX(position), flipX(block));
 		result.put(flipZ(position), flipZ(block));
@@ -55,7 +56,7 @@ public class TriplePlaneMirror extends SymmetryMirror {
 	}
 	
 	@Override
-	public SmoothUtil getOrientation() {
+	public StringIdentifiable getOrientation() {
 		return CrossPlaneMirror.Align.Y;
 	}
 	

@@ -1,30 +1,30 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter;
+package com.simibubi.create.content.logistics.item.filter;
 
-import bfs;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.FoodComponent;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.screen.BrewingStandScreenHandler;
-import net.minecraft.screen.LecternScreenHandler;
-import net.minecraft.screen.ShulkerBoxScreenHandler;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 
-public abstract class AbstractFilterContainer extends FoodComponent {
+public abstract class AbstractFilterContainer extends ScreenHandler {
 
-	public PlayerAbilities player;
-	protected bfs playerInventory;
-	public ItemCooldownManager filterItem;
+	public PlayerEntity player;
+	protected PlayerInventory playerInventory;
+	public ItemStack filterItem;
 	public ItemStackHandler filterInventory;
 
-	protected AbstractFilterContainer(LecternScreenHandler<?> type, int id, bfs inv, PacketByteBuf extraData) {
-		this(type, id, inv, extraData.n());
+	protected AbstractFilterContainer(ScreenHandlerType<?> type, int id, PlayerInventory inv, PacketByteBuf extraData) {
+		this(type, id, inv, extraData.readItemStack());
 	}
 
-	protected AbstractFilterContainer(LecternScreenHandler<?> type, int id, bfs inv, ItemCooldownManager filterItem) {
+	protected AbstractFilterContainer(ScreenHandlerType<?> type, int id, PlayerInventory inv, ItemStack filterItem) {
 		super(type, id);
-		player = inv.e;
+		player = inv.player;
 		playerInventory = inv;
 		this.filterItem = filterItem;
 		init();
@@ -35,12 +35,12 @@ public abstract class AbstractFilterContainer extends FoodComponent {
 		readData(filterItem);
 		addPlayerSlots();
 		addFilterSlots();
-		c();
+		sendContentUpdates();
 	}
 
 	protected void clearContents() {
 		for (int i = 0; i < filterInventory.getSlots(); i++)
-			filterInventory.setStackInSlot(i, ItemCooldownManager.tick);
+			filterInventory.setStackInSlot(i, ItemStack.EMPTY);
 	}
 
 	protected abstract int getInventoryOffset();
@@ -49,93 +49,93 @@ public abstract class AbstractFilterContainer extends FoodComponent {
 
 	protected abstract ItemStackHandler createFilterInventory();
 
-	protected abstract void readData(ItemCooldownManager filterItem);
+	protected abstract void readData(ItemStack filterItem);
 
-	protected abstract void saveData(ItemCooldownManager filterItem);
+	protected abstract void saveData(ItemStack filterItem);
 
 	protected void addPlayerSlots() {
 		int x = 58;
 		int y = 28 + getInventoryOffset();
 
 		for (int hotbarSlot = 0; hotbarSlot < 9; ++hotbarSlot)
-			this.a(new ShulkerBoxScreenHandler(playerInventory, hotbarSlot, x + hotbarSlot * 18, y + 58));
+			this.addSlot(new Slot(playerInventory, hotbarSlot, x + hotbarSlot * 18, y + 58));
 		for (int row = 0; row < 3; ++row)
 			for (int col = 0; col < 9; ++col)
-				this.a(new ShulkerBoxScreenHandler(playerInventory, col + row * 9 + 9, x + col * 18, y + row * 18));
+				this.addSlot(new Slot(playerInventory, col + row * 9 + 9, x + col * 18, y + row * 18));
 	}
 
 	@Override
-	public boolean a(ItemCooldownManager stack, ShulkerBoxScreenHandler slotIn) {
-		return b(slotIn);
+	public boolean canInsertIntoSlot(ItemStack stack, Slot slotIn) {
+		return canInsertIntoSlot(slotIn);
 	}
 
 	@Override
-	public boolean b(ShulkerBoxScreenHandler slotIn) {
+	public boolean canInsertIntoSlot(Slot slotIn) {
 		return slotIn.inventory == playerInventory;
 	}
 
 	@Override
-	public boolean a(PlayerAbilities playerIn) {
+	public boolean canUse(PlayerEntity playerIn) {
 		return true;
 	}
 
 	@Override
-	public ItemCooldownManager a(int slotId, int dragType, BrewingStandScreenHandler clickTypeIn, PlayerAbilities player) {
-		if (slotId == playerInventory.d && clickTypeIn != BrewingStandScreenHandler.ingredientSlot)
-			return ItemCooldownManager.tick;
+	public ItemStack onSlotClick(int slotId, int dragType, SlotActionType clickTypeIn, PlayerEntity player) {
+		if (slotId == playerInventory.selectedSlot && clickTypeIn != SlotActionType.THROW)
+			return ItemStack.EMPTY;
 
-		ItemCooldownManager held = playerInventory.m();
+		ItemStack held = playerInventory.getCursorStack();
 		if (slotId < 36)
-			return super.a(slotId, dragType, clickTypeIn, player);
-		if (clickTypeIn == BrewingStandScreenHandler.ingredientSlot)
-			return ItemCooldownManager.tick;
+			return super.onSlotClick(slotId, dragType, clickTypeIn, player);
+		if (clickTypeIn == SlotActionType.THROW)
+			return ItemStack.EMPTY;
 
 		int slot = slotId - 36;
-		if (clickTypeIn == BrewingStandScreenHandler.propertyDelegate) {
-			if (player.b_() && held.a()) {
-				ItemCooldownManager stackInSlot = filterInventory.getStackInSlot(slot).i();
-				stackInSlot.e(64);
-				playerInventory.g(stackInSlot);
-				return ItemCooldownManager.tick;
+		if (clickTypeIn == SlotActionType.CLONE) {
+			if (player.isCreative() && held.isEmpty()) {
+				ItemStack stackInSlot = filterInventory.getStackInSlot(slot).copy();
+				stackInSlot.setCount(64);
+				playerInventory.setCursorStack(stackInSlot);
+				return ItemStack.EMPTY;
 			}
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		}
 
-		if (held.a()) {
-			filterInventory.setStackInSlot(slot, ItemCooldownManager.tick);
-			return ItemCooldownManager.tick;
+		if (held.isEmpty()) {
+			filterInventory.setStackInSlot(slot, ItemStack.EMPTY);
+			return ItemStack.EMPTY;
 		}
 
-		ItemCooldownManager insert = held.i();
-		insert.e(1);
+		ItemStack insert = held.copy();
+		insert.setCount(1);
 		filterInventory.setStackInSlot(slot, insert);
 		return held;
 	}
 
 	@Override
-	public ItemCooldownManager b(PlayerAbilities playerIn, int index) {
+	public ItemStack transferSlot(PlayerEntity playerIn, int index) {
 		if (index < 36) {
-			ItemCooldownManager stackToInsert = playerInventory.a(index);
+			ItemStack stackToInsert = playerInventory.getStack(index);
 			for (int i = 0; i < filterInventory.getSlots(); i++) {
-				ItemCooldownManager stack = filterInventory.getStackInSlot(i);
+				ItemStack stack = filterInventory.getStackInSlot(i);
 				if (ItemHandlerHelper.canItemStacksStack(stack, stackToInsert))
 					break;
-				if (stack.a()) {
-					ItemCooldownManager copy = stackToInsert.i();
-					copy.e(1);
+				if (stack.isEmpty()) {
+					ItemStack copy = stackToInsert.copy();
+					copy.setCount(1);
 					filterInventory.insertItem(i, copy, false);
 					break;
 				}
 			}
 		} else
 			filterInventory.extractItem(index - 36, 1, false);
-		return ItemCooldownManager.tick;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public void b(PlayerAbilities playerIn) {
-		super.b(playerIn);
-		filterItem.p().put("Items", filterInventory.serializeNBT());
+	public void close(PlayerEntity playerIn) {
+		super.close(playerIn);
+		filterItem.getOrCreateTag().put("Items", filterInventory.serializeNBT());
 		saveData(filterItem);
 	}
 

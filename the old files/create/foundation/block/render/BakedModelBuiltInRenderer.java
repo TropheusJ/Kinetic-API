@@ -1,15 +1,15 @@
-package com.simibubi.kinetic_api.foundation.block.render;
+package com.simibubi.create.foundation.block.render;
 
-import elg;
+import net.minecraft.client.render.model.BakedModel;
 
 public class BakedModelBuiltInRenderer extends WrappedBakedModel {
 
-	public BakedModelBuiltInRenderer(elg template) {
+	public BakedModelBuiltInRenderer(BakedModel template) {
 		super(template);
 	}
 	
 	@Override
-	public boolean d() {
+	public boolean isBuiltin() {
 		return true;
 	}
 

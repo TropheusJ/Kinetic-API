@@ -1,84 +1,84 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
-import net.minecraft.block.BellBlock;
-import net.minecraft.item.DebugStickItem;
-import net.minecraft.item.HoeItem;
-import net.minecraft.world.GameRules;
+import net.minecraft.block.Blocks;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.util.DyeColor;
 import net.minecraftforge.common.Tags;
 
 public class DyeHelper {
 
-	public static GameRules getWoolOfDye(DebugStickItem color) {
+	public static ItemConvertible getWoolOfDye(DyeColor color) {
 		switch (color) {
-		case p:
-			return BellBlock.bn;
-		case l:
-			return BellBlock.bj;
-		case m:
-			return BellBlock.bk;
-		case j:
-			return BellBlock.bh;
-		case h:
-			return BellBlock.bf;
-		case n:
-			return BellBlock.bl;
-		case d:
-			return BellBlock.bb;
-		case i:
-			return BellBlock.bg;
-		case f:
-			return BellBlock.bd;
-		case c:
-			return BellBlock.ba;
-		case b:
-			return BellBlock.aZ;
-		case g:
-			return BellBlock.be;
-		case k:
-			return BellBlock.bi;
-		case o:
-			return BellBlock.bm;
-		case e:
-			return BellBlock.bc;
-		case a:
+		case BLACK:
+			return Blocks.BLACK_WOOL;
+		case BLUE:
+			return Blocks.BLUE_WOOL;
+		case BROWN:
+			return Blocks.BROWN_WOOL;
+		case CYAN:
+			return Blocks.CYAN_WOOL;
+		case GRAY:
+			return Blocks.GRAY_WOOL;
+		case GREEN:
+			return Blocks.GREEN_WOOL;
+		case LIGHT_BLUE:
+			return Blocks.LIGHT_BLUE_WOOL;
+		case LIGHT_GRAY:
+			return Blocks.LIGHT_GRAY_WOOL;
+		case LIME:
+			return Blocks.LIME_WOOL;
+		case MAGENTA:
+			return Blocks.MAGENTA_WOOL;
+		case ORANGE:
+			return Blocks.ORANGE_WOOL;
+		case PINK:
+			return Blocks.PINK_WOOL;
+		case PURPLE:
+			return Blocks.PURPLE_WOOL;
+		case RED:
+			return Blocks.RED_WOOL;
+		case YELLOW:
+			return Blocks.YELLOW_WOOL;
+		case WHITE:
 		default:
-			return BellBlock.aY;
+			return Blocks.WHITE_WOOL;
 		}
 	}
 
-	public static Tags.IOptionalNamedTag<HoeItem> getTagOfDye(DebugStickItem color) {
+	public static Tags.IOptionalNamedTag<Item> getTagOfDye(DyeColor color) {
 		switch (color) {
-		case p:
+		case BLACK:
 			return Tags.Items.DYES_BLACK;
-		case l:
+		case BLUE:
 			return Tags.Items.DYES_BLUE;
-		case m:
+		case BROWN:
 			return Tags.Items.DYES_BROWN;
-		case j:
+		case CYAN:
 			return Tags.Items.DYES_CYAN;
-		case h:
+		case GRAY:
 			return Tags.Items.DYES_GRAY;
-		case n:
+		case GREEN:
 			return Tags.Items.DYES_GREEN;
-		case d:
+		case LIGHT_BLUE:
 			return Tags.Items.DYES_LIGHT_BLUE;
-		case i:
+		case LIGHT_GRAY:
 			return Tags.Items.DYES_LIGHT_GRAY;
-		case f:
+		case LIME:
 			return Tags.Items.DYES_LIME;
-		case c:
+		case MAGENTA:
 			return Tags.Items.DYES_MAGENTA;
-		case b:
+		case ORANGE:
 			return Tags.Items.DYES_ORANGE;
-		case g:
+		case PINK:
 			return Tags.Items.DYES_PINK;
-		case k:
+		case PURPLE:
 			return Tags.Items.DYES_PURPLE;
-		case o:
+		case RED:
 			return Tags.Items.DYES_RED;
-		case e:
+		case YELLOW:
 			return Tags.Items.DYES_YELLOW;
-		case a:
+		case WHITE:
 		default:
 			return Tags.Items.DYES_WHITE;
 		}

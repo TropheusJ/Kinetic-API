@@ -1,18 +1,18 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.terrainzapper;
+package com.simibubi.create.content.curiosities.zapper.terrainzapper;
 
-import com.simibubi.kinetic_api.foundation.block.render.CustomRenderedItemModel;
-import elg;
-import net.minecraft.client.input.Input;
+import com.simibubi.create.foundation.block.render.CustomRenderedItemModel;
+import net.minecraft.client.render.item.BuiltinModelItemRenderer;
+import net.minecraft.client.render.model.BakedModel;
 
 public class WorldshaperModel extends CustomRenderedItemModel {
 
-	public WorldshaperModel(elg template) {
+	public WorldshaperModel(BakedModel template) {
 		super(template, "handheld_worldshaper");
 		addPartials("core", "core_glow", "accelerator");
 	}
 
 	@Override
-	public Input createRenderer() {
+	public BuiltinModelItemRenderer createRenderer() {
 		return new WorldshaperItemRenderer();
 	}
 

@@ -1,12 +1,13 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
-import bqx;
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShiftEntry;
-import com.simibubi.kinetic_api.foundation.block.connected.ConnectedTextureBehaviour;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.CreateClient;
+import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
+import com.simibubi.create.foundation.block.connected.ConnectedTextureBehaviour;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 
 public class EncasedCTBehaviour extends ConnectedTextureBehaviour {
 
@@ -17,7 +18,7 @@ public class EncasedCTBehaviour extends ConnectedTextureBehaviour {
 	}
 
 	@Override
-	public boolean connectsTo(PistonHandler state, PistonHandler other, bqx reader, BlockPos pos, BlockPos otherPos,
+	public boolean connectsTo(BlockState state, BlockState other, BlockRenderView reader, BlockPos pos, BlockPos otherPos,
 							  Direction face) {
 		if (isBeingBlocked(state, reader, pos, otherPos, face))
 			return false;
@@ -34,7 +35,7 @@ public class EncasedCTBehaviour extends ConnectedTextureBehaviour {
 	}
 
 	@Override
-	public CTSpriteShiftEntry get(PistonHandler state, Direction direction) {
+	public CTSpriteShiftEntry get(BlockState state, Direction direction) {
 		return shift;
 	}
 

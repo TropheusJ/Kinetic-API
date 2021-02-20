@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.content.contraptions.components.mixer;
+package com.simibubi.create.content.contraptions.components.mixer;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.processing.BasinRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.processing.BasinRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
 
 public class MixingRecipe extends BasinRecipe {
 

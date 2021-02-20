@@ -1,17 +1,19 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.belt.transport;
+package com.simibubi.create.content.contraptions.relays.belt.transport;
 
 import java.util.Random;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.content.contraptions.relays.belt.BeltHelper;
+import com.simibubi.create.content.logistics.InWorldProcessing;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.Direction;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltHelper;
-import com.simibubi.kinetic_api.content.logistics.InWorldProcessing;
 
 public class TransportedItemStack implements Comparable<TransportedItemStack> {
 
 	private static Random R = new Random();
 
-	public ItemCooldownManager stack;
+	public ItemStack stack;
 	public float beltPosition;
 	public float sideOffset;
 	public int angle;
@@ -25,7 +27,7 @@ public class TransportedItemStack implements Comparable<TransportedItemStack> {
 	public InWorldProcessing.Type processedBy;
 	public int processingTime;
 
-	public TransportedItemStack(ItemCooldownManager stack) {
+	public TransportedItemStack(ItemStack stack) {
 		this.stack = stack;
 		boolean centered = BeltHelper.isItemUpright(stack);
 		angle = centered ? 180 : R.nextInt(360);
@@ -43,7 +45,7 @@ public class TransportedItemStack implements Comparable<TransportedItemStack> {
 	}
 
 	public TransportedItemStack getSimilar() {
-		TransportedItemStack copy = new TransportedItemStack(stack.i());
+		TransportedItemStack copy = new TransportedItemStack(stack.copy());
 		copy.beltPosition = beltPosition;
 		copy.insertedAt = insertedAt;
 		copy.insertedFrom = insertedFrom;
@@ -76,7 +78,7 @@ public class TransportedItemStack implements Comparable<TransportedItemStack> {
 	}
 
 	public static TransportedItemStack read(CompoundTag nbt) {
-		TransportedItemStack stack = new TransportedItemStack(ItemCooldownManager.a(nbt.getCompound("Item")));
+		TransportedItemStack stack = new TransportedItemStack(ItemStack.fromTag(nbt.getCompound("Item")));
 		stack.beltPosition = nbt.getFloat("Pos");
 		stack.prevBeltPosition = nbt.getFloat("PrevPos");
 		stack.sideOffset = nbt.getFloat("Offset");

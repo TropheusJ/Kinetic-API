@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.schematics;
+package com.simibubi.create.content.schematics;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,16 +14,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.schematics.packet.SchematicUploadPacket;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.utility.FilesHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.schematics.packet.SchematicUploadPacket;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.utility.FilesHelper;
+import com.simibubi.create.foundation.utility.Lang;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.particle.FishingParticle;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraftforge.api.distmarker.Dist;
@@ -81,14 +81,14 @@ public class ClientSchematicLoader {
 	}
 
 	public static boolean validateSizeLimitation(long size) {
-		if (KeyBinding.B().F())
+		if (MinecraftClient.getInstance().isIntegratedServerRunning())
 			return true;
 		Integer maxSize = AllConfigs.SERVER.schematics.maxTotalSchematicSize.get();
 		if (size > maxSize * 1000) {
-			FishingParticle player = KeyBinding.B().s;
+			ClientPlayerEntity player = MinecraftClient.getInstance().player;
 			if (player != null) {
-				player.sendSystemMessage(Lang.translate("schematics.uploadTooLarge").append(" (" + size / 1000 + " KB)."), player.bR());
-				player.sendSystemMessage(Lang.translate("schematics.maxAllowedSize").append(" " + maxSize + " KB"), player.bR());
+				player.sendSystemMessage(Lang.translate("schematics.uploadTooLarge").append(" (" + size / 1000 + " KB)."), player.getUuid());
+				player.sendSystemMessage(Lang.translate("schematics.maxAllowedSize").append(" " + maxSize + " KB"), player.getUuid());
 			}
 			return false;
 		}
@@ -105,7 +105,7 @@ public class ClientSchematicLoader {
 				if (status != -1) {
 					if (status < maxPacketSize)
 						data = Arrays.copyOf(data, status);
-					if (KeyBinding.B().r != null)
+					if (MinecraftClient.getInstance().world != null)
 						AllPackets.channel.sendToServer(SchematicUploadPacket.write(schematic, data));
 					else {
 						activeUploads.remove(schematic);

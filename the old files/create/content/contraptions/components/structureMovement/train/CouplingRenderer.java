@@ -1,37 +1,39 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train;
+package com.simibubi.create.content.contraptions.components.structureMovement.train;
 
-import static afj.d;
+import static net.minecraft.util.math.MathHelper.lerp;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.content.contraptions.KineticDebugger;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.CouplingRenderer.CartEndpoint;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.capability.MinecartController;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.Couple;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.gl.JsonGlProgram;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.CreateClient;
+import com.simibubi.create.content.contraptions.KineticDebugger;
+import com.simibubi.create.content.contraptions.components.structureMovement.train.CouplingRenderer.CartEndpoint;
+import com.simibubi.create.content.contraptions.components.structureMovement.train.capability.MinecartController;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import com.simibubi.create.foundation.utility.Couple;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
+import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class CouplingRenderer {
 
-	public static void renderAll(BufferVertexConsumer ms, BackgroundRenderer buffer) {
-		CouplingHandler.forEachLoadedCoupling(KeyBinding.B().r,
+	public static void renderAll(MatrixStack ms, VertexConsumerProvider buffer) {
+		CouplingHandler.forEachLoadedCoupling(MinecraftClient.getInstance().world,
 			c -> {
 				if (c.getFirst().hasContraptionCoupling(true))
 					return;
@@ -41,55 +43,55 @@ public class CouplingRenderer {
 
 	public static void tickDebugModeRenders() {
 		if (KineticDebugger.isActive())
-			CouplingHandler.forEachLoadedCoupling(KeyBinding.B().r, CouplingRenderer::doDebugRender);
+			CouplingHandler.forEachLoadedCoupling(MinecraftClient.getInstance().world, CouplingRenderer::doDebugRender);
 	}
 
-	public static void renderCoupling(BufferVertexConsumer ms, BackgroundRenderer buffer, Couple<ScheduleBuilder> carts) {
-		DragonHeadEntityModel world = KeyBinding.B().r;
+	public static void renderCoupling(MatrixStack ms, VertexConsumerProvider buffer, Couple<AbstractMinecartEntity> carts) {
+		ClientWorld world = MinecraftClient.getInstance().world;
 		
 		if (carts.getFirst() == null || carts.getSecond() == null)
 			return;
 		
 		Couple<Integer> lightValues =
-			carts.map(c -> JsonGlProgram.a(world, new BlockPos(c.cb()
-				.f())));
+			carts.map(c -> WorldRenderer.getLightmapCoordinates(world, new BlockPos(c.getBoundingBox()
+				.getCenter())));
 
-		EntityHitResult center = carts.getFirst()
-			.cz()
-			.e(carts.getSecond()
-				.cz())
-			.a(.5f);
+		Vec3d center = carts.getFirst()
+			.getPos()
+			.add(carts.getSecond()
+				.getPos())
+			.multiply(.5f);
 
 		Couple<CartEndpoint> transforms = carts.map(c -> getSuitableCartEndpoint(c, center));
 
-		PistonHandler renderState = BellBlock.FACING.n();
-		OverlayVertexConsumer builder = buffer.getBuffer(VertexConsumerProvider.c());
+		BlockState renderState = Blocks.AIR.getDefaultState();
+		VertexConsumer builder = buffer.getBuffer(RenderLayer.getSolid());
 		SuperByteBuffer attachment = AllBlockPartials.COUPLING_ATTACHMENT.renderOn(renderState);
 		SuperByteBuffer ring = AllBlockPartials.COUPLING_RING.renderOn(renderState);
 		SuperByteBuffer connector = AllBlockPartials.COUPLING_CONNECTOR.renderOn(renderState);
 
-		EntityHitResult zero = EntityHitResult.a;
-		EntityHitResult firstEndpoint = transforms.getFirst()
+		Vec3d zero = Vec3d.ZERO;
+		Vec3d firstEndpoint = transforms.getFirst()
 			.apply(zero);
-		EntityHitResult secondEndpoint = transforms.getSecond()
+		Vec3d secondEndpoint = transforms.getSecond()
 			.apply(zero);
-		EntityHitResult endPointDiff = secondEndpoint.d(firstEndpoint);
-		double connectorYaw = -Math.atan2(endPointDiff.d, endPointDiff.entity) * 180.0D / Math.PI;
-		double connectorPitch = Math.atan2(endPointDiff.c, endPointDiff.d(1, 0, 1)
-			.f()) * 180 / Math.PI;
+		Vec3d endPointDiff = secondEndpoint.subtract(firstEndpoint);
+		double connectorYaw = -Math.atan2(endPointDiff.z, endPointDiff.x) * 180.0D / Math.PI;
+		double connectorPitch = Math.atan2(endPointDiff.y, endPointDiff.multiply(1, 0, 1)
+			.length()) * 180 / Math.PI;
 
 		MatrixStacker msr = MatrixStacker.of(ms);
 		carts.forEachWithContext((cart, isFirst) -> {
 			CartEndpoint cartTransform = transforms.get(isFirst);
 
-			ms.a();
+			ms.push();
 			cartTransform.apply(ms);
 			attachment.light(lightValues.get(isFirst))
 				.renderInto(ms, builder);
 			msr.rotateY(connectorYaw - cartTransform.yaw);
 			ring.light(lightValues.get(isFirst))
 				.renderInto(ms, builder);
-			ms.b();
+			ms.pop();
 		});
 
 		int l1 = lightValues.getFirst();
@@ -97,64 +99,63 @@ public class CouplingRenderer {
 		int meanBlockLight = (((l1 >> 4) & 0xf) + ((l2 >> 4) & 0xf)) / 2;
 		int meanSkyLight = (((l1 >> 20) & 0xf) + ((l2 >> 20) & 0xf)) / 2;
 
-		ms.a();
+		ms.push();
 		msr.translate(firstEndpoint)
 			.rotateY(connectorYaw)
 			.rotateZ(connectorPitch);
-		ms.a((float) endPointDiff.f(), 1, 1);
+		ms.scale((float) endPointDiff.length(), 1, 1);
 
 		connector.light(meanSkyLight << 20 | meanBlockLight << 4)
 			.renderInto(ms, builder);
-		ms.b();
+		ms.pop();
 	}
 
-	private static CartEndpoint getSuitableCartEndpoint(ScheduleBuilder cart, EntityHitResult centerOfCoupling) {
-		long i = cart.X() * 493286711L;
+	private static CartEndpoint getSuitableCartEndpoint(AbstractMinecartEntity cart, Vec3d centerOfCoupling) {
+		long i = cart.getEntityId() * 493286711L;
 		i = i * i * 4392167121L + i * 98761L;
 		float x = (((float) (i >> 16 & 7L) + 0.5F) / 8.0F - 0.5F) * 0.004F;
 		float y = (((float) (i >> 20 & 7L) + 0.5F) / 8.0F - 0.5F) * 0.004F + 0.375F;
 		float z = (((float) (i >> 24 & 7L) + 0.5F) / 8.0F - 0.5F) * 0.004F;
 
-		float pt = KeyBinding.B()
-			.ai();
+		float pt = AnimationTickHolder.getPartialTicks();
 
-		double xIn = d(pt, cart.D, cart.cC());
-		double yIn = d(pt, cart.E, cart.cD());
-		double zIn = d(pt, cart.F, cart.cG());
+		double xIn = lerp(pt, cart.lastRenderX, cart.getX());
+		double yIn = lerp(pt, cart.lastRenderY, cart.getY());
+		double zIn = lerp(pt, cart.lastRenderZ, cart.getZ());
 
-		float yaw = g(pt, cart.r, cart.p);
-		float pitch = g(pt, cart.s, cart.q);
-		float roll = cart.m() - pt;
+		float yaw = lerp(pt, cart.prevYaw, cart.yaw);
+		float pitch = lerp(pt, cart.prevPitch, cart.pitch);
+		float roll = cart.getDamageWobbleTicks() - pt;
 
-		float rollAmplifier = cart.k() - pt;
+		float rollAmplifier = cart.getDamageWobbleStrength() - pt;
 		if (rollAmplifier < 0.0F)
 			rollAmplifier = 0.0F;
-		roll = roll > 0 ? afj.a(roll) * roll * rollAmplifier / 10.0F * cart.n() : 0;
+		roll = roll > 0 ? MathHelper.sin(roll) * roll * rollAmplifier / 10.0F * cart.getDamageWobbleSide() : 0;
 
-		EntityHitResult positionVec = new EntityHitResult(xIn, yIn, zIn);
-		EntityHitResult frontVec = positionVec.e(VecHelper.rotate(new EntityHitResult(.5, 0, 0), 180 - yaw, Axis.Y));
-		EntityHitResult backVec = positionVec.e(VecHelper.rotate(new EntityHitResult(-.5, 0, 0), 180 - yaw, Axis.Y));
+		Vec3d positionVec = new Vec3d(xIn, yIn, zIn);
+		Vec3d frontVec = positionVec.add(VecHelper.rotate(new Vec3d(.5, 0, 0), 180 - yaw, Axis.Y));
+		Vec3d backVec = positionVec.add(VecHelper.rotate(new Vec3d(-.5, 0, 0), 180 - yaw, Axis.Y));
 
-		EntityHitResult railVecOfPos = cart.p(xIn, yIn, zIn);
+		Vec3d railVecOfPos = cart.snapPositionToRail(xIn, yIn, zIn);
 		boolean flip = false;
 
 		if (railVecOfPos != null) {
-			frontVec = cart.a(xIn, yIn, zIn, (double) 0.3F);
-			backVec = cart.a(xIn, yIn, zIn, (double) -0.3F);
+			frontVec = cart.snapPositionToRailWithOffset(xIn, yIn, zIn, (double) 0.3F);
+			backVec = cart.snapPositionToRailWithOffset(xIn, yIn, zIn, (double) -0.3F);
 			if (frontVec == null)
 				frontVec = railVecOfPos;
 			if (backVec == null)
 				backVec = railVecOfPos;
 
-			x += railVecOfPos.entity;
-			y += (frontVec.c + backVec.c) / 2;
-			z += railVecOfPos.d;
+			x += railVecOfPos.x;
+			y += (frontVec.y + backVec.y) / 2;
+			z += railVecOfPos.z;
 
-			EntityHitResult endPointDiff = backVec.b(-frontVec.entity, -frontVec.c, -frontVec.d);
-			if (endPointDiff.f() != 0.0D) {
-				endPointDiff = endPointDiff.d();
-				yaw = (float) (Math.atan2(endPointDiff.d, endPointDiff.entity) * 180.0D / Math.PI);
-				pitch = (float) (Math.atan(endPointDiff.c) * 73.0D);
+			Vec3d endPointDiff = backVec.add(-frontVec.x, -frontVec.y, -frontVec.z);
+			if (endPointDiff.length() != 0.0D) {
+				endPointDiff = endPointDiff.normalize();
+				yaw = (float) (Math.atan2(endPointDiff.z, endPointDiff.x) * 180.0D / Math.PI);
+				pitch = (float) (Math.atan(endPointDiff.y) * 73.0D);
 			}
 		} else {
 			x += xIn;
@@ -164,7 +165,7 @@ public class CouplingRenderer {
 
 		final float offsetMagnitude = 13 / 16f;
 		boolean isBackFaceCloser =
-			frontVec.g(centerOfCoupling) > backVec.g(centerOfCoupling);
+			frontVec.squaredDistanceTo(centerOfCoupling) > backVec.squaredDistanceTo(centerOfCoupling);
 		flip = isBackFaceCloser;
 		float offset = isBackFaceCloser ? -offsetMagnitude : offsetMagnitude;
 
@@ -193,22 +194,22 @@ public class CouplingRenderer {
 			this.flip = flip;
 		}
 
-		public EntityHitResult apply(EntityHitResult vec) {
-			vec = vec.b(offset, 0, 0);
+		public Vec3d apply(Vec3d vec) {
+			vec = vec.add(offset, 0, 0);
 			vec = VecHelper.rotate(vec, roll, Axis.X);
 			vec = VecHelper.rotate(vec, pitch, Axis.Z);
 			vec = VecHelper.rotate(vec, yaw, Axis.Y);
-			return vec.b(x, y, z);
+			return vec.add(x, y, z);
 		}
 
-		public void apply(BufferVertexConsumer ms) {
-			ms.a(x, y, z);
-			ms.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(yaw));
-			ms.a(Vector3f.POSITIVE_Z.getDegreesQuaternion(pitch));
-			ms.a(Vector3f.POSITIVE_X.getDegreesQuaternion(roll));
-			ms.a(offset, 0, 0);
+		public void apply(MatrixStack ms) {
+			ms.translate(x, y, z);
+			ms.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(yaw));
+			ms.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(pitch));
+			ms.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(roll));
+			ms.translate(offset, 0, 0);
 			if (flip)
-				ms.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(180));
+				ms.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180));
 		}
 
 	}
@@ -216,24 +217,24 @@ public class CouplingRenderer {
 	public static void doDebugRender(Couple<MinecartController> c) {
 		int yOffset = 1;
 		MinecartController first = c.getFirst();
-		ScheduleBuilder mainCart = first.cart();
-		EntityHitResult mainCenter = mainCart.cz()
-			.b(0, yOffset, 0);
-		EntityHitResult connectedCenter = c.getSecond()
+		AbstractMinecartEntity mainCart = first.cart();
+		Vec3d mainCenter = mainCart.getPos()
+			.add(0, yOffset, 0);
+		Vec3d connectedCenter = c.getSecond()
 			.cart()
-			.cz()
-			.b(0, yOffset, 0);
+			.getPos()
+			.add(0, yOffset, 0);
 
-		int color = ColorHelper.mixColors(0xabf0e9, 0xee8572, (float) afj
-			.a(Math.abs(first.getCouplingLength(true) - connectedCenter.f(mainCenter)) * 8, 0, 1));
+		int color = ColorHelper.mixColors(0xabf0e9, 0xee8572, (float) MathHelper
+			.clamp(Math.abs(first.getCouplingLength(true) - connectedCenter.distanceTo(mainCenter)) * 8, 0, 1));
 
-		CreateClient.outliner.showLine(mainCart.X() + "", mainCenter, connectedCenter)
+		CreateClient.outliner.showLine(mainCart.getEntityId() + "", mainCenter, connectedCenter)
 			.colored(color)
 			.lineWidth(1 / 8f);
 
-		EntityHitResult point = mainCart.cz()
-			.b(0, yOffset, 0);
-		CreateClient.outliner.showLine(mainCart.X() + "_dot", point, point.b(0, 1 / 128f, 0))
+		Vec3d point = mainCart.getPos()
+			.add(0, yOffset, 0);
+		CreateClient.outliner.showLine(mainCart.getEntityId() + "_dot", point, point.add(0, 1 / 128f, 0))
 			.colored(0xffffff)
 			.lineWidth(1 / 4f);
 	}

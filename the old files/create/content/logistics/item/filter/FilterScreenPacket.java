@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter;
+package com.simibubi.create.content.logistics.item.filter;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.content.logistics.item.filter.AttributeFilterContainer.WhitelistMode;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
+import com.simibubi.create.content.logistics.item.filter.AttributeFilterContainer.WhitelistMode;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -45,16 +45,16 @@ public class FilterScreenPacket extends SimplePacketBase {
 			if (player == null)
 				return;
 
-			if (player.bp instanceof AbstractFilterContainer) {
-				AbstractFilterContainer c = (AbstractFilterContainer) player.bp;
+			if (player.currentScreenHandler instanceof AbstractFilterContainer) {
+				AbstractFilterContainer c = (AbstractFilterContainer) player.currentScreenHandler;
 				if (option == Option.CLEAR) {
 					c.clearContents();
 					return;
 				}
 			}
 
-			if (player.bp instanceof FilterContainer) {
-				FilterContainer c = (FilterContainer) player.bp;
+			if (player.currentScreenHandler instanceof FilterContainer) {
+				FilterContainer c = (FilterContainer) player.currentScreenHandler;
 				if (option == Option.WHITELIST)
 					c.blacklist = false;
 				if (option == Option.BLACKLIST)
@@ -66,11 +66,11 @@ public class FilterScreenPacket extends SimplePacketBase {
 				if (option == Option.UPDATE_FILTER_ITEM)
 					c.filterInventory.setStackInSlot(
 							data.getInt("Slot"),
-							net.minecraft.entity.player.ItemCooldownManager.a(data.getCompound("Item")));
+							net.minecraft.item.ItemStack.fromTag(data.getCompound("Item")));
 			}
 
-			if (player.bp instanceof AttributeFilterContainer) {
-				AttributeFilterContainer c = (AttributeFilterContainer) player.bp;
+			if (player.currentScreenHandler instanceof AttributeFilterContainer) {
+				AttributeFilterContainer c = (AttributeFilterContainer) player.currentScreenHandler;
 				if (option == Option.WHITELIST)
 					c.whitelistMode = WhitelistMode.WHITELIST_DISJ;
 				if (option == Option.WHITELIST2)

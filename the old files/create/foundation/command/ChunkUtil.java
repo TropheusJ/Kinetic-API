@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.command;
+package com.simibubi.create.foundation.command;
 
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -8,15 +8,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import net.minecraft.server.world.ChunkHolder;
 import net.minecraft.server.world.ServerChunkManager;
-import net.minecraft.world.BlockRenderView;
-import net.minecraft.world.biome.source.BiomeArray;
-import net.minecraft.world.gen.decorator.Decoratable;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public class ChunkUtil {
-	private static final Logger LOGGER = LogManager.getLogger("KineticAPI/ChunkUtil");
-	final EnumSet<Decoratable.a> POST_FEATURES = EnumSet.of(Decoratable.a.d, Decoratable.a.b, Decoratable.a.e, Decoratable.a.f);
+	private static final Logger LOGGER = LogManager.getLogger("Create/ChunkUtil");
+	final EnumSet<Heightmap.Type> POST_FEATURES = EnumSet.of(Heightmap.Type.OCEAN_FLOOR, Heightmap.Type.WORLD_SURFACE, Heightmap.Type.MOTION_BLOCKING, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES);
 
 	private final List<Long> markedChunks;
 	private final List<Long> interestingChunks;
@@ -28,11 +28,11 @@ public class ChunkUtil {
 	}
 
 	public void init() {
-		BiomeArray.m = new BiomeArray("full", BiomeArray.l, 0, POST_FEATURES, BiomeArray.a.b,
+		ChunkStatus.FULL = new ChunkStatus("full", ChunkStatus.HEIGHTMAPS, 0, POST_FEATURES, ChunkStatus.ChunkType.LEVELCHUNK,
 				(_0, _1, _2, _3, _4, future, _6, chunk) -> future.apply(chunk),
 				(_0, _1, _2, _3, future, chunk) -> {
-					if (markedChunks.contains(chunk.g().a())) {
-						LOGGER.debug("trying to load unforced chunk " + chunk.g().toString() + ", returning chunk loading error");
+					if (markedChunks.contains(chunk.getPos().toLong())) {
+						LOGGER.debug("trying to load unforced chunk " + chunk.getPos().toString() + ", returning chunk loading error");
 						//this.reloadChunk(world.getChunkProvider(), chunk.getPos());
 						return ChunkHolder.UNLOADED_CHUNK_FUTURE;
 					} else {
@@ -43,21 +43,21 @@ public class ChunkUtil {
 
 	}
 
-	public boolean reloadChunk(ServerChunkManager provider, BlockRenderView pos) {
-		ChunkHolder holder = provider.threadedAnvilChunkStorage.currentChunkHolders.remove(pos.a());
+	public boolean reloadChunk(ServerChunkManager provider, ChunkPos pos) {
+		ChunkHolder holder = provider.threadedAnvilChunkStorage.currentChunkHolders.remove(pos.toLong());
 		provider.threadedAnvilChunkStorage.chunkHolderListDirty = true;
 		if (holder != null) {
-			provider.threadedAnvilChunkStorage.chunksToUnload.put(pos.a(), holder);
-			provider.threadedAnvilChunkStorage.tryUnloadChunk(pos.a(), holder);
+			provider.threadedAnvilChunkStorage.chunksToUnload.put(pos.toLong(), holder);
+			provider.threadedAnvilChunkStorage.tryUnloadChunk(pos.toLong(), holder);
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	public boolean unloadChunk(ServerChunkManager provider, BlockRenderView pos) {
-		this.interestingChunks.add(pos.a());
-		this.markedChunks.add(pos.a());
+	public boolean unloadChunk(ServerChunkManager provider, ChunkPos pos) {
+		this.interestingChunks.add(pos.toLong());
+		this.markedChunks.add(pos.toLong());
 
 		return this.reloadChunk(provider, pos);
 	}
@@ -68,21 +68,21 @@ public class ChunkUtil {
 		int size = this.markedChunks.size();
 		this.markedChunks.clear();
 
-		copy.forEach(l -> reForce(provider, new BlockRenderView(l)));
+		copy.forEach(l -> reForce(provider, new ChunkPos(l)));
 
 		return size;
 	}
 
-	public void reForce(ServerChunkManager provider, BlockRenderView pos) {
-		provider.a(pos, true);
-		provider.a(pos, false);
+	public void reForce(ServerChunkManager provider, ChunkPos pos) {
+		provider.setChunkForced(pos, true);
+		provider.setChunkForced(pos, false);
 	}
 
 	@SubscribeEvent
 	public void chunkUnload(ChunkEvent.Unload event) {
 		//LOGGER.debug("Chunk Unload: " + event.getChunk().getPos().toString());
-		if (interestingChunks.contains(event.getChunk().g().a())) {
-			LOGGER.info("Interesting Chunk Unload: " + event.getChunk().g().toString());
+		if (interestingChunks.contains(event.getChunk().getPos().toLong())) {
+			LOGGER.info("Interesting Chunk Unload: " + event.getChunk().getPos().toString());
 		}
 	}
 
@@ -90,11 +90,11 @@ public class ChunkUtil {
 	public void chunkLoad(ChunkEvent.Load event) {
 		//LOGGER.debug("Chunk Load: " + event.getChunk().getPos().toString());
 
-		BlockRenderView pos = event.getChunk().g();
-		if (interestingChunks.contains(pos.a())) {
+		ChunkPos pos = event.getChunk().getPos();
+		if (interestingChunks.contains(pos.toLong())) {
 			LOGGER.info("Interesting Chunk Load: " + pos.toString());
-			if (!markedChunks.contains(pos.a()))
-				interestingChunks.remove(pos.a());
+			if (!markedChunks.contains(pos.toLong()))
+				interestingChunks.remove(pos.toLong());
 		}
 
 

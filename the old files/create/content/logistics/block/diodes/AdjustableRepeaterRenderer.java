@@ -1,14 +1,14 @@
-package com.simibubi.kinetic_api.content.logistics.block.diodes;
+package com.simibubi.create.content.logistics.block.diodes;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.foundation.tileEntity.renderer.ColoredOverlayTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.tileEntity.renderer.ColoredOverlayTileEntityRenderer;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 
 public class AdjustableRepeaterRenderer extends ColoredOverlayTileEntityRenderer<AdjustableRepeaterTileEntity> {
 
-	public AdjustableRepeaterRenderer(ebv dispatcher) {
+	public AdjustableRepeaterRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
@@ -19,7 +19,7 @@ public class AdjustableRepeaterRenderer extends ColoredOverlayTileEntityRenderer
 
 	@Override
 	protected SuperByteBuffer getOverlayBuffer(AdjustableRepeaterTileEntity te) {
-		return AllBlockPartials.FLEXPEATER_INDICATOR.renderOn(te.p());
+		return AllBlockPartials.FLEXPEATER_INDICATOR.renderOn(te.getCachedState());
 	}
 
 }

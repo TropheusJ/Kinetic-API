@@ -1,23 +1,23 @@
-package com.simibubi.kinetic_api.foundation.utility.outliner;
+package com.simibubi.create.foundation.utility.outliner;
 
-import afj;
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.world.timer.Timer;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
 
 public class ChasingAABBOutline extends AABBOutline {
 
-	Timer targetBB;
-	Timer prevBB;
+	Box targetBB;
+	Box prevBB;
 
-	public ChasingAABBOutline(Timer bb) {
+	public ChasingAABBOutline(Box bb) {
 		super(bb);
-		prevBB = bb.g(0);
-		targetBB = bb.g(0);
+		prevBB = bb.expand(0);
+		targetBB = bb.expand(0);
 	}
 
-	public void target(Timer target) {
+	public void target(Box target) {
 		targetBB = target;
 	}
 
@@ -28,16 +28,15 @@ public class ChasingAABBOutline extends AABBOutline {
 	}
 
 	@Override
-	public void render(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
-		renderBB(ms, buffer, interpolateBBs(prevBB, bb, KeyBinding.B()
-			.ai()));
+	public void render(MatrixStack ms, SuperRenderTypeBuffer buffer) {
+		renderBB(ms, buffer, interpolateBBs(prevBB, bb, AnimationTickHolder.getPartialTicks()));
 	}
 
-	private static Timer interpolateBBs(Timer current, Timer target, float pt) {
-		return new Timer(afj.d(pt, current.LOGGER, target.LOGGER),
-			afj.d(pt, current.callback, target.callback), afj.d(pt, current.events, target.events),
-			afj.d(pt, current.eventCounter, target.eventCounter), afj.d(pt, current.eventsByName, target.eventsByName),
-			afj.d(pt, current.f, target.f));
+	private static Box interpolateBBs(Box current, Box target, float pt) {
+		return new Box(MathHelper.lerp(pt, current.minX, target.minX),
+			MathHelper.lerp(pt, current.minY, target.minY), MathHelper.lerp(pt, current.minZ, target.minZ),
+			MathHelper.lerp(pt, current.maxX, target.maxX), MathHelper.lerp(pt, current.maxY, target.maxY),
+			MathHelper.lerp(pt, current.maxZ, target.maxZ));
 	}
 
 }

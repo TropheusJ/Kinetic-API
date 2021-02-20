@@ -1,21 +1,22 @@
-package com.simibubi.kinetic_api.content.schematics.block;
+package com.simibubi.create.content.schematics.block;
 
-import bfs;
-import com.simibubi.kinetic_api.foundation.tileEntity.SyncedTileEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.entity.StructureBlockBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.FoodComponent;
+import com.simibubi.create.foundation.tileEntity.SyncedTileEntity;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
+import net.minecraft.util.Tickable;
 import net.minecraftforge.items.ItemStackHandler;
 
-public class SchematicTableTileEntity extends SyncedTileEntity implements StructureBlockBlockEntity, ActionResult {
+public class SchematicTableTileEntity extends SyncedTileEntity implements Tickable, NamedScreenHandlerFactory {
 
 	public SchematicTableInventory inventory;
 	public boolean isUploading;
@@ -31,11 +32,11 @@ public class SchematicTableTileEntity extends SyncedTileEntity implements Struct
 		@Override
 		protected void onContentsChanged(int slot) {
 			super.onContentsChanged(slot);
-			X_();
+			markDirty();
 		}
 	}
 
-	public SchematicTableTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public SchematicTableTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		inventory = new SchematicTableInventory();
 		uploadingSchematic = null;
@@ -43,19 +44,19 @@ public class SchematicTableTileEntity extends SyncedTileEntity implements Struct
 	}
 
 	public void sendToContainer(PacketByteBuf buffer) {
-		buffer.writeBlockPos(o());
-		buffer.writeCompoundTag(b());
+		buffer.writeBlockPos(getPos());
+		buffer.writeCompoundTag(toInitialChunkDataTag());
 	}
 
 	@Override
-	public void a(PistonHandler state, CompoundTag compound) {
+	public void fromTag(BlockState state, CompoundTag compound) {
 		inventory.deserializeNBT(compound.getCompound("Inventory"));
 		readClientUpdate(state, compound);
-		super.a(state, compound);
+		super.fromTag(state, compound);
 	}
 
 	@Override
-	public void readClientUpdate(PistonHandler state, CompoundTag compound) {
+	public void readClientUpdate(BlockState state, CompoundTag compound) {
 		if (compound.contains("Uploading")) {
 			isUploading = true;
 			uploadingSchematic = compound.getString("Schematic");
@@ -68,10 +69,10 @@ public class SchematicTableTileEntity extends SyncedTileEntity implements Struct
 	}
 
 	@Override
-	public CompoundTag a(CompoundTag compound) {
+	public CompoundTag toTag(CompoundTag compound) {
 		compound.put("Inventory", inventory.serializeNBT());
 		writeToClient(compound);
-		return super.a(compound);
+		return super.toTag(compound);
 	}
 
 	@Override
@@ -85,11 +86,11 @@ public class SchematicTableTileEntity extends SyncedTileEntity implements Struct
 	}
 
 	@Override
-	public void aj_() {
+	public void tick() {
 		// Update Client Tile
 		if (sendUpdate) {
 			sendUpdate = false;
-			d.a(e, p(), p(), 6);
+			world.updateListeners(pos, getCachedState(), getCachedState(), 6);
 		}
 	}
 	
@@ -98,7 +99,7 @@ public class SchematicTableTileEntity extends SyncedTileEntity implements Struct
 		uploadingProgress = 0;
 		uploadingSchematic = schematic;
 		sendUpdate = true;
-		inventory.setStackInSlot(0, ItemCooldownManager.tick);
+		inventory.setStackInSlot(0, ItemStack.EMPTY);
 	}
 	
 	public void finishUpload() {
@@ -109,13 +110,13 @@ public class SchematicTableTileEntity extends SyncedTileEntity implements Struct
 	}
 
 	@Override
-	public FoodComponent createMenu(int p_createMenu_1_, bfs p_createMenu_2_, PlayerAbilities p_createMenu_3_) {
+	public ScreenHandler createMenu(int p_createMenu_1_, PlayerInventory p_createMenu_2_, PlayerEntity p_createMenu_3_) {
 		return new SchematicTableContainer(p_createMenu_1_, p_createMenu_2_, this);
 	}
 
 	@Override
-	public Text d() {
-		return new LiteralText(u().getRegistryName().toString());
+	public Text getDisplayName() {
+		return new LiteralText(getType().getRegistryName().toString());
 	}
 
 }

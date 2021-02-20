@@ -1,24 +1,26 @@
-package com.simibubi.kinetic_api.content.contraptions.processing.burner;
+package com.simibubi.create.content.contraptions.processing.burner;
 
 import java.util.List;
 import java.util.Random;
-import afj;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.content.contraptions.particle.CubeParticleData;
-import com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.LerpedFloat;
-import com.simibubi.kinetic_api.foundation.utility.LerpedFloat.Chaser;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.particle.FishingParticle;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.AllItems;
+import com.simibubi.create.content.contraptions.particle.CubeParticleData;
+import com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import com.simibubi.create.foundation.utility.LerpedFloat;
+import com.simibubi.create.foundation.utility.LerpedFloat.Chaser;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.ForgeHooks;
 
 public class BlazeBurnerTileEntity extends SmartTileEntity {
@@ -37,7 +39,7 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 	FuelType activeFuel;
 	LerpedFloat headAngle;
 
-	public BlazeBurnerTileEntity(BellBlockEntity<? extends BlazeBurnerTileEntity> tileEntityTypeIn) {
+	public BlazeBurnerTileEntity(BlockEntityType<? extends BlazeBurnerTileEntity> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		activeFuel = FuelType.NONE;
 		remainingBurnTime = 0;
@@ -45,9 +47,9 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
-		if (d.v) {
+	public void tick() {
+		super.tick();
+		if (world.isClient) {
 			tickRotation();
 			spawnParticles(getHeatLevelFromBlock(), 1);
 			return;
@@ -71,12 +73,12 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 	}
 
 	private void tickRotation() {
-		FishingParticle player = KeyBinding.B().s;
+		ClientPlayerEntity player = MinecraftClient.getInstance().player;
 		float target = 0;
 		if (player != null) {
-			double dx = player.cC() - (o().getX() + 0.5);
-			double dz = player.cG() - (o().getZ() + 0.5);
-			target = AngleHelper.deg(-afj.d(dz, dx)) - 90;
+			double dx = player.getX() - (getPos().getX() + 0.5);
+			double dz = player.getZ() - (getPos().getZ() + 0.5);
+			target = AngleHelper.deg(-MathHelper.atan2(dz, dx)) - 90;
 		}
 		target = headAngle.getValue() + AngleHelper.getShortestAngleDiff(headAngle.getValue(), target);
 		headAngle.chase(target, .25f, Chaser.exp(5));
@@ -94,7 +96,7 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		activeFuel = FuelType.values()[compound.getInt("fuelLevel")];
 		remainingBurnTime = compound.getInt("burnTimeRemaining");
 		super.fromTag(state, compound, clientPacket);
@@ -104,7 +106,7 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 	 * @return true if the heater updated its burn time and a item should be
 	 *         consumed
 	 */
-	boolean tryUpdateFuel(ItemCooldownManager itemStack, boolean forceOverflow, boolean simulate) {
+	boolean tryUpdateFuel(ItemStack itemStack, boolean forceOverflow, boolean simulate) {
 		FuelType newFuel = FuelType.NONE;
 		int newBurnTime = ForgeHooks.getBurnTime(itemStack);
 
@@ -125,7 +127,7 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 		if (newFuel == activeFuel) {
 			if (remainingBurnTime + newBurnTime > maxHeatCapacity && !forceOverflow)
 				return false;
-			newBurnTime = afj.a(remainingBurnTime + newBurnTime, 0, maxHeatCapacity);
+			newBurnTime = MathHelper.clamp(remainingBurnTime + newBurnTime, 0, maxHeatCapacity);
 		}
 
 		if (simulate)
@@ -134,7 +136,7 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 		activeFuel = newFuel;
 		remainingBurnTime = newBurnTime;
 
-		if (d.v) {
+		if (world.isClient) {
 			HeatLevel level = getHeatLevelFromFuelType(newFuel);
 			for (int i = 0; i < 20; i++)
 				spawnParticles(level, 1 + (.25 * (i / 4)));
@@ -146,7 +148,7 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 	}
 
 	public BlazeBurnerBlock.HeatLevel getHeatLevelFromBlock() {
-		return BlazeBurnerBlock.getHeatLevelOf(p());
+		return BlazeBurnerBlock.getHeatLevelOf(getCachedState());
 	}
 
 	public void updateBlockState() {
@@ -154,7 +156,7 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 		HeatLevel inTE = getHeatLevelFromFuelType(activeFuel);
 		if (inBlockState == inTE)
 			return;
-		d.a(e, p().a(BlazeBurnerBlock.HEAT_LEVEL, inTE));
+		world.setBlockState(pos, getCachedState().with(BlazeBurnerBlock.HEAT_LEVEL, inTE));
 		notifyUpdate();
 	}
 
@@ -176,12 +178,12 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 	}
 
 	private void spawnParticles(HeatLevel heatLevel, double burstMult) {
-		if (d == null)
+		if (world == null)
 			return;
 		if (heatLevel == BlazeBurnerBlock.HeatLevel.NONE)
 			return;
 
-		Random r = d.getRandom();
+		Random r = world.getRandom();
 		switch (heatLevel) {
 		case SMOULDERING:
 			if (r.nextDouble() > 0.25)
@@ -209,18 +211,18 @@ public class BlazeBurnerTileEntity extends SmartTileEntity {
 	}
 
 	private void spawnParticle(HeatLevel heatLevel, float scale, int avgAge, boolean hot, double speed, double spread) {
-		Random random = d.getRandom();
-		EntityHitResult color = randomColor(heatLevel);
-		d.b(
-			new CubeParticleData((float) color.entity, (float) color.c, (float) color.d, scale, avgAge, hot),
-			(double) e.getX() + 0.5D + (random.nextDouble() * 2.0 - 1D) * spread,
-			(double) e.getY() + 0.6D + (random.nextDouble() / 4.0),
-			(double) e.getZ() + 0.5D + (random.nextDouble() * 2.0 - 1D) * spread, 0.0D, speed, 0.0D);
+		Random random = world.getRandom();
+		Vec3d color = randomColor(heatLevel);
+		world.addImportantParticle(
+			new CubeParticleData((float) color.x, (float) color.y, (float) color.z, scale, avgAge, hot),
+			(double) pos.getX() + 0.5D + (random.nextDouble() * 2.0 - 1D) * spread,
+			(double) pos.getY() + 0.6D + (random.nextDouble() / 4.0),
+			(double) pos.getZ() + 0.5D + (random.nextDouble() * 2.0 - 1D) * spread, 0.0D, speed, 0.0D);
 	}
 
-	private static EntityHitResult randomColor(BlazeBurnerBlock.HeatLevel heatLevel) {
+	private static Vec3d randomColor(BlazeBurnerBlock.HeatLevel heatLevel) {
 		if (heatLevel == BlazeBurnerBlock.HeatLevel.NONE)
-			return new EntityHitResult(0, 0, 0);
+			return new Vec3d(0, 0, 0);
 		return ColorHelper.getRGB(heatParticleColors[heatLevel.ordinal() - 1][(int) (Math.random() * 4)]);
 	}
 

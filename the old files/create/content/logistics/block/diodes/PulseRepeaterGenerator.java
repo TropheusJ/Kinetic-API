@@ -1,10 +1,11 @@
-package com.simibubi.kinetic_api.content.logistics.block.diodes;
+package com.simibubi.create.content.logistics.block.diodes;
 
 import java.util.Vector;
 
 import com.tterrag.registrate.providers.DataGenContext;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.client.model.generators.BlockModelProvider;
 import net.minecraftforge.client.model.generators.ModelFile;
@@ -12,7 +13,7 @@ import net.minecraftforge.client.model.generators.ModelFile;
 public class PulseRepeaterGenerator extends AbstractDiodeGenerator {
 
 	@Override
-	<T extends BeetrootsBlock> Vector<ModelFile> createModels(DataGenContext<BeetrootsBlock, T> ctx, BlockModelProvider prov) {
+	<T extends Block> Vector<ModelFile> createModels(DataGenContext<Block, T> ctx, BlockModelProvider prov) {
 		Vector<ModelFile> models = makeVector(3);
 		String name = ctx.getName();
 		Identifier template = existing(name);
@@ -28,8 +29,8 @@ public class PulseRepeaterGenerator extends AbstractDiodeGenerator {
 	}
 
 	@Override
-	int getModelIndex(PistonHandler state) {
-		return state.c(PulseRepeaterBlock.PULSING) ? 2 : state.c(PulseRepeaterBlock.SHAPE) ? 1 : 0;
+	int getModelIndex(BlockState state) {
+		return state.get(PulseRepeaterBlock.PULSING) ? 2 : state.get(PulseRepeaterBlock.POWERED) ? 1 : 0;
 	}
 
 }

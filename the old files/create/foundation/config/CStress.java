@@ -1,8 +1,9 @@
-package com.simibubi.kinetic_api.foundation.config;
+package com.simibubi.create.foundation.config;
 
 import java.util.HashMap;
 import java.util.Map;
-import net.minecraft.block.BeetrootsBlock;
+
+import net.minecraft.block.Block;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.common.ForgeConfigSpec.Builder;
 import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
@@ -27,13 +28,13 @@ public class CStress extends ConfigBase {
 		builder.pop();
 	}
 
-	public double getImpactOf(BeetrootsBlock block) {
+	public double getImpactOf(Block block) {
 		Identifier key = block.getRegistryName();
 		return getImpacts().containsKey(key) ? getImpacts().get(key)
 			.get() : 0;
 	}
 
-	public double getCapacityOf(BeetrootsBlock block) {
+	public double getCapacityOf(Block block) {
 		Identifier key = block.getRegistryName();
 		return getCapacities().containsKey(key) ? getCapacities().get(key)
 			.get() : 0;

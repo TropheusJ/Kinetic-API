@@ -1,37 +1,37 @@
-package com.simibubi.kinetic_api.content.schematics.block;
+package com.simibubi.create.content.schematics.block;
 
-import bfs;
-import com.simibubi.kinetic_api.AllContainerTypes;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.FoodComponent;
+import com.simibubi.create.AllContainerTypes;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.screen.ShulkerBoxScreenHandler;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
 import net.minecraftforge.items.SlotItemHandler;
 
-public class SchematicannonContainer extends FoodComponent {
+public class SchematicannonContainer extends ScreenHandler {
 
 	private SchematicannonTileEntity te;
-	private PlayerAbilities player;
+	private PlayerEntity player;
 
-	public SchematicannonContainer(int id, bfs inv, PacketByteBuf buffer) {
+	public SchematicannonContainer(int id, PlayerInventory inv, PacketByteBuf buffer) {
 		super(AllContainerTypes.SCHEMATICANNON.type, id);
-		player = inv.e;
-		DragonHeadEntityModel world = KeyBinding.B().r;
-		BeehiveBlockEntity tileEntity = world.c(buffer.readBlockPos());
+		player = inv.player;
+		ClientWorld world = MinecraftClient.getInstance().world;
+		BlockEntity tileEntity = world.getBlockEntity(buffer.readBlockPos());
 		if (tileEntity instanceof SchematicannonTileEntity) {
 			this.te = (SchematicannonTileEntity) tileEntity;
-			this.te.handleUpdateTag(te.p(), buffer.readCompoundTag());
+			this.te.handleUpdateTag(te.getCachedState(), buffer.readCompoundTag());
 			init();
 		}
 	}
 
-	public SchematicannonContainer(int id, bfs inv, SchematicannonTileEntity te) {
+	public SchematicannonContainer(int id, PlayerInventory inv, SchematicannonTileEntity te) {
 		super(AllContainerTypes.SCHEMATICANNON.type, id);
-		player = inv.e;
+		player = inv.player;
 		this.te = te;
 		init();
 	}
@@ -40,30 +40,30 @@ public class SchematicannonContainer extends FoodComponent {
 		int x = 20;
 		int y = 0;
 
-		a(new SlotItemHandler(te.inventory, 0, x + 15, y + 65));
-		a(new SlotItemHandler(te.inventory, 1, x + 171, y + 65));
-		a(new SlotItemHandler(te.inventory, 2, x + 134, y + 19));
-		a(new SlotItemHandler(te.inventory, 3, x + 174, y + 19));
-		a(new SlotItemHandler(te.inventory, 4, x + 15, y + 19));
+		addSlot(new SlotItemHandler(te.inventory, 0, x + 15, y + 65));
+		addSlot(new SlotItemHandler(te.inventory, 1, x + 171, y + 65));
+		addSlot(new SlotItemHandler(te.inventory, 2, x + 134, y + 19));
+		addSlot(new SlotItemHandler(te.inventory, 3, x + 174, y + 19));
+		addSlot(new SlotItemHandler(te.inventory, 4, x + 15, y + 19));
 
 		// player Slots
 		for (int row = 0; row < 3; ++row) 
 			for (int col = 0; col < 9; ++col) 
-				a(new ShulkerBoxScreenHandler(player.bm, col + row * 9 + 9, -2 + col * 18, 163 + row * 18));
+				addSlot(new Slot(player.inventory, col + row * 9 + 9, -2 + col * 18, 163 + row * 18));
 		for (int hotbarSlot = 0; hotbarSlot < 9; ++hotbarSlot) 
-			a(new ShulkerBoxScreenHandler(player.bm, hotbarSlot, -2 + hotbarSlot * 18, 221));
+			addSlot(new Slot(player.inventory, hotbarSlot, -2 + hotbarSlot * 18, 221));
 
-		c();
+		sendContentUpdates();
 	}
 
 	@Override
-	public boolean a(PlayerAbilities playerIn) {
+	public boolean canUse(PlayerEntity playerIn) {
 		return true;
 	}
 
 	@Override
-	public void b(PlayerAbilities playerIn) {
-		super.b(playerIn);
+	public void close(PlayerEntity playerIn) {
+		super.close(playerIn);
 	}
 
 	public SchematicannonTileEntity getTileEntity() {
@@ -71,21 +71,21 @@ public class SchematicannonContainer extends FoodComponent {
 	}
 
 	@Override
-	public ItemCooldownManager b(PlayerAbilities playerIn, int index) {
-		ShulkerBoxScreenHandler clickedSlot = a(index);
-		if (!clickedSlot.f())
-			return ItemCooldownManager.tick;
-		ItemCooldownManager stack = clickedSlot.e();
+	public ItemStack transferSlot(PlayerEntity playerIn, int index) {
+		Slot clickedSlot = getSlot(index);
+		if (!clickedSlot.hasStack())
+			return ItemStack.EMPTY;
+		ItemStack stack = clickedSlot.getStack();
 
 		if (index < 5) {
-			a(stack, 5, hunger.size(), false);
+			insertItem(stack, 5, slots.size(), false);
 		} else {
-			if (a(stack, 0, 1, false) || a(stack, 2, 3, false)
-					|| a(stack, 4, 5, false))
+			if (insertItem(stack, 0, 1, false) || insertItem(stack, 2, 3, false)
+					|| insertItem(stack, 4, 5, false))
 				;
 		}
 
-		return ItemCooldownManager.tick;
+		return ItemStack.EMPTY;
 	}
 
 }

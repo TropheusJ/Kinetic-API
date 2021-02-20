@@ -1,12 +1,13 @@
-package com.simibubi.kinetic_api.foundation.block.connected;
+package com.simibubi.create.foundation.block.connected;
 
-import bqx;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShifter.CTType;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.foundation.block.connected.CTSpriteShifter.CTType;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.world.BlockRenderView;
 
 public abstract class ConnectedTextureBehaviour {
 
@@ -15,17 +16,17 @@ public abstract class ConnectedTextureBehaviour {
 		boolean topLeft, topRight, bottomLeft, bottomRight;
 	}
 
-	public abstract CTSpriteShiftEntry get(PistonHandler state, Direction direction);
+	public abstract CTSpriteShiftEntry get(BlockState state, Direction direction);
 
-	protected boolean reverseUVs(PistonHandler state, Direction face) {
+	protected boolean reverseUVs(BlockState state, Direction face) {
 		return false;
 	}
 
-	protected boolean reverseUVsHorizontally(PistonHandler state, Direction face) {
+	protected boolean reverseUVsHorizontally(BlockState state, Direction face) {
 		return reverseUVs(state, face);
 	}
 
-	protected boolean reverseUVsVertically(PistonHandler state, Direction face) {
+	protected boolean reverseUVsVertically(BlockState state, Direction face) {
 		return reverseUVs(state, face);
 	}
 
@@ -33,21 +34,21 @@ public abstract class ConnectedTextureBehaviour {
 		return false;
 	}
 
-	public boolean connectsTo(PistonHandler state, PistonHandler other, bqx reader, BlockPos pos, BlockPos otherPos,
+	public boolean connectsTo(BlockState state, BlockState other, BlockRenderView reader, BlockPos pos, BlockPos otherPos,
 		Direction face) {
-		return !isBeingBlocked(state, reader, pos, otherPos, face) && state.b() == other.b();
+		return !isBeingBlocked(state, reader, pos, otherPos, face) && state.getBlock() == other.getBlock();
 	}
 
-	protected boolean isBeingBlocked(PistonHandler state, bqx reader, BlockPos pos, BlockPos otherPos,
+	protected boolean isBeingBlocked(BlockState state, BlockRenderView reader, BlockPos pos, BlockPos otherPos,
 		Direction face) {
 		BlockPos blockingPos = otherPos.offset(face);
 		return face.getAxis()
 			.choose(pos.getX(), pos.getY(), pos.getZ()) == face.getAxis()
 				.choose(otherPos.getX(), otherPos.getY(), otherPos.getZ())
-			&& connectsTo(state, reader.d_(blockingPos), reader, pos, blockingPos, face);
+			&& connectsTo(state, reader.getBlockState(blockingPos), reader, pos, blockingPos, face);
 	}
 
-	public CTContext buildContext(bqx reader, BlockPos pos, PistonHandler state, Direction face) {
+	public CTContext buildContext(BlockRenderView reader, BlockPos pos, BlockState state, Direction face) {
 		CTContext context = new CTContext();
 		CTSpriteShiftEntry textureEntry = get(state, face);
 
@@ -94,11 +95,11 @@ public abstract class ConnectedTextureBehaviour {
 		return context;
 	}
 
-	private boolean testConnection(bqx reader, BlockPos pos, PistonHandler state, Direction face,
+	private boolean testConnection(BlockRenderView reader, BlockPos pos, BlockState state, Direction face,
 		final Direction horizontal, final Direction vertical, int sh, int sv) {
 		BlockPos p = pos.offset(horizontal, sh)
 			.offset(vertical, sv);
-		boolean test = connectsTo(state, reader.d_(p), reader, pos, p, face);
+		boolean test = connectsTo(state, reader.getBlockState(p), reader, pos, p, face);
 		return test;
 	}
 

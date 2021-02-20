@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement;
+package com.simibubi.create.content.contraptions.components.structureMovement;
 
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
+import com.simibubi.create.foundation.utility.Lang;
 
 import net.minecraft.util.math.BlockPos;
 

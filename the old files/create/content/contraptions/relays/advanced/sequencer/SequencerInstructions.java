@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.advanced.sequencer;
+package com.simibubi.create.content.contraptions.relays.advanced.sequencer;
 
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.text.Text;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.utility.Lang;
 
 public enum SequencerInstructions {
 

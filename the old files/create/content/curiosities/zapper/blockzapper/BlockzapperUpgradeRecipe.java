@@ -1,72 +1,73 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper;
+package com.simibubi.create.content.curiosities.zapper.blockzapper;
 
 import com.google.gson.JsonObject;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper.BlockzapperItem.ComponentTier;
-import com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper.BlockzapperItem.Components;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.curiosities.zapper.blockzapper.BlockzapperItem.ComponentTier;
+import com.simibubi.create.content.curiosities.zapper.blockzapper.BlockzapperItem.Components;
+
+import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.recipe.BlastingRecipe;
-import net.minecraft.recipe.FireworkRocketRecipe;
-import net.minecraft.recipe.MapExtendingRecipe;
+import net.minecraft.recipe.CraftingRecipe;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.screen.PropertyDelegate;
-import net.minecraft.text.OrderedText;
+import net.minecraft.recipe.ShapedRecipe;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.registries.ForgeRegistryEntry;
 
-public class BlockzapperUpgradeRecipe implements BlastingRecipe {
+public class BlockzapperUpgradeRecipe implements CraftingRecipe {
 
-	private RecipeSerializer recipe;
+	private ShapedRecipe recipe;
 	private Components component;
 	private ComponentTier tier;
 	
-	public BlockzapperUpgradeRecipe(RecipeSerializer recipe, Components component, ComponentTier tier) {
+	public BlockzapperUpgradeRecipe(ShapedRecipe recipe, Components component, ComponentTier tier) {
 		this.recipe = recipe;
 		this.component = component;
 		this.tier = tier;
 	}
 	
 	@Override
-	public boolean matches(PropertyDelegate inv, GameMode worldIn) {
-		return getRecipe().a(inv, worldIn);
+	public boolean matches(CraftingInventory inv, World worldIn) {
+		return getRecipe().matches(inv, worldIn);
 	}
 	
 	@Override
-	public DefaultedList<FireworkRocketRecipe> a() {
-		return recipe.a();
+	public DefaultedList<Ingredient> getPreviewInputs() {
+		return recipe.getPreviewInputs();
 	}
 	
 	@Override
-	public ItemCooldownManager getCraftingResult(PropertyDelegate inv) {
-		for (int slot = 0; slot < inv.Z_(); slot++) {
-			ItemCooldownManager handgun = inv.a(slot).i();
+	public ItemStack getCraftingResult(CraftingInventory inv) {
+		for (int slot = 0; slot < inv.size(); slot++) {
+			ItemStack handgun = inv.getStack(slot).copy();
 			if (!AllItems.BLOCKZAPPER.isIn(handgun))
 				continue;
 			BlockzapperItem.setTier(getUpgradedComponent(), getTier(), handgun);
 			return handgun;
 		}
-		return ItemCooldownManager.tick;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemCooldownManager c() {
-		ItemCooldownManager handgun = new ItemCooldownManager(AllItems.BLOCKZAPPER.get());
+	public ItemStack getOutput() {
+		ItemStack handgun = new ItemStack(AllItems.BLOCKZAPPER.get());
 		BlockzapperItem.setTier(getUpgradedComponent(), getTier(), handgun);
 		return handgun;
 	}
 
 	@Override
-	public boolean af_() {
+	public boolean isIgnoredInRecipeBook() {
 		return true;
 	}
 	
 	@Override
-	public Identifier f() {
-		return getRecipe().f();
+	public Identifier getId() {
+		return getRecipe().getId();
 	}
 
 //	@Override
@@ -75,24 +76,24 @@ public class BlockzapperUpgradeRecipe implements BlastingRecipe {
 //	}
 	
 	@Override
-	public MapExtendingRecipe<?> ag_() {
+	public RecipeSerializer<?> getSerializer() {
 		return AllRecipeTypes.BLOCKZAPPER_UPGRADE.serializer;
 	}
 	
-	public static class Serializer extends ForgeRegistryEntry<MapExtendingRecipe<?>> implements MapExtendingRecipe<BlockzapperUpgradeRecipe> {
+	public static class Serializer extends ForgeRegistryEntry<RecipeSerializer<?>> implements RecipeSerializer<BlockzapperUpgradeRecipe> {
 
 		@Override
-		public BlockzapperUpgradeRecipe a(Identifier recipeId, JsonObject json) {
-			RecipeSerializer recipe = MapExtendingRecipe.a.a(recipeId, json);
+		public BlockzapperUpgradeRecipe read(Identifier recipeId, JsonObject json) {
+			ShapedRecipe recipe = RecipeSerializer.SHAPED.read(recipeId, json);
 			
-			Components component = Components.valueOf(OrderedText.h(json, "component"));
-			ComponentTier tier = ComponentTier.valueOf(OrderedText.h(json, "tier"));
+			Components component = Components.valueOf(JsonHelper.getString(json, "component"));
+			ComponentTier tier = ComponentTier.valueOf(JsonHelper.getString(json, "tier"));
 			return new BlockzapperUpgradeRecipe(recipe, component, tier);
 		}
 
 		@Override
-		public BlockzapperUpgradeRecipe a(Identifier recipeId, PacketByteBuf buffer) {
-			RecipeSerializer recipe = MapExtendingRecipe.a.a(recipeId, buffer);
+		public BlockzapperUpgradeRecipe read(Identifier recipeId, PacketByteBuf buffer) {
+			ShapedRecipe recipe = RecipeSerializer.SHAPED.read(recipeId, buffer);
 			
 			Components component = Components.valueOf(buffer.readString(buffer.readInt()));
 			ComponentTier tier = ComponentTier.valueOf(buffer.readString(buffer.readInt()));
@@ -101,7 +102,7 @@ public class BlockzapperUpgradeRecipe implements BlastingRecipe {
 
 		@Override
 		public void write(PacketByteBuf buffer, BlockzapperUpgradeRecipe recipe) {
-			MapExtendingRecipe.a.a(buffer, recipe.getRecipe());
+			RecipeSerializer.SHAPED.write(buffer, recipe.getRecipe());
 			
 			String name = recipe.getUpgradedComponent().name();
 			String name2 = recipe.getTier().name();
@@ -114,11 +115,11 @@ public class BlockzapperUpgradeRecipe implements BlastingRecipe {
 	}
 
 	@Override
-	public boolean a(int width, int height) {
-		return getRecipe().a(width, height);
+	public boolean fits(int width, int height) {
+		return getRecipe().fits(width, height);
 	}
 
-	public RecipeSerializer getRecipe() {
+	public ShapedRecipe getRecipe() {
 		return recipe;
 	}
 

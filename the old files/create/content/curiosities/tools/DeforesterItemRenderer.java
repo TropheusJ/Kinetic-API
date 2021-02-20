@@ -1,18 +1,18 @@
-package com.simibubi.kinetic_api.content.curiosities.tools;
+package com.simibubi.create.content.curiosities.tools;
 
-import com.simibubi.kinetic_api.foundation.block.render.CustomRenderedItemModelRenderer;
-import com.simibubi.kinetic_api.foundation.item.PartialItemModelRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.block.render.CustomRenderedItemModelRenderer;
+import com.simibubi.create.foundation.item.PartialItemModelRenderer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.item.ItemStack;
 
 public class DeforesterItemRenderer extends CustomRenderedItemModelRenderer<DeforesterModel> {
 
 	@Override
-	protected void render(ItemCooldownManager stack, DeforesterModel model, PartialItemModelRenderer renderer,
-		BufferVertexConsumer ms, BackgroundRenderer buffer, int light, int overlay) {
+	protected void render(ItemStack stack, DeforesterModel model, PartialItemModelRenderer renderer,
+		MatrixStack ms, VertexConsumerProvider buffer, int light, int overlay) {
 		int maxLight = 0xF000F0;
 		float worldTime = AnimationTickHolder.getRenderTick();
 		
@@ -21,7 +21,7 @@ public class DeforesterItemRenderer extends CustomRenderedItemModelRenderer<Defo
 		renderer.renderGlowing(model.getPartial("core_glow"), maxLight);
 		
 		float angle = worldTime * -.5f % 360;
-		ms.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(angle));
+		ms.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(angle));
 		renderer.renderSolid(model.getPartial("gear"), light);
 	}
 	

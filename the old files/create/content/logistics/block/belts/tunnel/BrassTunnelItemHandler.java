@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.content.logistics.block.belts.tunnel;
+package com.simibubi.create.content.logistics.block.belts.tunnel;
 
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 
@@ -18,12 +18,12 @@ public class BrassTunnelItemHandler implements IItemHandler {
 	}
 
 	@Override
-	public ItemCooldownManager getStackInSlot(int slot) {
+	public ItemStack getStackInSlot(int slot) {
 		return te.stackToDistribute;
 	}
 
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
 		if (!te.hasDistributionBehaviour()) {
 			LazyOptional<IItemHandler> beltCapability = te.getBeltCapability();
 			if (!beltCapability.isPresent())
@@ -35,24 +35,24 @@ public class BrassTunnelItemHandler implements IItemHandler {
 			return stack;
 		if (!simulate) 
 			te.setStackToDistribute(stack);
-		return ItemCooldownManager.tick;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
+	public ItemStack extractItem(int slot, int amount, boolean simulate) {
 		LazyOptional<IItemHandler> beltCapability = te.getBeltCapability();
 		if (!beltCapability.isPresent())
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		return beltCapability.orElse(null).extractItem(slot, amount, simulate);
 	}
 
 	@Override
 	public int getSlotLimit(int slot) {
-		return te.stackToDistribute.a() ? 64 : te.stackToDistribute.c();
+		return te.stackToDistribute.isEmpty() ? 64 : te.stackToDistribute.getMaxCount();
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		return true;
 	}
 

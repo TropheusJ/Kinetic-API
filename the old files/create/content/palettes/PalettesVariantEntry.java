@@ -1,35 +1,36 @@
-package com.simibubi.kinetic_api.content.palettes;
+package com.simibubi.create.content.palettes;
 
-import static com.simibubi.kinetic_api.foundation.data.CreateRegistrate.connectedTextures;
+import static com.simibubi.create.foundation.data.CreateRegistrate.connectedTextures;
 
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.AllColorHandlers;
-import com.simibubi.kinetic_api.AllTags;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.data.CreateRegistrate;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.AllColorHandlers;
+import com.simibubi.create.AllTags;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.data.CreateRegistrate;
+import com.simibubi.create.foundation.utility.Lang;
 import com.tterrag.registrate.builders.BlockBuilder;
 import com.tterrag.registrate.util.DataIngredient;
 import com.tterrag.registrate.util.entry.BlockEntry;
 import com.tterrag.registrate.util.nullness.NonNullSupplier;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.client.render.VertexConsumerProvider;
+
+import net.minecraft.block.Block;
+import net.minecraft.client.render.RenderLayer;
 
 public class PalettesVariantEntry {
 
-	public ImmutableList<BlockEntry<? extends BeetrootsBlock>> registeredBlocks;
-	public ImmutableList<BlockEntry<? extends BeetrootsBlock>> registeredPartials;
+	public ImmutableList<BlockEntry<? extends Block>> registeredBlocks;
+	public ImmutableList<BlockEntry<? extends Block>> registeredPartials;
 
 	public PalettesVariantEntry(PaletteStoneVariants variant, PaletteBlockPatterns[] patterns,
-		NonNullSupplier<? extends BeetrootsBlock> initialProperties) {
+		NonNullSupplier<? extends Block> initialProperties) {
 
 		String name = Lang.asId(variant.name());
-		ImmutableList.Builder<BlockEntry<? extends BeetrootsBlock>> registeredBlocks = ImmutableList.builder();
-		ImmutableList.Builder<BlockEntry<? extends BeetrootsBlock>> registeredPartials = ImmutableList.builder();
+		ImmutableList.Builder<BlockEntry<? extends Block>> registeredBlocks = ImmutableList.builder();
+		ImmutableList.Builder<BlockEntry<? extends Block>> registeredPartials = ImmutableList.builder();
 		for (PaletteBlockPatterns pattern : patterns) {
 
 			CreateRegistrate registrate = Create.registrate();
-			BlockBuilder<? extends BeetrootsBlock, CreateRegistrate> builder =
+			BlockBuilder<? extends Block, CreateRegistrate> builder =
 				registrate.block(pattern.createName(name), pattern.getBlockFactory())
 					.initialProperties(initialProperties)
 					.blockstate(pattern.getBlockStateGenerator()
@@ -37,7 +38,7 @@ public class PalettesVariantEntry {
 						.apply(name)::accept);
 
 			if (pattern.isTranslucent())
-				builder.addLayer(() -> VertexConsumerProvider::f);
+				builder.addLayer(() -> RenderLayer::getTranslucent);
 			if (pattern == PaletteBlockPatterns.COBBLESTONE)
 				builder.item().tag(AllTags.AllItemTags.COBBLESTONE.tag);
 			if (pattern.hasFoliage())
@@ -58,10 +59,10 @@ public class PalettesVariantEntry {
 			else
 				builder.simpleItem();
 
-			BlockEntry<? extends BeetrootsBlock> block = builder.register();
+			BlockEntry<? extends Block> block = builder.register();
 			registeredBlocks.add(block);
 
-			for (PaletteBlockPartial<? extends BeetrootsBlock> partialBlock : pattern.getPartials())
+			for (PaletteBlockPartial<? extends Block> partialBlock : pattern.getPartials())
 				registeredPartials.add(partialBlock.create(name, pattern, block)
 					.register());
 

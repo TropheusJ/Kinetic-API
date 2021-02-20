@@ -1,22 +1,22 @@
-package com.simibubi.kinetic_api.foundation.utility.outliner;
+package com.simibubi.create.foundation.utility.outliner;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import com.simibubi.kinetic_api.AllSpecialTextures;
-import com.simibubi.kinetic_api.foundation.renderState.RenderTypes;
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.AllSpecialTextures;
+import com.simibubi.create.foundation.renderState.RenderTypes;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import com.simibubi.create.foundation.utility.VecHelper;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.util.math.Vec3d;
 
 public class BlockClusterOutline extends Outline {
 
@@ -28,11 +28,11 @@ public class BlockClusterOutline extends Outline {
 	}
 
 	@Override
-	public void render(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
+	public void render(MatrixStack ms, SuperRenderTypeBuffer buffer) {
 		for (MergeEntry edge : cluster.visibleEdges) {
-			EntityHitResult start = EntityHitResult.b(edge.pos);
+			Vec3d start = Vec3d.of(edge.pos);
 			Direction direction = Direction.get(AxisDirection.POSITIVE, edge.axis);
-			renderAACuboidLine(ms, buffer, start, EntityHitResult.b(edge.pos.offset(direction)));
+			renderAACuboidLine(ms, buffer, start, Vec3d.of(edge.pos.offset(direction)));
 		}
 
 		for (MergeEntry face : cluster.visibleFaces.keySet()) {
@@ -45,33 +45,33 @@ public class BlockClusterOutline extends Outline {
 		}
 	}
 
-	protected void renderBlockFace(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer, BlockPos pos, Direction face) {
+	protected void renderBlockFace(MatrixStack ms, SuperRenderTypeBuffer buffer, BlockPos pos, Direction face) {
 		Optional<AllSpecialTextures> faceTexture = params.faceTexture;
 		if (!faceTexture.isPresent())
 			return;
 
-		VertexConsumerProvider translucentType = RenderTypes.getOutlineTranslucent(faceTexture.get()
+		RenderLayer translucentType = RenderTypes.getOutlineTranslucent(faceTexture.get()
 			.getLocation(), true);
-		OverlayVertexConsumer builder = buffer.getLateBuffer(translucentType);
+		VertexConsumer builder = buffer.getLateBuffer(translucentType);
 
-		EntityHitResult center = VecHelper.getCenterOf(pos);
-		EntityHitResult offset = EntityHitResult.b(face.getVector());
-		EntityHitResult plane = VecHelper.axisAlingedPlaneOf(offset);
+		Vec3d center = VecHelper.getCenterOf(pos);
+		Vec3d offset = Vec3d.of(face.getVector());
+		Vec3d plane = VecHelper.axisAlingedPlaneOf(offset);
 		Axis axis = face.getAxis();
 
-		offset = offset.a(1 / 2f + 1 / 64d);
-		plane = plane.a(1 / 2f)
-			.e(offset);
+		offset = offset.multiply(1 / 2f + 1 / 64d);
+		plane = plane.multiply(1 / 2f)
+			.add(offset);
 
 		int deg = face.getDirection()
 			.offset() * 90;
-		EntityHitResult a1 = plane.e(center);
+		Vec3d a1 = plane.add(center);
 		plane = VecHelper.rotate(plane, deg, axis);
-		EntityHitResult a2 = plane.e(center);
+		Vec3d a2 = plane.add(center);
 		plane = VecHelper.rotate(plane, deg, axis);
-		EntityHitResult a3 = plane.e(center);
+		Vec3d a3 = plane.add(center);
 		plane = VecHelper.rotate(plane, deg, axis);
-		EntityHitResult a4 = plane.e(center);
+		Vec3d a4 = plane.add(center);
 
 		putQuad(ms, builder, a1, a2, a3, a4, face);
 	}

@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue;
+package com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue;
 
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform;
 import net.minecraft.text.Text;
 
 public class ScrollOptionBehaviour<E extends Enum<E> & INamedIconOptions> extends ScrollValueBehaviour {

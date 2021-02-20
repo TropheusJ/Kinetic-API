@@ -1,12 +1,23 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
 import java.util.List;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.simibubi.create.foundation.item.TooltipHelper;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.Couple;
+import com.simibubi.create.foundation.utility.Pair;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
@@ -15,17 +26,8 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
-import apx;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.simibubi.kinetic_api.foundation.item.TooltipHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.Couple;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 
 public class NixieTubeTileEntity extends SmartTileEntity {
 
@@ -35,18 +37,18 @@ public class NixieTubeTileEntity extends SmartTileEntity {
 
 	int redstoneStrength;
 
-	public NixieTubeTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public NixieTubeTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		redstoneStrength = 0;
 		customText = Optional.empty();
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 
 		// Dynamic text components have to be ticked manually and re-sent to the client
-		if (customText.isPresent() && d instanceof ServerWorld) {
+		if (customText.isPresent() && world instanceof ServerWorld) {
 			Pair<Text, Integer> textSection = customText.get();
 			textSection.setFirst(updateDynamicTextComponents(Text.Serializer.fromJson(rawCustomText)));
 
@@ -67,12 +69,12 @@ public class NixieTubeTileEntity extends SmartTileEntity {
 		displayRedstoneStrength(0);
 	}
 
-	public void displayCustomNameOf(ItemCooldownManager stack, int nixiePositionInRow) {
-		CompoundTag compoundnbt = stack.b("display");
+	public void displayCustomNameOf(ItemStack stack, int nixiePositionInRow) {
+		CompoundTag compoundnbt = stack.getSubTag("display");
 		if (compoundnbt != null && compoundnbt.contains("Name", 8)) {
 			JsonElement fromJson = getJsonFromString(compoundnbt.getString("Name"));
 			Text displayed = Text.Serializer.fromJson(fromJson);
-			if (this.d instanceof ServerWorld)
+			if (this.world instanceof ServerWorld)
 				displayed = updateDynamicTextComponents(displayed);
 			this.customText = Optional.of(Pair.of(displayed, nixiePositionInRow));
 			this.rawCustomText = fromJson;
@@ -103,7 +105,7 @@ public class NixieTubeTileEntity extends SmartTileEntity {
 	//
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag nbt, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag nbt, boolean clientPacket) {
 		customText = Optional.empty();
 		redstoneStrength = nbt.getInt("RedstoneStrength");
 		if (nbt.contains("CustomText")) {
@@ -133,8 +135,8 @@ public class NixieTubeTileEntity extends SmartTileEntity {
 
 	protected Text updateDynamicTextComponents(Text customText) {
 		try {
-			return Texts.a(this.getCommandSource(null), customText,
-				(apx) null, 0);
+			return Texts.parse(this.getCommandSource(null), customText,
+				(Entity) null, 0);
 		} catch (CommandSyntaxException e) {
 		}
 		return customText;
@@ -143,14 +145,14 @@ public class NixieTubeTileEntity extends SmartTileEntity {
 	// From SignTileEntity
 	protected ServerCommandSource getCommandSource(@Nullable ServerPlayerEntity p_195539_1_) {
 		String s = p_195539_1_ == null ? "Sign"
-			: p_195539_1_.Q()
+			: p_195539_1_.getName()
 				.getString();
 		Text itextcomponent =
-			(Text) (p_195539_1_ == null ? new LiteralText("Sign") : p_195539_1_.d());
+			(Text) (p_195539_1_ == null ? new LiteralText("Sign") : p_195539_1_.getDisplayName());
 		return new ServerCommandSource(CommandOutput.DUMMY,
-			new EntityHitResult((double) this.e.getX() + 0.5D, (double) this.e.getY() + 0.5D,
-				(double) this.e.getZ() + 0.5D),
-			BlockHitResult.a, (ServerWorld) this.d, 2, s, itextcomponent, this.d.l(), p_195539_1_);
+			new Vec3d((double) this.pos.getX() + 0.5D, (double) this.pos.getY() + 0.5D,
+				(double) this.pos.getZ() + 0.5D),
+			Vec2f.ZERO, (ServerWorld) this.world, 2, s, itextcomponent, this.world.getServer(), p_195539_1_);
 	}
 
 	private String charOrEmpty(String string, int index) {

@@ -1,22 +1,29 @@
-package com.simibubi.kinetic_api;
+package com.simibubi.create;
 
-import static net.minecraft.block.enums.BambooLeaves.M;
-import static net.minecraft.block.enums.BambooLeaves.O;
+import static net.minecraft.state.properties.BlockStateProperties.FACING;
+import static net.minecraft.state.properties.BlockStateProperties.HORIZONTAL_FACING;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidTransportBehaviour.AttachmentTypes;
-import com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import elg;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferVertexConsumer;
+import java.util.function.Supplier;
+import com.simibubi.create.content.contraptions.base.KineticRenderMaterials;
+import com.simibubi.create.content.contraptions.base.RotatingData;
+import com.simibubi.create.content.contraptions.fluids.FluidTransportBehaviour.AttachmentTypes;
+import com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
+import com.simibubi.create.content.contraptions.relays.belt.BeltData;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.render.backend.instancing.InstancedModel;
+import com.simibubi.create.foundation.render.backend.instancing.InstancedTileRenderer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
 import net.minecraftforge.client.event.ModelBakeEvent;
@@ -56,7 +63,8 @@ public class AllBlockPartials {
 		HARVESTER_BLADE = get("mechanical_harvester/blade"), DEPLOYER_POLE = get("deployer/pole"),
 		DEPLOYER_HAND_POINTING = get("deployer/hand_pointing"), DEPLOYER_HAND_PUNCHING = get("deployer/hand_punching"),
 		DEPLOYER_HAND_HOLDING = get("deployer/hand_holding"), ANALOG_LEVER_HANDLE = get("analog_lever/handle"),
-		ANALOG_LEVER_INDICATOR = get("analog_lever/indicator"), BELT_FUNNEL_FLAP = get("belt_funnel/flap"),
+		ANALOG_LEVER_INDICATOR = get("analog_lever/indicator"), FUNNEL_FLAP = get("funnel/flap"), 
+		BELT_FUNNEL_FLAP = get("belt_funnel/flap"),
 		BELT_TUNNEL_FLAP = get("belt_tunnel/flap"), FLEXPEATER_INDICATOR = get("diodes/indicator"),
 		FLYWHEEL = get("flywheel/wheel"), FLYWHEEL_UPPER_ROTATING = get("flywheel/upper_rotating_connector"),
 
@@ -67,6 +75,8 @@ public class AllBlockPartials {
 		CUCKOO_HOUR_HAND = get("cuckoo_clock/hour_hand"), CUCKOO_LEFT_DOOR = get("cuckoo_clock/left_door"),
 		CUCKOO_RIGHT_DOOR = get("cuckoo_clock/right_door"), CUCKOO_PIG = get("cuckoo_clock/pig"),
 		CUCKOO_CREEPER = get("cuckoo_clock/creeper"), 
+		
+		GANTRY_COGS = get("gantry_pinion/wheels"),
 		
 		ROPE_COIL = get("rope_pulley/rope_coil"),
 		ROPE_HALF = get("rope_pulley/rope_half"), 
@@ -104,6 +114,8 @@ public class AllBlockPartials {
 
 		SPOUT_TOP = get("spout/top"), SPOUT_MIDDLE = get("spout/middle"), SPOUT_BOTTOM = get("spout/bottom"),
 
+		SPEED_CONTROLLER_BRACKET = get("rotation_speed_controller/bracket"),
+		
 		COUPLING_ATTACHMENT = getEntity("minecart_coupling/attachment"),
 		COUPLING_RING = getEntity("minecart_coupling/ring"),
 		COUPLING_CONNECTOR = getEntity("minecart_coupling/connector")
@@ -120,7 +132,7 @@ public class AllBlockPartials {
 	;
 
 	private Identifier modelLocation;
-	private elg bakedModel;
+	private BakedModel bakedModel;
 
 	private AllBlockPartials() {}
 
@@ -131,14 +143,14 @@ public class AllBlockPartials {
 			Map<Direction, AllBlockPartials> map = map();
 			for (Direction d : Iterate.directions) {
 				String asId = Lang.asId(type.name());
-				map.put(d, get("fluid_pipe/" + asId + "/" + Lang.asId(d.a())));
+				map.put(d, get("fluid_pipe/" + asId + "/" + Lang.asId(d.asString())));
 			}
 			PIPE_ATTACHMENTS.put(type, map);
 		}
 		for (HeatLevel heat : HeatLevel.values()) {
 			if (heat == HeatLevel.NONE)
 				continue;
-			BLAZES.put(heat, get("blaze_burner/blaze/" + heat.a()));
+			BLAZES.put(heat, get("blaze_burner/blaze/" + heat.asString()));
 		}
 	}
 
@@ -166,36 +178,36 @@ public class AllBlockPartials {
 	}
 
 	public static void onModelBake(ModelBakeEvent event) {
-		Map<Identifier, elg> modelRegistry = event.getModelRegistry();
+		Map<Identifier, BakedModel> modelRegistry = event.getModelRegistry();
 		for (AllBlockPartials partial : all)
 			partial.bakedModel = modelRegistry.get(partial.modelLocation);
 	}
 
-	public elg get() {
+	public BakedModel get() {
 		return bakedModel;
 	}
 
-	public SuperByteBuffer renderOn(PistonHandler referenceState) {
+	public SuperByteBuffer renderOn(BlockState referenceState) {
 		return CreateClient.bufferCache.renderPartial(this, referenceState);
 	}
 
-	public SuperByteBuffer renderOnDirectionalSouth(PistonHandler referenceState) {
-		Direction facing = referenceState.c(M);
+	public SuperByteBuffer renderOnDirectionalSouth(BlockState referenceState) {
+		Direction facing = referenceState.get(FACING);
 		return renderOnDirectionalSouth(referenceState, facing);
 	}
 
-	public SuperByteBuffer renderOnDirectional(PistonHandler referenceState) {
-		Direction facing = referenceState.c(M);
+	public SuperByteBuffer renderOnDirectional(BlockState referenceState) {
+		Direction facing = referenceState.get(FACING);
 		return renderOnDirectional(referenceState, facing);
 	}
 
-	public SuperByteBuffer renderOnHorizontal(PistonHandler referenceState) {
-		Direction facing = referenceState.c(O);
+	public SuperByteBuffer renderOnHorizontal(BlockState referenceState) {
+		Direction facing = referenceState.get(HORIZONTAL_FACING);
 		return renderOnDirectionalSouth(referenceState, facing);
 	}
 
-	public SuperByteBuffer renderOnDirectionalSouth(PistonHandler referenceState, Direction facing) {
-		BufferVertexConsumer ms = new BufferVertexConsumer();
+	public SuperByteBuffer renderOnDirectionalSouth(BlockState referenceState, Direction facing) {
+		MatrixStack ms = new MatrixStack();
 		// TODO 1.15 find a way to cache this model matrix computation
 		MatrixStacker.of(ms)
 			.centre()
@@ -205,8 +217,8 @@ public class AllBlockPartials {
 		return CreateClient.bufferCache.renderDirectionalPartial(this, referenceState, facing, ms);
 	}
 
-	public SuperByteBuffer renderOnDirectional(PistonHandler referenceState, Direction facing) {
-		BufferVertexConsumer ms = new BufferVertexConsumer();
+	public SuperByteBuffer renderOnDirectional(BlockState referenceState, Direction facing) {
+		MatrixStack ms = new MatrixStack();
 		// TODO 1.15 find a way to cache this model matrix computation
 		MatrixStacker.of(ms)
 			.centre()
@@ -214,6 +226,32 @@ public class AllBlockPartials {
 			.rotateX(facing == Direction.UP ? 0 : facing == Direction.DOWN ? 180 : 90)
 			.unCentre();
 		return CreateClient.bufferCache.renderDirectionalPartial(this, referenceState, facing, ms);
+	}
+
+	public InstancedModel<RotatingData> renderOnRotating(InstancedTileRenderer<?> ctx, BlockState referenceState) {
+		return ctx.getMaterial(KineticRenderMaterials.ROTATING).getModel(this, referenceState);
+	}
+
+	public InstancedModel<BeltData> renderOnBelt(InstancedTileRenderer<?> ctx, BlockState referenceState) {
+		return ctx.getMaterial(KineticRenderMaterials.BELTS).getModel(this, referenceState);
+	}
+
+	public InstancedModel<RotatingData> renderOnDirectionalSouthRotating(InstancedTileRenderer<?> dispatcher, BlockState referenceState) {
+		Direction facing = referenceState.get(FACING);
+		return renderOnDirectionalSouthRotating(dispatcher, referenceState, facing);
+	}
+
+	public InstancedModel<RotatingData> renderOnDirectionalSouthRotating(InstancedTileRenderer<?> dispatcher, BlockState referenceState, Direction facing) {
+		Supplier<MatrixStack> ms = () -> {
+			MatrixStack stack = new MatrixStack();
+			MatrixStacker.of(stack)
+						 .centre()
+						 .rotateY(AngleHelper.horizontalAngle(facing))
+						 .rotateX(AngleHelper.verticalAngle(facing))
+						 .unCentre();
+			return stack;
+		};
+		return dispatcher.getMaterial(KineticRenderMaterials.ROTATING).getModel(this, referenceState, facing, ms);
 	}
 
 }

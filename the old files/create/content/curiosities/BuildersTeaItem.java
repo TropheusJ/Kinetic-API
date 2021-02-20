@@ -1,62 +1,62 @@
-package com.simibubi.kinetic_api.content.curiosities;
+package com.simibubi.create.content.curiosities;
 
 import net.minecraft.advancement.criterion.Criteria;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.effect.InstantStatusEffect;
-import net.minecraft.entity.effect.StatusEffectType;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.TippedArrowItem;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.stat.StatFormatter;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.LocalDifficulty;
+import net.minecraft.stat.Stats;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.UseAction;
+import net.minecraft.world.World;
 
-public class BuildersTeaItem extends HoeItem {
+public class BuildersTeaItem extends Item {
 
-	public BuildersTeaItem(a p_i48487_1_) {
+	public BuildersTeaItem(Settings p_i48487_1_) {
 		super(p_i48487_1_);
 	}
 
-	public ItemCooldownManager a(ItemCooldownManager stack, GameMode world, SaddledComponent entity) {
-		PlayerAbilities playerentity = entity instanceof PlayerAbilities ? (PlayerAbilities) entity : null;
+	public ItemStack finishUsing(ItemStack stack, World world, LivingEntity entity) {
+		PlayerEntity playerentity = entity instanceof PlayerEntity ? (PlayerEntity) entity : null;
 		if (playerentity instanceof ServerPlayerEntity)
-			Criteria.CONSUME_ITEM.a((ServerPlayerEntity) playerentity, stack);
+			Criteria.CONSUME_ITEM.trigger((ServerPlayerEntity) playerentity, stack);
 
-		if (!world.v) 
-			entity.c(new InstantStatusEffect(StatusEffectType.field_18273, 3 * 60 * 20, 0, false, false, false));
+		if (!world.isClient) 
+			entity.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 3 * 60 * 20, 0, false, false, false));
 
 		if (playerentity != null) {
-			playerentity.b(StatFormatter.DIVIDE_BY_TEN.b(this));
-			playerentity.eH().a(1, .6F);
-			if (!playerentity.bC.spawnDelay)
-				stack.g(1);
+			playerentity.incrementStat(Stats.USED.getOrCreateStat(this));
+			playerentity.getHungerManager().add(1, .6F);
+			if (!playerentity.abilities.creativeMode)
+				stack.decrement(1);
 		}
 
-		if (playerentity == null || !playerentity.bC.spawnDelay) {
-			if (stack.a()) 
-				return new ItemCooldownManager(AliasedBlockItem.nw);
+		if (playerentity == null || !playerentity.abilities.creativeMode) {
+			if (stack.isEmpty()) 
+				return new ItemStack(Items.GLASS_BOTTLE);
 			if (playerentity != null) 
-				playerentity.bm.e(new ItemCooldownManager(AliasedBlockItem.nw));
+				playerentity.inventory.insertStack(new ItemStack(Items.GLASS_BOTTLE));
 		}
 
 		return stack;
 	}
 
-	public int e_(ItemCooldownManager p_77626_1_) {
+	public int getMaxUseTime(ItemStack p_77626_1_) {
 		return 42;
 	}
 
-	public TippedArrowItem d_(ItemCooldownManager p_77661_1_) {
-		return TippedArrowItem.c;
+	public UseAction getUseAction(ItemStack p_77661_1_) {
+		return UseAction.DRINK;
 	}
 
-	public LocalDifficulty<ItemCooldownManager> a(GameMode p_77659_1_, PlayerAbilities p_77659_2_, ItemScatterer p_77659_3_) {
-		p_77659_2_.c(p_77659_3_);
-		return LocalDifficulty.a(p_77659_2_.b(p_77659_3_));
+	public TypedActionResult<ItemStack> use(World p_77659_1_, PlayerEntity p_77659_2_, Hand p_77659_3_) {
+		p_77659_2_.setCurrentHand(p_77659_3_);
+		return TypedActionResult.success(p_77659_2_.getStackInHand(p_77659_3_));
 	}
 
 }

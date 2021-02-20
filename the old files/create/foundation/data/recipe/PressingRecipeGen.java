@@ -1,20 +1,21 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import net.minecraft.block.BellBlock;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllRecipeTypes;
+
+import net.minecraft.block.Blocks;
 import net.minecraft.data.DataGenerator;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.recipe.FireworkRocketRecipe;
+import net.minecraft.item.Items;
+import net.minecraft.recipe.Ingredient;
 
 public class PressingRecipeGen extends ProcessingRecipeGen {
 
 	GeneratedRecipe
 
-	SUGAR_CANE = create(() -> AliasedBlockItem.bD, b -> b.output(AliasedBlockItem.mb)),
+	SUGAR_CANE = create(() -> Items.SUGAR_CANE, b -> b.output(Items.PAPER)),
 
-		PATH = create("path", b -> b.require(FireworkRocketRecipe.a(AliasedBlockItem.i, AliasedBlockItem.j, AliasedBlockItem.l))
-			.output(AliasedBlockItem.gi)),
+		PATH = create("path", b -> b.require(Ingredient.ofItems(Items.GRASS_BLOCK, Items.DIRT, Items.PODZOL))
+			.output(Items.GRASS_PATH)),
 
 		IRON = create("iron_ingot", b -> b.require(I.iron())
 			.output(AllItems.IRON_SHEET.get())),
@@ -22,7 +23,7 @@ public class PressingRecipeGen extends ProcessingRecipeGen {
 			.output(AllItems.GOLDEN_SHEET.get())),
 		COPPER = create("copper_ingot", b -> b.require(I.copper())
 			.output(AllItems.COPPER_SHEET.get())),
-		LAPIS = create("lapis_block", b -> b.require(BellBlock.ar)
+		LAPIS = create("lapis_block", b -> b.require(Blocks.LAPIS_BLOCK)
 			.output(AllItems.LAPIS_SHEET.get())),
 		BRASS = create("brass_ingot", b -> b.require(I.brass())
 			.output(AllItems.BRASS_SHEET.get()))

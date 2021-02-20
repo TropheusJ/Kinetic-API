@@ -1,51 +1,51 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
-import com.simibubi.kinetic_api.AllFluids;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.AllTags;
-import com.simibubi.kinetic_api.content.contraptions.fluids.potion.PotionFluidHandler;
+import com.simibubi.create.AllFluids;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.AllTags;
+import com.simibubi.create.content.contraptions.fluids.potion.PotionFluidHandler;
 
 import net.minecraft.data.DataGenerator;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.potion.Potion;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.Items;
+import net.minecraft.potion.Potions;
 
 public class FillingRecipeGen extends ProcessingRecipeGen {
 
 	GeneratedRecipe
 
 	HONEY_BOTTLE = create("honey_bottle", b -> b.require(AllTags.forgeFluidTag("honey"), 250)
-		.require(AliasedBlockItem.nw)
-		.output(AliasedBlockItem.rt)),
+		.require(Items.GLASS_BOTTLE)
+		.output(Items.HONEY_BOTTLE)),
 
 		BUILDERS_TEA = create("builders_tea", b -> b.require(AllFluids.TEA.get(), 250)
-			.require(AliasedBlockItem.nw)
+			.require(Items.GLASS_BOTTLE)
 			.output(AllItems.BUILDERS_TEA.get())),
 
-		BLAZE_CAKE = create("blaze_cake", b -> b.require(FlowableFluid.field_15901, 250)
+		BLAZE_CAKE = create("blaze_cake", b -> b.require(Fluids.LAVA, 250)
 			.require(AllItems.BLAZE_CAKE_BASE.get())
 			.output(AllItems.BLAZE_CAKE.get())),
 
-		GRASS_BLOCK = create("grass_block", b -> b.require(FlowableFluid.c, 500)
-			.require(AliasedBlockItem.j)
-			.output(AliasedBlockItem.i)),
+		GRASS_BLOCK = create("grass_block", b -> b.require(Fluids.WATER, 500)
+			.require(Items.DIRT)
+			.output(Items.GRASS_BLOCK)),
 
-		GUNPOWDER = create("gunpowder", b -> b.require(PotionFluidHandler.potionIngredient(Potion.B, 25))
+		GUNPOWDER = create("gunpowder", b -> b.require(PotionFluidHandler.potionIngredient(Potions.HARMING, 25))
 			.require(AllItems.CINDER_FLOUR.get())
-			.output(AliasedBlockItem.kU)),
+			.output(Items.GUNPOWDER)),
 
-		REDSTONE = create("redstone", b -> b.require(PotionFluidHandler.potionIngredient(Potion.J, 25))
+		REDSTONE = create("redstone", b -> b.require(PotionFluidHandler.potionIngredient(Potions.STRENGTH, 25))
 			.require(AllItems.CINDER_FLOUR.get())
-			.output(AliasedBlockItem.lP)),
+			.output(Items.REDSTONE)),
 
-		GLOWSTONE = create("glowstone", b -> b.require(PotionFluidHandler.potionIngredient(Potion.f, 25))
+		GLOWSTONE = create("glowstone", b -> b.require(PotionFluidHandler.potionIngredient(Potions.NIGHT_VISION, 25))
 			.require(AllItems.CINDER_FLOUR.get())
-			.output(AliasedBlockItem.mk)),
+			.output(Items.GLOWSTONE_DUST)),
 
 		MILK_BUCKET = create("milk_bucket", b -> b.require(AllTags.forgeFluidTag("milk"), 1000)
-			.require(AliasedBlockItem.lK)
-			.output(AliasedBlockItem.lT))
+			.require(Items.BUCKET)
+			.output(Items.MILK_BUCKET))
 
 	;
 

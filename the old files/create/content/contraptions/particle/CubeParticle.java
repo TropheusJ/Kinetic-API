@@ -1,47 +1,48 @@
-package com.simibubi.kinetic_api.content.contraptions.particle;
+package com.simibubi.create.content.contraptions.particle;
 
 import org.lwjgl.opengl.GL11;
-import afj;
+
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.WindowSettings;
-import net.minecraft.client.gl.GlShader;
-import net.minecraft.client.options.AoMode;
-import net.minecraft.client.particle.ExplosionLargeParticle;
-import net.minecraft.client.particle.LargeFireSmokeParticle;
-import net.minecraft.client.particle.LavaEmberParticle;
+import net.minecraft.client.particle.Particle;
+import net.minecraft.client.particle.ParticleFactory;
+import net.minecraft.client.particle.ParticleTextureSheet;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.FixedColorVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
-import net.minecraft.client.texture.MissingSprite;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.texture.TextureManager;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
-public class CubeParticle extends ExplosionLargeParticle {
+public class CubeParticle extends Particle {
 
-	public static final EntityHitResult[] CUBE = {
+	public static final Vec3d[] CUBE = {
 		// TOP
-		new EntityHitResult(1, 1, -1), new EntityHitResult(1, 1, 1), new EntityHitResult(-1, 1, 1), new EntityHitResult(-1, 1, -1),
+		new Vec3d(1, 1, -1), new Vec3d(1, 1, 1), new Vec3d(-1, 1, 1), new Vec3d(-1, 1, -1),
 
 		// BOTTOM
-		new EntityHitResult(-1, -1, -1), new EntityHitResult(-1, -1, 1), new EntityHitResult(1, -1, 1), new EntityHitResult(1, -1, -1),
+		new Vec3d(-1, -1, -1), new Vec3d(-1, -1, 1), new Vec3d(1, -1, 1), new Vec3d(1, -1, -1),
 
 		// FRONT
-		new EntityHitResult(-1, -1, 1), new EntityHitResult(-1, 1, 1), new EntityHitResult(1, 1, 1), new EntityHitResult(1, -1, 1),
+		new Vec3d(-1, -1, 1), new Vec3d(-1, 1, 1), new Vec3d(1, 1, 1), new Vec3d(1, -1, 1),
 
 		// BACK
-		new EntityHitResult(1, -1, -1), new EntityHitResult(1, 1, -1), new EntityHitResult(-1, 1, -1), new EntityHitResult(-1, -1, -1),
+		new Vec3d(1, -1, -1), new Vec3d(1, 1, -1), new Vec3d(-1, 1, -1), new Vec3d(-1, -1, -1),
 
 		// LEFT
-		new EntityHitResult(-1, -1, -1), new EntityHitResult(-1, 1, -1), new EntityHitResult(-1, 1, 1), new EntityHitResult(-1, -1, 1),
+		new Vec3d(-1, -1, -1), new Vec3d(-1, 1, -1), new Vec3d(-1, 1, 1), new Vec3d(-1, -1, 1),
 
 		// RIGHT
-		new EntityHitResult(1, -1, 1), new EntityHitResult(1, 1, 1), new EntityHitResult(1, 1, -1), new EntityHitResult(1, -1, -1) };
+		new Vec3d(1, -1, 1), new Vec3d(1, 1, 1), new Vec3d(1, 1, -1), new Vec3d(1, -1, -1) };
 
-	public static final EntityHitResult[] CUBE_NORMALS = {
+	public static final Vec3d[] CUBE_NORMALS = {
 		// modified normals for the sides
-		new EntityHitResult(0, 1, 0), new EntityHitResult(0, -1, 0), new EntityHitResult(0, 0, 1), new EntityHitResult(0, 0, 1), new EntityHitResult(0, 0, 1),
-		new EntityHitResult(0, 0, 1),
+		new Vec3d(0, 1, 0), new Vec3d(0, -1, 0), new Vec3d(0, 0, 1), new Vec3d(0, 0, 1), new Vec3d(0, 0, 1),
+		new Vec3d(0, 0, 1),
 
 		/*
 		 * new Vector3d(0, 1, 0), new Vector3d(0, -1, 0), new Vector3d(0, 0, 1), new Vector3d(0, 0,
@@ -49,15 +50,15 @@ public class CubeParticle extends ExplosionLargeParticle {
 		 */
 	};
 
-	private static final LavaEmberParticle renderType = new LavaEmberParticle() {
+	private static final ParticleTextureSheet renderType = new ParticleTextureSheet() {
 		@Override
-		public void a(GlShader builder, MissingSprite textureManager) {
+		public void begin(BufferBuilder builder, TextureManager textureManager) {
 			RenderSystem.disableTexture();
 
 			// transparent, additive blending
 			RenderSystem.depthMask(false);
 			RenderSystem.enableBlend();
-			RenderSystem.blendFunc(WindowSettings.q.e, WindowSettings.j.e);
+			RenderSystem.blendFunc(GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE);
 			RenderSystem.enableLighting();
 			RenderSystem.enableColorMaterial();
 
@@ -66,14 +67,14 @@ public class CubeParticle extends ExplosionLargeParticle {
 //			RenderSystem.disableBlend();
 //			RenderSystem.enableLighting();
 
-			builder.a(GL11.GL_QUADS, BufferBuilder.buffer);
+			builder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
 		}
 
 		@Override
-		public void a(FixedColorVertexConsumer tessellator) {
-			tessellator.b();
-			RenderSystem.blendFunc(WindowSettings.q.l,
-				WindowSettings.j.j);
+		public void draw(Tessellator tessellator) {
+			tessellator.draw();
+			RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA,
+				GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
 			RenderSystem.disableLighting();
 			RenderSystem.enableTexture();
 		}
@@ -82,22 +83,22 @@ public class CubeParticle extends ExplosionLargeParticle {
 	protected float scale;
 	protected boolean hot;
 
-	public CubeParticle(DragonHeadEntityModel world, double x, double y, double z, double motionX, double motionY, double motionZ) {
+	public CubeParticle(ClientWorld world, double x, double y, double z, double motionX, double motionY, double motionZ) {
 		super(world, x, y, z);
-		this.j = motionX;
-		this.k = motionY;
-		this.l = motionZ;
+		this.velocityX = motionX;
+		this.velocityY = motionY;
+		this.velocityZ = motionZ;
 
 		setScale(0.2F);
 	}
 
 	public void setScale(float scale) {
 		this.scale = scale;
-		this.a(scale * 0.5f, scale * 0.5f);
+		this.setBoundingBoxSpacing(scale * 0.5f, scale * 0.5f);
 	}
 
 	public void averageAge(int age) {
-		this.t = (int) (age + (r.nextDouble() * 2D - 1D) * 8);
+		this.maxAge = (int) (age + (random.nextDouble() * 2D - 1D) * 8);
 	}
 	
 	public void setHot(boolean hot) {
@@ -107,71 +108,71 @@ public class CubeParticle extends ExplosionLargeParticle {
 	private boolean billowing = false;
 	
 	@Override
-	public void a() {
-		if (this.hot && this.s > 0) {
-			if (this.e == this.h) {
+	public void tick() {
+		if (this.hot && this.age > 0) {
+			if (this.prevPosY == this.y) {
 				billowing = true;
-				B = false; // Prevent motion being ignored due to vertical collision
-				if (this.j == 0 && this.l == 0) {
-					EntityHitResult diff = EntityHitResult.b(new BlockPos(g, h, i)).b(0.5, 0.5, 0.5).a(g, h, i);
-					this.j = -diff.entity * 0.1;
-					this.l = -diff.d * 0.1;
+				field_21507 = false; // Prevent motion being ignored due to vertical collision
+				if (this.velocityX == 0 && this.velocityZ == 0) {
+					Vec3d diff = Vec3d.of(new BlockPos(x, y, z)).add(0.5, 0.5, 0.5).subtract(x, y, z);
+					this.velocityX = -diff.x * 0.1;
+					this.velocityZ = -diff.z * 0.1;
 				}
-				this.j *= 1.1;
-				this.k *= 0.9;
-				this.l *= 1.1;
+				this.velocityX *= 1.1;
+				this.velocityY *= 0.9;
+				this.velocityZ *= 1.1;
 			} else if (billowing) {
-				this.k *= 1.2;
+				this.velocityY *= 1.2;
 			}
 		}
-		super.a();
+		super.tick();
 	}
 
 	@Override
-	public void a(OverlayVertexConsumer builder, AoMode renderInfo, float p_225606_3_) {
-		EntityHitResult projectedView = renderInfo.b();
-		float lerpedX = (float) (afj.d(p_225606_3_, this.d, this.g) - projectedView.getX());
-		float lerpedY = (float) (afj.d(p_225606_3_, this.e, this.h) - projectedView.getY());
-		float lerpedZ = (float) (afj.d(p_225606_3_, this.f, this.i) - projectedView.getZ());
+	public void buildGeometry(VertexConsumer builder, Camera renderInfo, float p_225606_3_) {
+		Vec3d projectedView = renderInfo.getPos();
+		float lerpedX = (float) (MathHelper.lerp(p_225606_3_, this.prevPosX, this.x) - projectedView.getX());
+		float lerpedY = (float) (MathHelper.lerp(p_225606_3_, this.prevPosY, this.y) - projectedView.getY());
+		float lerpedZ = (float) (MathHelper.lerp(p_225606_3_, this.prevPosZ, this.z) - projectedView.getZ());
 
 		// int light = getBrightnessForRender(p_225606_3_);
 		int light = 15728880;// 15<<20 && 15<<4
-		double ageMultiplier = 1 - Math.pow(s, 3) / Math.pow(t, 3);
+		double ageMultiplier = 1 - Math.pow(age, 3) / Math.pow(maxAge, 3);
 
 		for (int i = 0; i < 6; i++) {
 			// 6 faces to a cube
 			for (int j = 0; j < 4; j++) {
-				EntityHitResult vec = CUBE[i * 4 + j];
+				Vec3d vec = CUBE[i * 4 + j];
 				vec = vec
 					/* .rotate(?) */
-					.a(scale * ageMultiplier)
-					.b(lerpedX, lerpedY, lerpedZ);
+					.multiply(scale * ageMultiplier)
+					.add(lerpedX, lerpedY, lerpedZ);
 
-				EntityHitResult normal = CUBE_NORMALS[i];
-				builder.a(vec.entity, vec.c, vec.d)
-					.a(v, w, x, y)
-					.a(0, 0)
-					.a(light)
-					.b((float) normal.entity, (float) normal.c, (float) normal.d)
-					.d();
+				Vec3d normal = CUBE_NORMALS[i];
+				builder.vertex(vec.x, vec.y, vec.z)
+					.color(colorRed, colorGreen, colorBlue, colorAlpha)
+					.texture(0, 0)
+					.light(light)
+					.normal((float) normal.x, (float) normal.y, (float) normal.z)
+					.next();
 			}
 		}
 	}
 
 	@Override
-	public LavaEmberParticle b() {
+	public ParticleTextureSheet getType() {
 		return renderType;
 	}
 
-	public static class Factory implements LargeFireSmokeParticle<CubeParticleData> {
+	public static class Factory implements ParticleFactory<CubeParticleData> {
 
 		public Factory() {}
 
 		@Override
-		public ExplosionLargeParticle makeParticle(CubeParticleData data, DragonHeadEntityModel world, double x, double y, double z, double motionX,
+		public Particle makeParticle(CubeParticleData data, ClientWorld world, double x, double y, double z, double motionX,
 			double motionY, double motionZ) {
 			CubeParticle particle = new CubeParticle(world, x, y, z, motionX, motionY, motionZ);
-			particle.a(data.r, data.g, data.b);
+			particle.setColor(data.r, data.g, data.b);
 			particle.setScale(data.scale);
 			particle.averageAge(data.avgAge);
 			particle.setHot(data.hot);

@@ -1,8 +1,9 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter;
+package com.simibubi.create.content.logistics.item.filter;
 
-import bfs;
-import com.simibubi.kinetic_api.AllContainerTypes;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.AllContainerTypes;
+
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraftforge.items.ItemStackHandler;
@@ -13,11 +14,11 @@ public class FilterContainer extends AbstractFilterContainer {
 	boolean respectNBT;
 	boolean blacklist;
 
-	public FilterContainer(int id, bfs inv, PacketByteBuf extraData) {
+	public FilterContainer(int id, PlayerInventory inv, PacketByteBuf extraData) {
 		super(AllContainerTypes.FILTER.type, id, inv, extraData);
 	}
 
-	public FilterContainer(int id, bfs inv, ItemCooldownManager stack) {
+	public FilterContainer(int id, PlayerInventory inv, ItemStack stack) {
 		super(AllContainerTypes.FILTER.type, id, inv, stack);
 	}
 
@@ -28,7 +29,7 @@ public class FilterContainer extends AbstractFilterContainer {
 
 		for (int row = 0; row < 2; ++row)
 			for (int col = 0; col < 9; ++col)
-				this.a(new SlotItemHandler(filterInventory, col + row * 9, x + col * 18, y + row * 18));
+				this.addSlot(new SlotItemHandler(filterInventory, col + row * 9, x + col * 18, y + row * 18));
 	}
 	
 	@Override
@@ -42,15 +43,15 @@ public class FilterContainer extends AbstractFilterContainer {
 	}
 	
 	@Override
-	protected void readData(ItemCooldownManager filterItem) {
-		CompoundTag tag = filterItem.p();
+	protected void readData(ItemStack filterItem) {
+		CompoundTag tag = filterItem.getOrCreateTag();
 		respectNBT = tag.getBoolean("RespectNBT");
 		blacklist = tag.getBoolean("Blacklist");
 	}
 	
 	@Override
-	protected void saveData(ItemCooldownManager filterItem) {
-		CompoundTag tag = filterItem.p();
+	protected void saveData(ItemStack filterItem) {
+		CompoundTag tag = filterItem.getOrCreateTag();
 		tag.putBoolean("RespectNBT", respectNBT);
 		tag.putBoolean("Blacklist", blacklist);
 	}

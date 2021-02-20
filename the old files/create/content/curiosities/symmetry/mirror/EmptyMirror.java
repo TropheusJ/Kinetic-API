@@ -1,29 +1,30 @@
-package com.simibubi.kinetic_api.content.curiosities.symmetry.mirror;
+package com.simibubi.create.content.curiosities.symmetry.mirror;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.util.SmoothUtil;
+import com.simibubi.create.AllBlockPartials;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.text.Text;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 public class EmptyMirror extends SymmetryMirror {
 
-	public static enum Align implements SmoothUtil {
+	public static enum Align implements StringIdentifiable {
 		None("none");
 		
 		private final String name;
 		private Align(String name) { this.name = name; }
-		@Override public String a() { return name; }
+		@Override public String asString() { return name; }
 		@Override public String toString() { return name; }
 	}
 	
-	public EmptyMirror(EntityHitResult pos) {
+	public EmptyMirror(Vec3d pos) {
 		super(pos);
 		orientation = Align.None;
 	}
@@ -39,7 +40,7 @@ public class EmptyMirror extends SymmetryMirror {
 	}
 
 	@Override
-	public Map<BlockPos, PistonHandler> process(BlockPos position, PistonHandler block) {
+	public Map<BlockPos, BlockState> process(BlockPos position, BlockState block) {
 		return new HashMap<>();
 	}
 

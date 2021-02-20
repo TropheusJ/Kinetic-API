@@ -1,27 +1,40 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.advanced;
+package com.simibubi.create.content.contraptions.relays.advanced;
 
 import java.util.List;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.util.hit.EntityHitResult;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.RotationPropagator;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.components.motor.CreativeMotorTileEntity;
+import com.simibubi.create.content.contraptions.relays.elementary.CogWheelBlock;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.math.Direction;
-import com.simibubi.kinetic_api.content.contraptions.RotationPropagator;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.motor.CreativeMotorTileEntity;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class SpeedControllerTileEntity extends KineticTileEntity {
 
 	public static final int DEFAULT_SPEED = 16;
 	protected ScrollValueBehaviour targetSpeed;
 
-	public SpeedControllerTileEntity(BellBlockEntity<? extends SpeedControllerTileEntity> type) {
+	boolean hasBracket;
+
+	public SpeedControllerTileEntity(BlockEntityType<? extends SpeedControllerTileEntity> type) {
 		super(type);
+		hasBracket = false;
+	}
+
+	@Override
+	public void lazyTick() {
+		super.lazyTick();
+		updateBracket();
 	}
 
 	@Override
@@ -33,7 +46,7 @@ public class SpeedControllerTileEntity extends KineticTileEntity {
 			new ScrollValueBehaviour(Lang.translate("generic.speed"), this, new ControllerValueBoxTransform());
 		targetSpeed.between(-max, max);
 		targetSpeed.value = DEFAULT_SPEED;
-		targetSpeed.moveText(new EntityHitResult(9, 0, 10));
+		targetSpeed.moveText(new Vec3d(9, 0, 10));
 		targetSpeed.withUnit(i -> Lang.translate("generic.unit.rpm"));
 		targetSpeed.withCallback(i -> this.updateTargetRotation());
 		targetSpeed.withStepFunction(CreativeMotorTileEntity::step);
@@ -43,13 +56,13 @@ public class SpeedControllerTileEntity extends KineticTileEntity {
 	private void updateTargetRotation() {
 		if (hasNetwork())
 			getOrCreateNetwork().remove(this);
-		RotationPropagator.handleRemoved(d, e, this);
+		RotationPropagator.handleRemoved(world, pos, this);
 		removeSource();
 		attachKinetics();
 	}
 
 	public static float getConveyedSpeed(KineticTileEntity cogWheel, KineticTileEntity speedControllerIn,
-			boolean targetingController) {
+		boolean targetingController) {
 		if (!(speedControllerIn instanceof SpeedControllerTileEntity))
 			return 0;
 
@@ -67,7 +80,7 @@ public class SpeedControllerTileEntity extends KineticTileEntity {
 	}
 
 	public static float getDesiredOutputSpeed(KineticTileEntity cogWheel, KineticTileEntity speedControllerIn,
-			boolean targetingController) {
+		boolean targetingController) {
 		SpeedControllerTileEntity speedController = (SpeedControllerTileEntity) speedControllerIn;
 		float targetSpeed = speedController.targetSpeed.getValue();
 		float speed = speedControllerIn.getTheoreticalSpeed();
@@ -83,7 +96,7 @@ public class SpeedControllerTileEntity extends KineticTileEntity {
 			return 0;
 		}
 
-		boolean wheelPowersController = speedController.source.equals(cogWheel.o());
+		boolean wheelPowersController = speedController.source.equals(cogWheel.getPos());
 
 		if (wheelPowersController) {
 			if (targetingController)
@@ -96,18 +109,27 @@ public class SpeedControllerTileEntity extends KineticTileEntity {
 		return targetSpeed;
 	}
 
+	public void updateBracket() {
+		if (world == null || !world.isClient)
+			return;
+		BlockState stateAbove = world.getBlockState(pos.up());
+		hasBracket = AllBlocks.LARGE_COGWHEEL.has(stateAbove) && stateAbove.get(CogWheelBlock.AXIS)
+			.isHorizontal();
+	}
+
 	private class ControllerValueBoxTransform extends ValueBoxTransform.Sided {
 
 		@Override
-		protected EntityHitResult getSouthLocation() {
-			return VecHelper.voxelSpace(8, 11.5f, 14);
+		protected Vec3d getSouthLocation() {
+			return VecHelper.voxelSpace(8, 11f, 16);
 		}
 
 		@Override
-		protected boolean isSideActive(PistonHandler state, Direction direction) {
-			if (direction.getAxis().isVertical())
+		protected boolean isSideActive(BlockState state, Direction direction) {
+			if (direction.getAxis()
+				.isVertical())
 				return false;
-			return state.c(SpeedControllerBlock.HORIZONTAL_AXIS) != direction.getAxis();
+			return state.get(SpeedControllerBlock.HORIZONTAL_AXIS) != direction.getAxis();
 		}
 
 		@Override

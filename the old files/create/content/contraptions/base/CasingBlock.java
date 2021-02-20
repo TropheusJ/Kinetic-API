@@ -1,34 +1,35 @@
-package com.simibubi.kinetic_api.content.contraptions.base;
+package com.simibubi.create.content.contraptions.base;
 
-import bnx;
-import com.simibubi.kinetic_api.content.contraptions.wrench.IWrenchable;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.PlayerAbilities;
+import com.simibubi.create.content.contraptions.wrench.IWrenchable;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
 import net.minecraftforge.common.ToolType;
 
-public class CasingBlock extends BeetrootsBlock implements IWrenchable {
+public class CasingBlock extends Block implements IWrenchable {
 
-	public CasingBlock(c p_i48440_1_) {
+	public CasingBlock(Settings p_i48440_1_) {
 		super(p_i48440_1_);
 	}
 
 	@Override
-	public Difficulty onWrenched(PistonHandler state, bnx context) {
-		return Difficulty.FAIL;
+	public ActionResult onWrenched(BlockState state, ItemUsageContext context) {
+		return ActionResult.FAIL;
 	}
 
 	@Override
-	public ToolType getHarvestTool(PistonHandler state) {
+	public ToolType getHarvestTool(BlockState state) {
 		return null;
 	}
 
 	@Override
-	public boolean canHarvestBlock(PistonHandler state, MobSpawnerLogic world, BlockPos pos, PlayerAbilities player) {
-		for (ToolType toolType : player.dC().getToolTypes()) {
+	public boolean canHarvestBlock(BlockState state, BlockView world, BlockPos pos, PlayerEntity player) {
+		for (ToolType toolType : player.getMainHandStack().getToolTypes()) {
 			if (isToolEffective(state, toolType))
 				return true;
 		}		
@@ -36,7 +37,7 @@ public class CasingBlock extends BeetrootsBlock implements IWrenchable {
 	}
 	
 	@Override
-	public boolean isToolEffective(PistonHandler state, ToolType tool) {
+	public boolean isToolEffective(BlockState state, ToolType tool) {
 		return tool == ToolType.AXE || tool == ToolType.PICKAXE;
 	}
 

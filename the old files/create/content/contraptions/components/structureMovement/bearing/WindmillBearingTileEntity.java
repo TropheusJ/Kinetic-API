@@ -1,23 +1,24 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing;
+package com.simibubi.create.content.contraptions.components.structureMovement.bearing;
 
 import java.util.List;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.content.contraptions.components.structureMovement.bearing.WindmillBearingTileEntity.RotationDirection;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
-import afj;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing.WindmillBearingTileEntity.RotationDirection;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import net.minecraft.util.math.MathHelper;
 
 public class WindmillBearingTileEntity extends MechanicalBearingTileEntity {
 
 	protected ScrollOptionBehaviour<RotationDirection> movementDirection;
 	protected float lastGeneratedSpeed;
 
-	public WindmillBearingTileEntity(BellBlockEntity<? extends MechanicalBearingTileEntity> type) {
+	public WindmillBearingTileEntity(BlockEntityType<? extends MechanicalBearingTileEntity> type) {
 		super(type);
 	}
 
@@ -41,7 +42,7 @@ public class WindmillBearingTileEntity extends MechanicalBearingTileEntity {
 		if (movedContraption == null)
 			return lastGeneratedSpeed;
 		int sails = ((BearingContraption) movedContraption.getContraption()).getSailBlocks() / 8;
-		return afj.a(sails, 1, 16) * getAngleSpeedDirection();
+		return MathHelper.clamp(sails, 1, 16) * getAngleSpeedDirection();
 	}
 
 	@Override
@@ -61,7 +62,7 @@ public class WindmillBearingTileEntity extends MechanicalBearingTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		lastGeneratedSpeed = compound.getFloat("LastGenerated");
 		super.fromTag(state, compound, clientPacket);
 	}
@@ -80,7 +81,7 @@ public class WindmillBearingTileEntity extends MechanicalBearingTileEntity {
 	private void onDirectionChanged() {
 		if (!running)
 			return;
-		if (!d.v)
+		if (!world.isClient)
 			updateGeneratedRotation();
 	}
 

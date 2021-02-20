@@ -1,70 +1,72 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors.dispenser;
+package com.simibubi.create.content.contraptions.components.actors.dispenser;
 
 import java.util.Random;
-import apx;
-import bct;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import cus;
-import cut;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.Fertilizable;
-import net.minecraft.block.Stainable;
-import net.minecraft.block.entity.LockableContainerBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.FlyingItemEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.EvokerFangsEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+
+import net.minecraft.block.BeehiveBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.FluidDrainable;
+import net.minecraft.block.entity.BeehiveBlockEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.TntEntity;
+import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.entity.projectile.thrown.EggEntity;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.SignItem;
-import net.minecraft.item.WrittenBookItem;
-import net.minecraft.potion.Potion;
+import net.minecraft.entity.projectile.SmallFireballEntity;
+import net.minecraft.entity.projectile.thrown.PotionEntity;
+import net.minecraft.fluid.FlowableFluid;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.item.SpawnEggItem;
+import net.minecraft.potion.PotionUtil;
+import net.minecraft.potion.Potions;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.stat.StatHandler;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.Util;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public interface IMovedDispenseItemBehaviour {
 
 	static void initSpawneggs() {
 		final IMovedDispenseItemBehaviour spawnEggDispenseBehaviour = new MovedDefaultDispenseItemBehaviour() {
 			@Override
-			protected ItemCooldownManager dispenseStack(ItemCooldownManager itemStack, MovementContext context, BlockPos pos,
-				EntityHitResult facing) {
-				if (!(itemStack.b() instanceof SignItem))
+			protected ItemStack dispenseStack(ItemStack itemStack, MovementContext context, BlockPos pos,
+				Vec3d facing) {
+				if (!(itemStack.getItem() instanceof SpawnEggItem))
 					return super.dispenseStack(itemStack, context, pos, facing);
 				if (context.world instanceof ServerWorld) {
-					EntityDimensions<?> entityType = ((SignItem) itemStack.b()).a(itemStack.o());
-					apx spawnedEntity = entityType.a((ServerWorld) context.world, itemStack, null,
-						pos.add(facing.entity + .7, facing.c + .7, facing.d + .7), LivingEntity.o, facing.c < .5,
+					EntityType<?> entityType = ((SpawnEggItem) itemStack.getItem()).getEntityType(itemStack.getTag());
+					Entity spawnedEntity = entityType.spawnFromItemStack((ServerWorld) context.world, itemStack, null,
+						pos.add(facing.x + .7, facing.y + .7, facing.z + .7), SpawnReason.DISPENSER, facing.y < .5,
 						false);
 					if (spawnedEntity != null)
-						spawnedEntity.f(context.motion.a(2));
+						spawnedEntity.setVelocity(context.motion.multiply(2));
 				}
-				itemStack.g(1);
+				itemStack.decrement(1);
 				return itemStack;
 			}
 		};
 
-		for (SignItem spawneggitem : SignItem.f())
+		for (SpawnEggItem spawneggitem : SpawnEggItem.getAll())
 			DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(spawneggitem, spawnEggDispenseBehaviour);
 	}
 
 	static void init() {
 		MovedProjectileDispenserBehaviour movedPotionDispenseItemBehaviour = new MovedProjectileDispenserBehaviour() {
 			@Override
-			protected FlyingItemEntity getProjectileEntity(GameMode world, double x, double y, double z,
-				ItemCooldownManager itemStack) {
-				return Util.make(new EggEntity(world, x, y, z), (p_218411_1_) -> p_218411_1_.b(itemStack));
+			protected ProjectileEntity getProjectileEntity(World world, double x, double y, double z,
+				ItemStack itemStack) {
+				return Util.make(new PotionEntity(world, x, y, z), (p_218411_1_) -> p_218411_1_.setItem(itemStack));
 			}
 
 			protected float getProjectileInaccuracy() {
@@ -76,97 +78,97 @@ public interface IMovedDispenseItemBehaviour {
 			}
 		};
 
-		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(AliasedBlockItem.qj,
+		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(Items.SPLASH_POTION,
 			movedPotionDispenseItemBehaviour);
-		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(AliasedBlockItem.qm,
+		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(Items.LINGERING_POTION,
 			movedPotionDispenseItemBehaviour);
 
-		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(AliasedBlockItem.cl,
+		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(Items.TNT,
 			new MovedDefaultDispenseItemBehaviour() {
 				@Override
-				protected ItemCooldownManager dispenseStack(ItemCooldownManager itemStack, MovementContext context, BlockPos pos,
-					EntityHitResult facing) {
-					double x = pos.getX() + facing.entity * .7 + .5;
-					double y = pos.getY() + facing.c * .7 + .5;
-					double z = pos.getZ() + facing.d * .7 + .5;
-					bct tntentity = new bct(context.world, x, y, z, null);
-					tntentity.i(context.motion.entity, context.motion.c, context.motion.d);
-					context.world.c(tntentity);
-					context.world.a(null, tntentity.cC(), tntentity.cD(), tntentity.cG(),
-						MusicType.pb, SoundEvent.e, 1.0F, 1.0F);
-					itemStack.g(1);
+				protected ItemStack dispenseStack(ItemStack itemStack, MovementContext context, BlockPos pos,
+					Vec3d facing) {
+					double x = pos.getX() + facing.x * .7 + .5;
+					double y = pos.getY() + facing.y * .7 + .5;
+					double z = pos.getZ() + facing.z * .7 + .5;
+					TntEntity tntentity = new TntEntity(context.world, x, y, z, null);
+					tntentity.addVelocity(context.motion.x, context.motion.y, context.motion.z);
+					context.world.spawnEntity(tntentity);
+					context.world.playSound(null, tntentity.getX(), tntentity.getY(), tntentity.getZ(),
+						SoundEvents.ENTITY_TNT_PRIMED, SoundCategory.BLOCKS, 1.0F, 1.0F);
+					itemStack.decrement(1);
 					return itemStack;
 				}
 			});
 
-		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(AliasedBlockItem.po,
+		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(Items.FIREWORK_ROCKET,
 			new MovedDefaultDispenseItemBehaviour() {
 				@Override
-				protected ItemCooldownManager dispenseStack(ItemCooldownManager itemStack, MovementContext context, BlockPos pos,
-					EntityHitResult facing) {
-					double x = pos.getX() + facing.entity * .7 + .5;
-					double y = pos.getY() + facing.c * .7 + .5;
-					double z = pos.getZ() + facing.d * .7 + .5;
-					EvokerFangsEntity fireworkrocketentity =
-						new EvokerFangsEntity(context.world, itemStack, x, y, z, true);
-					fireworkrocketentity.c(facing.entity, facing.c, facing.d, 0.5F, 1.0F);
-					context.world.c(fireworkrocketentity);
-					itemStack.g(1);
+				protected ItemStack dispenseStack(ItemStack itemStack, MovementContext context, BlockPos pos,
+					Vec3d facing) {
+					double x = pos.getX() + facing.x * .7 + .5;
+					double y = pos.getY() + facing.y * .7 + .5;
+					double z = pos.getZ() + facing.z * .7 + .5;
+					FireworkRocketEntity fireworkrocketentity =
+						new FireworkRocketEntity(context.world, itemStack, x, y, z, true);
+					fireworkrocketentity.setVelocity(facing.x, facing.y, facing.z, 0.5F, 1.0F);
+					context.world.spawnEntity(fireworkrocketentity);
+					itemStack.decrement(1);
 					return itemStack;
 				}
 
 				@Override
-				protected void playDispenseSound(GrassColors world, BlockPos pos) {
+				protected void playDispenseSound(WorldAccess world, BlockPos pos) {
 					world.syncWorldEvent(1004, pos, 0);
 				}
 			});
 
-		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(AliasedBlockItem.oS,
+		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(Items.FIRE_CHARGE,
 			new MovedDefaultDispenseItemBehaviour() {
 				@Override
-				protected void playDispenseSound(GrassColors world, BlockPos pos) {
+				protected void playDispenseSound(WorldAccess world, BlockPos pos) {
 					world.syncWorldEvent(1018, pos, 0);
 				}
 
 				@Override
-				protected ItemCooldownManager dispenseStack(ItemCooldownManager itemStack, MovementContext context, BlockPos pos,
-					EntityHitResult facing) {
-					Random random = context.world.t;
-					double x = pos.getX() + facing.entity * .7 + .5;
-					double y = pos.getY() + facing.c * .7 + .5;
-					double z = pos.getZ() + facing.d * .7 + .5;
-					context.world.c(Util.make(
-						new ProjectileEntity(context.world, x, y, z,
-							random.nextGaussian() * 0.05D + facing.entity + context.motion.entity,
-							random.nextGaussian() * 0.05D + facing.c + context.motion.c,
-							random.nextGaussian() * 0.05D + facing.d + context.motion.d),
-						(p_229425_1_) -> p_229425_1_.b(itemStack)));
-					itemStack.g(1);
+				protected ItemStack dispenseStack(ItemStack itemStack, MovementContext context, BlockPos pos,
+					Vec3d facing) {
+					Random random = context.world.random;
+					double x = pos.getX() + facing.x * .7 + .5;
+					double y = pos.getY() + facing.y * .7 + .5;
+					double z = pos.getZ() + facing.z * .7 + .5;
+					context.world.spawnEntity(Util.make(
+						new SmallFireballEntity(context.world, x, y, z,
+							random.nextGaussian() * 0.05D + facing.x + context.motion.x,
+							random.nextGaussian() * 0.05D + facing.y + context.motion.y,
+							random.nextGaussian() * 0.05D + facing.z + context.motion.z),
+						(p_229425_1_) -> p_229425_1_.setItem(itemStack)));
+					itemStack.decrement(1);
 					return itemStack;
 				}
 			});
 
-		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(AliasedBlockItem.nw,
+		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(Items.GLASS_BOTTLE,
 			new MovedOptionalDispenseBehaviour() {
 				@Override
-				protected ItemCooldownManager dispenseStack(ItemCooldownManager itemStack, MovementContext context, BlockPos pos,
-					EntityHitResult facing) {
+				protected ItemStack dispenseStack(ItemStack itemStack, MovementContext context, BlockPos pos,
+					Vec3d facing) {
 					this.successful = false;
 					BlockPos interactAt = pos.offset(getClosestFacingDirection(facing));
-					PistonHandler state = context.world.d_(interactAt);
-					BeetrootsBlock block = state.b();
+					BlockState state = context.world.getBlockState(interactAt);
+					Block block = state.getBlock();
 
-					if (block.a(StatHandler.aj) && state.c(Stainable.b) >= 5) { 
-						((Stainable) block).a(context.world, state, interactAt, null,
-							LockableContainerBlockEntity.b.b);
+					if (block.isIn(BlockTags.BEEHIVES) && state.get(BeehiveBlock.HONEY_LEVEL) >= 5) { 
+						((BeehiveBlock) block).takeHoney(context.world, state, interactAt, null,
+							BeehiveBlockEntity.BeeState.BEE_RELEASED);
 						this.successful = true;
-						return placeItemInInventory(itemStack, new ItemCooldownManager(AliasedBlockItem.rt), context, pos,
+						return placeItemInInventory(itemStack, new ItemStack(Items.HONEY_BOTTLE), context, pos,
 							facing);
-					} else if (context.world.b(interactAt)
-						.a(BlockTags.field_15481)) {
+					} else if (context.world.getFluidState(interactAt)
+						.isIn(FluidTags.WATER)) {
 						this.successful = true;
 						return placeItemInInventory(itemStack,
-							WrittenBookItem.a(new ItemCooldownManager(AliasedBlockItem.nv), Potion.effects), context, pos,
+							PotionUtil.setPotion(new ItemStack(Items.POTION), Potions.WATER), context, pos,
 							facing);
 					} else {
 						return super.dispenseStack(itemStack, context, pos, facing);
@@ -174,18 +176,18 @@ public interface IMovedDispenseItemBehaviour {
 				}
 			});
 
-		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(AliasedBlockItem.lK,
+		DispenserMovementBehaviour.registerMovedDispenseItemBehaviour(Items.BUCKET,
 			new MovedDefaultDispenseItemBehaviour() {
 				@Override
-				protected ItemCooldownManager dispenseStack(ItemCooldownManager itemStack, MovementContext context, BlockPos pos,
-					EntityHitResult facing) {
+				protected ItemStack dispenseStack(ItemStack itemStack, MovementContext context, BlockPos pos,
+					Vec3d facing) {
 					BlockPos interactAt = pos.offset(getClosestFacingDirection(facing));
-					PistonHandler state = context.world.d_(interactAt);
-					BeetrootsBlock block = state.b();
-					if (block instanceof Fertilizable) {
-						cut fluid = ((Fertilizable) block).b(context.world, interactAt, state);
-						if (fluid instanceof cus)
-							return placeItemInInventory(itemStack, new ItemCooldownManager(fluid.a()), context, pos,
+					BlockState state = context.world.getBlockState(interactAt);
+					Block block = state.getBlock();
+					if (block instanceof FluidDrainable) {
+						Fluid fluid = ((FluidDrainable) block).tryDrainFluid(context.world, interactAt, state);
+						if (fluid instanceof FlowableFluid)
+							return placeItemInInventory(itemStack, new ItemStack(fluid.getBucketItem()), context, pos,
 								facing);
 					}
 					return super.dispenseStack(itemStack, context, pos, facing);
@@ -193,5 +195,5 @@ public interface IMovedDispenseItemBehaviour {
 			});
 	}
 
-	ItemCooldownManager dispense(ItemCooldownManager itemStack, MovementContext context, BlockPos pos);
+	ItemStack dispense(ItemStack itemStack, MovementContext context, BlockPos pos);
 }

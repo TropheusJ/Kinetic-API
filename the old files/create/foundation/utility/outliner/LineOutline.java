@@ -1,24 +1,24 @@
-package com.simibubi.kinetic_api.foundation.utility.outliner;
+package com.simibubi.create.foundation.utility.outliner;
 
-import afj;
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class LineOutline extends Outline {
 
-	protected EntityHitResult start = EntityHitResult.a;
-	protected EntityHitResult end = EntityHitResult.a;
+	protected Vec3d start = Vec3d.ZERO;
+	protected Vec3d end = Vec3d.ZERO;
 
-	public LineOutline set(EntityHitResult start, EntityHitResult end) {
+	public LineOutline set(Vec3d start, Vec3d end) {
 		this.start = start;
 		this.end = end;
 		return this;
 	}
 
 	@Override
-	public void render(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
+	public void render(MatrixStack ms, SuperRenderTypeBuffer buffer) {
 		renderCuboidLine(ms, buffer, start, end);
 	}
 
@@ -38,19 +38,18 @@ public class LineOutline extends Outline {
 		}
 
 		@Override
-		public LineOutline set(EntityHitResult start, EntityHitResult end) {
+		public LineOutline set(Vec3d start, Vec3d end) {
 			if (!end.equals(this.end))
 				super.set(start, end);
 			return this;
 		}
 
 		@Override
-		public void render(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
-			float pt = KeyBinding.B()
-				.ai();
-			float distanceToTarget = 1 - afj.g(pt, prevProgress, progress);
-			EntityHitResult start = end.e(this.start.d(end)
-				.a(distanceToTarget));
+		public void render(MatrixStack ms, SuperRenderTypeBuffer buffer) {
+			float pt = AnimationTickHolder.getPartialTicks();
+			float distanceToTarget = 1 - MathHelper.lerp(pt, prevProgress, progress);
+			Vec3d start = end.add(this.start.subtract(end)
+				.multiply(distanceToTarget));
 			renderCuboidLine(ms, buffer, start, end);
 		}
 

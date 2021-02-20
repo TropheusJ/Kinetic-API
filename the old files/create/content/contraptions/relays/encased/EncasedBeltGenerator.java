@@ -1,29 +1,30 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
 import java.util.function.BiFunction;
 
-import com.simibubi.kinetic_api.content.contraptions.relays.encased.EncasedBeltBlock.Part;
-import com.simibubi.kinetic_api.foundation.data.SpecialBlockStateGen;
+import com.simibubi.create.content.contraptions.relays.encased.EncasedBeltBlock.Part;
+import com.simibubi.create.foundation.data.SpecialBlockStateGen;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraftforge.client.model.generators.ModelFile;
 
 public class EncasedBeltGenerator extends SpecialBlockStateGen {
 
-	private BiFunction<PistonHandler, String, ModelFile> modelFunc;
+	private BiFunction<BlockState, String, ModelFile> modelFunc;
 
-	public EncasedBeltGenerator(BiFunction<PistonHandler, String, ModelFile> modelFunc) {
+	public EncasedBeltGenerator(BiFunction<BlockState, String, ModelFile> modelFunc) {
 		this.modelFunc = modelFunc;
 	}
 
 	@Override
-	protected int getXRotation(PistonHandler state) {
-		EncasedBeltBlock.Part part = state.c(EncasedBeltBlock.PART);
-		boolean connectedAlongFirst = state.c(EncasedBeltBlock.CONNECTED_ALONG_FIRST_COORDINATE);
-		Axis axis = state.c(EncasedBeltBlock.AXIS);
+	protected int getXRotation(BlockState state) {
+		EncasedBeltBlock.Part part = state.get(EncasedBeltBlock.PART);
+		boolean connectedAlongFirst = state.get(EncasedBeltBlock.CONNECTED_ALONG_FIRST_COORDINATE);
+		Axis axis = state.get(EncasedBeltBlock.AXIS);
 
 		if (part == Part.NONE)
 			return axis == Axis.Y ? 90 : 0;
@@ -35,10 +36,10 @@ public class EncasedBeltGenerator extends SpecialBlockStateGen {
 	}
 
 	@Override
-	protected int getYRotation(PistonHandler state) {
-		EncasedBeltBlock.Part part = state.c(EncasedBeltBlock.PART);
-		boolean connectedAlongFirst = state.c(EncasedBeltBlock.CONNECTED_ALONG_FIRST_COORDINATE);
-		Axis axis = state.c(EncasedBeltBlock.AXIS);
+	protected int getYRotation(BlockState state) {
+		EncasedBeltBlock.Part part = state.get(EncasedBeltBlock.PART);
+		boolean connectedAlongFirst = state.get(EncasedBeltBlock.CONNECTED_ALONG_FIRST_COORDINATE);
+		Axis axis = state.get(EncasedBeltBlock.AXIS);
 
 		if (part == Part.NONE)
 			return axis == Axis.X ? 90 : 0;
@@ -51,14 +52,14 @@ public class EncasedBeltGenerator extends SpecialBlockStateGen {
 	}
 
 	@Override
-	public <T extends BeetrootsBlock> ModelFile getModel(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov,
-		PistonHandler state) {
+	public <T extends Block> ModelFile getModel(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov,
+		BlockState state) {
 		return modelFunc.apply(state, getModelSuffix(state));
 	}
 
-	protected String getModelSuffix(PistonHandler state) {
-		EncasedBeltBlock.Part part = state.c(EncasedBeltBlock.PART);
-		Axis axis = state.c(EncasedBeltBlock.AXIS);
+	protected String getModelSuffix(BlockState state) {
+		EncasedBeltBlock.Part part = state.get(EncasedBeltBlock.PART);
+		Axis axis = state.get(EncasedBeltBlock.AXIS);
 
 		if (part == Part.NONE)
 			return "single";

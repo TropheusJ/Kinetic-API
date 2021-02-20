@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;

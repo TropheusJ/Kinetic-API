@@ -1,14 +1,14 @@
-package com.simibubi.kinetic_api.foundation.advancement;
+package com.simibubi.create.foundation.advancement;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Predicate;
 import net.minecraft.advancement.criterion.Criteria;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.player.PlayerAbilities;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Box;
+import net.minecraft.world.WorldAccess;
 
 public class AllTriggers {
 
@@ -84,28 +84,28 @@ public class AllTriggers {
 		triggers.forEach(Criteria::register);
 	}
 
-	public static void triggerFor(ITriggerable trigger, PlayerAbilities player) {
+	public static void triggerFor(ITriggerable trigger, PlayerEntity player) {
 		if (player instanceof ServerPlayerEntity)
 			trigger.trigger((ServerPlayerEntity) player);
 	}
 
-	public static void triggerForNearbyPlayers(ITriggerable trigger, GrassColors world, BlockPos pos, int range) {
+	public static void triggerForNearbyPlayers(ITriggerable trigger, WorldAccess world, BlockPos pos, int range) {
 		triggerForNearbyPlayers(trigger, world, pos, range, player -> true);
 	}
 
-	public static void triggerForNearbyPlayers(ITriggerable trigger, GrassColors world, BlockPos pos, int range,
-			Predicate<PlayerAbilities> playerFilter) {
+	public static void triggerForNearbyPlayers(ITriggerable trigger, WorldAccess world, BlockPos pos, int range,
+			Predicate<PlayerEntity> playerFilter) {
 		if (world == null)
 			return;
-		if (world.s_())
+		if (world.isClient())
 			return;
 		List<ServerPlayerEntity> players = getPlayersInRange(world, pos, range);
 		players.stream().filter(playerFilter).forEach(trigger::trigger);
 	}
 
-	public static List<ServerPlayerEntity> getPlayersInRange(GrassColors world, BlockPos pos, int range) {
+	public static List<ServerPlayerEntity> getPlayersInRange(WorldAccess world, BlockPos pos, int range) {
 		List<ServerPlayerEntity> players =
-			world.a(ServerPlayerEntity.class, new Timer(pos).g(range));
+			world.getNonSpectatingEntities(ServerPlayerEntity.class, new Box(pos).expand(range));
 		return players;
 	}
 

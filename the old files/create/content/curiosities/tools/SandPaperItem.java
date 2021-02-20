@@ -1,84 +1,86 @@
-package com.simibubi.kinetic_api.content.curiosities.tools;
+package com.simibubi.create.content.curiosities.tools;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import bnx;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import dcg;
+
+import com.simibubi.create.foundation.utility.VecHelper;
+
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.enchantment.DamageEnchantment;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.TippedArrowItem;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.UseAction;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.LocalDifficulty;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.FakePlayer;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class SandPaperItem extends HoeItem {
+public class SandPaperItem extends Item {
 
-	public SandPaperItem(a properties) {
-		super(properties.c(8));
+	public SandPaperItem(Settings properties) {
+		super(properties.maxDamage(8));
 	}
 
 	@Override
-	public TippedArrowItem d_(ItemCooldownManager stack) {
-		return TippedArrowItem.b;
+	public UseAction getUseAction(ItemStack stack) {
+		return UseAction.EAT;
 	}
 
 	@Override
-	public Difficulty a(bnx context) {
-		return Difficulty.PASS;
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		return ActionResult.PASS;
 	}
 
 	@Override
-	public LocalDifficulty<ItemCooldownManager> a(GameMode worldIn, PlayerAbilities playerIn, ItemScatterer handIn) {
-		ItemCooldownManager itemstack = playerIn.b(handIn);
-		LocalDifficulty<ItemCooldownManager> FAIL = new LocalDifficulty<>(Difficulty.FAIL, itemstack);
+	public TypedActionResult<ItemStack> use(World worldIn, PlayerEntity playerIn, Hand handIn) {
+		ItemStack itemstack = playerIn.getStackInHand(handIn);
+		TypedActionResult<ItemStack> FAIL = new TypedActionResult<>(ActionResult.FAIL, itemstack);
 
-		if (itemstack.p()
+		if (itemstack.getOrCreateTag()
 			.contains("Polishing")) {
-			playerIn.c(handIn);
-			return new LocalDifficulty<>(Difficulty.PASS, itemstack);
+			playerIn.setCurrentHand(handIn);
+			return new TypedActionResult<>(ActionResult.PASS, itemstack);
 		}
 
-		ItemScatterer otherHand = handIn == ItemScatterer.RANDOM ? ItemScatterer.b : ItemScatterer.RANDOM;
-		ItemCooldownManager itemInOtherHand = playerIn.b(otherHand);
+		Hand otherHand = handIn == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND;
+		ItemStack itemInOtherHand = playerIn.getStackInHand(otherHand);
 		if (SandPaperPolishingRecipe.canPolish(worldIn, itemInOtherHand)) {
-			ItemCooldownManager item = itemInOtherHand.i();
-			ItemCooldownManager toPolish = item.a(1);
-			playerIn.c(handIn);
-			itemstack.p()
+			ItemStack item = itemInOtherHand.copy();
+			ItemStack toPolish = item.split(1);
+			playerIn.setCurrentHand(handIn);
+			itemstack.getOrCreateTag()
 				.put("Polishing", toPolish.serializeNBT());
-			playerIn.a(otherHand, item);
-			return new LocalDifficulty<>(Difficulty.SUCCESS, itemstack);
+			playerIn.setStackInHand(otherHand, item);
+			return new TypedActionResult<>(ActionResult.SUCCESS, itemstack);
 		}
 
-		Box raytraceresult = a(worldIn, playerIn, BlockView.b.a);
-		if (!(raytraceresult instanceof dcg))
+		HitResult raytraceresult = raycast(worldIn, playerIn, RaycastContext.FluidHandling.NONE);
+		if (!(raytraceresult instanceof BlockHitResult))
 			return FAIL;
-		dcg ray = (dcg) raytraceresult;
-		EntityHitResult hitVec = ray.e();
+		BlockHitResult ray = (BlockHitResult) raytraceresult;
+		Vec3d hitVec = ray.getPos();
 
-		Timer bb = new Timer(hitVec, hitVec).g(1f);
-		PaintingEntity pickUp = null;
-		for (PaintingEntity itemEntity : worldIn.a(PaintingEntity.class, bb)) {
-			if (itemEntity.cz()
-				.f(playerIn.cz()) > 3)
+		Box bb = new Box(hitVec, hitVec).expand(1f);
+		ItemEntity pickUp = null;
+		for (ItemEntity itemEntity : worldIn.getNonSpectatingEntities(ItemEntity.class, bb)) {
+			if (itemEntity.getPos()
+				.distanceTo(playerIn.getPos()) > 3)
 				continue;
-			ItemCooldownManager stack = itemEntity.g();
+			ItemStack stack = itemEntity.getStack();
 			if (!SandPaperPolishingRecipe.canPolish(worldIn, stack))
 				continue;
 			pickUp = itemEntity;
@@ -88,95 +90,95 @@ public class SandPaperItem extends HoeItem {
 		if (pickUp == null)
 			return FAIL;
 
-		ItemCooldownManager item = pickUp.g()
-			.i();
-		ItemCooldownManager toPolish = item.a(1);
+		ItemStack item = pickUp.getStack()
+			.copy();
+		ItemStack toPolish = item.split(1);
 
-		playerIn.c(handIn);
+		playerIn.setCurrentHand(handIn);
 
-		if (!worldIn.v) {
-			itemstack.p()
+		if (!worldIn.isClient) {
+			itemstack.getOrCreateTag()
 				.put("Polishing", toPolish.serializeNBT());
-			if (item.a())
-				pickUp.ac();
+			if (item.isEmpty())
+				pickUp.remove();
 			else
-				pickUp.b(item);
+				pickUp.setStack(item);
 		}
 
-		return new LocalDifficulty<>(Difficulty.SUCCESS, itemstack);
+		return new TypedActionResult<>(ActionResult.SUCCESS, itemstack);
 	}
 
 	@Override
-	public boolean canApplyAtEnchantingTable(ItemCooldownManager stack, DamageEnchantment enchantment) {
+	public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
 		return super.canApplyAtEnchantingTable(stack, enchantment);
 	}
 
 	@Override
-	public int getItemEnchantability(ItemCooldownManager stack) {
+	public int getItemEnchantability(ItemStack stack) {
 		return 1;
 	}
 
 	@Override
-	public ItemCooldownManager a(ItemCooldownManager stack, GameMode worldIn, SaddledComponent entityLiving) {
-		if (!(entityLiving instanceof PlayerAbilities))
+	public ItemStack finishUsing(ItemStack stack, World worldIn, LivingEntity entityLiving) {
+		if (!(entityLiving instanceof PlayerEntity))
 			return stack;
-		PlayerAbilities player = (PlayerAbilities) entityLiving;
-		CompoundTag tag = stack.p();
+		PlayerEntity player = (PlayerEntity) entityLiving;
+		CompoundTag tag = stack.getOrCreateTag();
 		if (tag.contains("Polishing")) {
-			ItemCooldownManager toPolish = ItemCooldownManager.a(tag.getCompound("Polishing"));
-			ItemCooldownManager polished =
-				SandPaperPolishingRecipe.applyPolish(worldIn, entityLiving.cz(), toPolish, stack);
+			ItemStack toPolish = ItemStack.fromTag(tag.getCompound("Polishing"));
+			ItemStack polished =
+				SandPaperPolishingRecipe.applyPolish(worldIn, entityLiving.getPos(), toPolish, stack);
 
-			if (worldIn.v) {
-				spawnParticles(entityLiving.j(1)
-					.e(entityLiving.bg()
-						.a(.5f)),
+			if (worldIn.isClient) {
+				spawnParticles(entityLiving.getCameraPosVec(1)
+					.add(entityLiving.getRotationVector()
+						.multiply(.5f)),
 					toPolish, worldIn);
 				return stack;
 			}
 
-			if (!polished.a()) {
+			if (!polished.isEmpty()) {
 				if (player instanceof FakePlayer) {
-					player.a(polished, false, false);
+					player.dropItem(polished, false, false);
 				} else {
-					player.bm.a(worldIn, polished);
+					player.inventory.offerOrDrop(worldIn, polished);
 				}
 			}
 			tag.remove("Polishing");
-			stack.a(1, entityLiving, p -> p.d(p.dW()));
+			stack.damage(1, entityLiving, p -> p.sendToolBreakStatus(p.getActiveHand()));
 		}
 
 		return stack;
 	}
 
-	public static void spawnParticles(EntityHitResult location, ItemCooldownManager polishedStack, GameMode world) {
+	public static void spawnParticles(Vec3d location, ItemStack polishedStack, World world) {
 		for (int i = 0; i < 20; i++) {
-			EntityHitResult motion = VecHelper.offsetRandomly(EntityHitResult.a, world.t, 1 / 8f);
-			world.addParticle(new ItemStackParticleEffect(ParticleTypes.ITEM, polishedStack), location.entity, location.c,
-				location.d, motion.entity, motion.c, motion.d);
+			Vec3d motion = VecHelper.offsetRandomly(Vec3d.ZERO, world.random, 1 / 8f);
+			world.addParticle(new ItemStackParticleEffect(ParticleTypes.ITEM, polishedStack), location.x, location.y,
+				location.z, motion.x, motion.y, motion.z);
 		}
 	}
 
 	@Override
-	public void a(ItemCooldownManager stack, GameMode worldIn, SaddledComponent entityLiving, int timeLeft) {
-		if (!(entityLiving instanceof PlayerAbilities))
+	public void onStoppedUsing(ItemStack stack, World worldIn, LivingEntity entityLiving, int timeLeft) {
+		if (!(entityLiving instanceof PlayerEntity))
 			return;
-		PlayerAbilities player = (PlayerAbilities) entityLiving;
-		CompoundTag tag = stack.p();
+		PlayerEntity player = (PlayerEntity) entityLiving;
+		CompoundTag tag = stack.getOrCreateTag();
 		if (tag.contains("Polishing")) {
-			ItemCooldownManager toPolish = ItemCooldownManager.a(tag.getCompound("Polishing"));
-			player.bm.a(worldIn, toPolish);
+			ItemStack toPolish = ItemStack.fromTag(tag.getCompound("Polishing"));
+			player.inventory.offerOrDrop(worldIn, toPolish);
 			tag.remove("Polishing");
 		}
 	}
 
 	@Override
-	public int e_(ItemCooldownManager stack) {
+	public int getMaxUseTime(ItemStack stack) {
 		return 32;
 	}
 
 	@Override
-	public int c() {
+	public int getEnchantability() {
 		return 5;
 	}
 

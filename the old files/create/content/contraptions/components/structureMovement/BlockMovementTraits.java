@@ -1,204 +1,203 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement;
+package com.simibubi.create.content.contraptions.components.structureMovement;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllTags.AllBlockTags;
-import com.simibubi.kinetic_api.content.contraptions.components.actors.AttachedActorBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.actors.HarvesterBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.actors.PortableStorageInterfaceBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.crank.HandCrankBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.fan.NozzleBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.flywheel.engine.EngineBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing.ClockworkBearingBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing.ClockworkBearingTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing.MechanicalBearingBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing.MechanicalBearingTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing.SailBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.chassis.AbstractChassisBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.mounted.CartAssemblerBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.piston.MechanicalPistonBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.piston.MechanicalPistonBlock.PistonState;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.pulley.PulleyBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.pulley.PulleyTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.fluids.tank.FluidTankBlock;
-import com.simibubi.kinetic_api.content.contraptions.fluids.tank.FluidTankConnectivityHandler;
-import com.simibubi.kinetic_api.content.logistics.block.redstone.RedstoneLinkBlock;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllTags.AllBlockTags;
+import com.simibubi.create.content.contraptions.components.actors.AttachedActorBlock;
+import com.simibubi.create.content.contraptions.components.actors.HarvesterBlock;
+import com.simibubi.create.content.contraptions.components.actors.PortableStorageInterfaceBlock;
+import com.simibubi.create.content.contraptions.components.crank.HandCrankBlock;
+import com.simibubi.create.content.contraptions.components.fan.NozzleBlock;
+import com.simibubi.create.content.contraptions.components.flywheel.engine.EngineBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.bearing.ClockworkBearingBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.bearing.ClockworkBearingTileEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.bearing.MechanicalBearingBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.bearing.MechanicalBearingTileEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.bearing.SailBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.chassis.AbstractChassisBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.mounted.CartAssemblerBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.piston.MechanicalPistonBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.piston.MechanicalPistonBlock.PistonState;
+import com.simibubi.create.content.contraptions.components.structureMovement.pulley.PulleyBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.pulley.PulleyTileEntity;
+import com.simibubi.create.content.contraptions.fluids.tank.FluidTankBlock;
+import com.simibubi.create.content.contraptions.fluids.tank.FluidTankConnectivityHandler;
+import com.simibubi.create.content.logistics.block.redstone.RedstoneLinkBlock;
+import com.simibubi.create.foundation.utility.BlockHelper;
+
+import net.minecraft.block.AbstractPressurePlateBlock;
+import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.AbstractRedstoneGateBlock;
-import net.minecraft.block.BedBlock;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BlockWithEntity;
-import net.minecraft.block.DaylightDetectorBlock;
-import net.minecraft.block.DeadCoralWallFanBlock;
-import net.minecraft.block.EndRodBlock;
-import net.minecraft.block.FallingBlock;
-import net.minecraft.block.FireBlock;
-import net.minecraft.block.GrassBlock;
-import net.minecraft.block.HayBlock;
-import net.minecraft.block.JukeboxBlock;
-import net.minecraft.block.RailBlock;
+import net.minecraft.block.BellBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.CarpetBlock;
+import net.minecraft.block.DoorBlock;
+import net.minecraft.block.FenceGateBlock;
+import net.minecraft.block.FlowerPotBlock;
+import net.minecraft.block.GrindstoneBlock;
+import net.minecraft.block.HorizontalFacingBlock;
+import net.minecraft.block.LadderBlock;
 import net.minecraft.block.RedstoneWireBlock;
-import net.minecraft.block.TallSeagrassBlock;
-import net.minecraft.block.WallBlock;
-import net.minecraft.block.WitherSkullBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
+import net.minecraft.block.TorchBlock;
+import net.minecraft.block.WallMountedBlock;
+import net.minecraft.block.WallRedstoneTorchBlock;
+import net.minecraft.block.WallTorchBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.Attachment;
 import net.minecraft.block.enums.WallMountLocation;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.fluid.LavaFluid;
-import net.minecraft.predicate.block.BlockPredicate;
+import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 public class BlockMovementTraits {
 
-	public static boolean movementNecessary(GameMode world, BlockPos pos) {
-		PistonHandler state = world.d_(pos);
+	public static boolean movementNecessary(BlockState state, World world, BlockPos pos) {
 		if (isBrittle(state))
 			return true;
-		if (state.b() instanceof FallingBlock)
+		if (state.getBlock() instanceof FenceGateBlock)
 			return true;
-		if (state.c()
-			.e())
+		if (state.getMaterial()
+			.isReplaceable())
 			return false;
-		if (state.k(world, pos)
-			.b())
+		if (state.getCollisionShape(world, pos)
+			.isEmpty())
 			return false;
 		return true;
 	}
 
-	public static boolean movementAllowed(GameMode world, BlockPos pos) {
-		PistonHandler blockState = world.d_(pos);
-		BeetrootsBlock block = blockState.b();
+	public static boolean movementAllowed(BlockState state, World world, BlockPos pos) {
+		Block block = state.getBlock();
 		if (block instanceof AbstractChassisBlock)
 			return true;
-		if (blockState.h(world, pos) == -1)
+		if (state.getHardness(world, pos) == -1)
 			return false;
-		if (AllBlockTags.NON_MOVABLE.matches(blockState))
+		if (AllBlockTags.NON_MOVABLE.matches(state))
 			return false;
 
 		// Move controllers only when they aren't moving
-		if (block instanceof MechanicalPistonBlock && blockState.c(MechanicalPistonBlock.STATE) != PistonState.MOVING)
+		if (block instanceof MechanicalPistonBlock && state.get(MechanicalPistonBlock.STATE) != PistonState.MOVING)
 			return true;
 		if (block instanceof MechanicalBearingBlock) {
-			BeehiveBlockEntity te = world.c(pos);
+			BlockEntity te = world.getBlockEntity(pos);
 			if (te instanceof MechanicalBearingTileEntity)
 				return !((MechanicalBearingTileEntity) te).isRunning();
 		}
 		if (block instanceof ClockworkBearingBlock) {
-			BeehiveBlockEntity te = world.c(pos);
+			BlockEntity te = world.getBlockEntity(pos);
 			if (te instanceof ClockworkBearingTileEntity)
 				return !((ClockworkBearingTileEntity) te).isRunning();
 		}
 		if (block instanceof PulleyBlock) {
-			BeehiveBlockEntity te = world.c(pos);
+			BlockEntity te = world.getBlockEntity(pos);
 			if (te instanceof PulleyTileEntity)
 				return !((PulleyTileEntity) te).running;
 		}
 
-		if (AllBlocks.BELT.has(blockState))
+		if (AllBlocks.BELT.has(state))
 			return true;
-		if (blockState.b() instanceof GrassBlock)
+		if (state.getBlock() instanceof GrindstoneBlock)
 			return true;
-		return blockState.k() != LavaFluid.c;
+		return state.getPistonBehavior() != PistonBehavior.BLOCK;
 	}
 
 	/**
 	 * Brittle blocks will be collected first, as they may break when other blocks
 	 * are removed before them
 	 */
-	public static boolean isBrittle(PistonHandler state) {
-		BeetrootsBlock block = state.b();
-		if (BlockHelper.hasBlockStateProperty(state, BambooLeaves.j))
+	public static boolean isBrittle(BlockState state) {
+		Block block = state.getBlock();
+		if (BlockHelper.hasBlockStateProperty(state, Properties.HANGING))
 			return true;
 
-		if (block instanceof JukeboxBlock)
+		if (block instanceof LadderBlock)
 			return true;
-		if (block instanceof TallSeagrassBlock)
+		if (block instanceof TorchBlock)
 			return true;
-		if (block instanceof DeadCoralWallFanBlock)
+		if (block instanceof AbstractPressurePlateBlock)
 			return true;
-		if (block instanceof EndRodBlock && !(block instanceof GrassBlock))
+		if (block instanceof WallMountedBlock && !(block instanceof GrindstoneBlock))
 			return true;
 		if (block instanceof CartAssemblerBlock)
 			return false;
-		if (block instanceof BlockWithEntity)
+		if (block instanceof AbstractRailBlock)
 			return true;
-		if (block instanceof DaylightDetectorBlock)
+		if (block instanceof AbstractRedstoneGateBlock)
 			return true;
-		if (block instanceof RailBlock)
+		if (block instanceof RedstoneWireBlock)
 			return true;
-		if (block instanceof WitherSkullBlock)
+		if (block instanceof CarpetBlock)
 			return true;
-		return AllBlockTags.BRITTLE.tag.a(block);
+		return AllBlockTags.BRITTLE.tag.contains(block);
 	}
 
 	/**
 	 * Attached blocks will move if blocks they are attached to are moved
 	 */
-	public static boolean isBlockAttachedTowards(MobSpawnerLogic world, BlockPos pos, PistonHandler state,
+	public static boolean isBlockAttachedTowards(BlockView world, BlockPos pos, BlockState state,
 		Direction direction) {
-		BeetrootsBlock block = state.b();
-		if (block instanceof JukeboxBlock)
-			return state.c(JukeboxBlock.HAS_RECORD) == direction.getOpposite();
-		if (block instanceof WallBlock)
-			return state.c(WallBlock.UP) == direction.getOpposite();
-		if (block instanceof DeadCoralWallFanBlock)
+		Block block = state.getBlock();
+		if (block instanceof LadderBlock)
+			return state.get(LadderBlock.FACING) == direction.getOpposite();
+		if (block instanceof WallTorchBlock)
+			return state.get(WallTorchBlock.FACING) == direction.getOpposite();
+		if (block instanceof AbstractPressurePlateBlock)
+			return direction == Direction.DOWN;
+		if (block instanceof DoorBlock)
+			return direction == Direction.DOWN;
+		if (block instanceof RedstoneLinkBlock)
+			return direction.getOpposite() == state.get(RedstoneLinkBlock.FACING);
+		if (block instanceof FlowerPotBlock)
 			return direction == Direction.DOWN;
 		if (block instanceof AbstractRedstoneGateBlock)
 			return direction == Direction.DOWN;
-		if (block instanceof RedstoneLinkBlock)
-			return direction.getOpposite() == state.c(RedstoneLinkBlock.SHAPE);
-		if (block instanceof FireBlock)
-			return direction == Direction.DOWN;
-		if (block instanceof DaylightDetectorBlock)
-			return direction == Direction.DOWN;
-		if (block instanceof RailBlock)
-			return direction == Direction.DOWN;
-		if (block instanceof WitherSkullBlock)
-			return direction == Direction.DOWN;
 		if (block instanceof RedstoneWireBlock)
-			return state.c(RedstoneWireBlock.WIRE_CONNECTION_EAST) == direction.getOpposite();
-		if (block instanceof TallSeagrassBlock)
 			return direction == Direction.DOWN;
-		if (block instanceof EndRodBlock) {
-			BlockPredicate attachFace = state.c(EndRodBlock.u);
-			if (attachFace == BlockPredicate.c)
+		if (block instanceof CarpetBlock)
+			return direction == Direction.DOWN;
+		if (block instanceof WallRedstoneTorchBlock)
+			return state.get(WallRedstoneTorchBlock.FACING) == direction.getOpposite();
+		if (block instanceof TorchBlock)
+			return direction == Direction.DOWN;
+		if (block instanceof WallMountedBlock) {
+			WallMountLocation attachFace = state.get(WallMountedBlock.FACE);
+			if (attachFace == WallMountLocation.CEILING)
 				return direction == Direction.UP;
-			if (attachFace == BlockPredicate.block)
+			if (attachFace == WallMountLocation.FLOOR)
 				return direction == Direction.DOWN;
-			if (attachFace == BlockPredicate.b)
-				return direction.getOpposite() == state.c(EndRodBlock.aq);
+			if (attachFace == WallMountLocation.WALL)
+				return direction.getOpposite() == state.get(WallMountedBlock.FACING);
 		}
-		if (BlockHelper.hasBlockStateProperty(state, BambooLeaves.j))
-			return direction == (state.c(BambooLeaves.j) ? Direction.UP : Direction.DOWN);
-		if (block instanceof BlockWithEntity)
+		if (BlockHelper.hasBlockStateProperty(state, Properties.HANGING))
+			return direction == (state.get(Properties.HANGING) ? Direction.UP : Direction.DOWN);
+		if (block instanceof AbstractRailBlock)
 			return direction == Direction.DOWN;
 		if (block instanceof AttachedActorBlock)
-			return direction == state.c(HarvesterBlock.aq)
+			return direction == state.get(HarvesterBlock.FACING)
 				.getOpposite();
 		if (block instanceof HandCrankBlock)
-			return direction == state.c(HandCrankBlock.FACING)
+			return direction == state.get(HandCrankBlock.FACING)
 				.getOpposite();
 		if (block instanceof NozzleBlock)
-			return direction == state.c(NozzleBlock.SHAPE)
+			return direction == state.get(NozzleBlock.FACING)
 				.getOpposite();
 		if (block instanceof EngineBlock)
-			return direction == state.c(EngineBlock.aq)
+			return direction == state.get(EngineBlock.FACING)
 				.getOpposite();
-		if (block instanceof BedBlock) {
-			WallMountLocation attachment = state.c(BambooLeaves.R);
-			if (attachment == WallMountLocation.FLOOR)
+		if (block instanceof BellBlock) {
+			Attachment attachment = state.get(Properties.ATTACHMENT);
+			if (attachment == Attachment.FLOOR)
 				return direction == Direction.DOWN;
-			if (attachment == WallMountLocation.CEILING)
+			if (attachment == Attachment.CEILING)
 				return direction == Direction.UP;
-			return direction == state.c(HayBlock.aq);
+			return direction == state.get(HorizontalFacingBlock.FACING);
 		}
-		if (state.b() instanceof SailBlock)
-			return direction.getAxis() != state.c(SailBlock.SHAPE)
+		if (state.getBlock() instanceof SailBlock)
+			return direction.getAxis() != state.get(SailBlock.FACING)
 				.getAxis();
-		if (state.b() instanceof FluidTankBlock)
+		if (state.getBlock() instanceof FluidTankBlock)
 			return FluidTankConnectivityHandler.isConnected(world, pos, pos.offset(direction));
 		return false;
 	}
@@ -207,25 +206,31 @@ public class BlockMovementTraits {
 	 * Non-Supportive blocks will not continue a chain of blocks picked up by e.g. a
 	 * piston
 	 */
-	public static boolean notSupportive(PistonHandler state, Direction facing) {
+	public static boolean notSupportive(BlockState state, Direction facing) {
 		if (AllBlocks.MECHANICAL_DRILL.has(state))
-			return state.c(BambooLeaves.M) == facing;
+			return state.get(Properties.FACING) == facing;
 		if (AllBlocks.MECHANICAL_BEARING.has(state))
-			return state.c(BambooLeaves.M) == facing;
+			return state.get(Properties.FACING) == facing;
 		if (AllBlocks.CART_ASSEMBLER.has(state))
 			return Direction.DOWN == facing;
 		if (AllBlocks.MECHANICAL_SAW.has(state))
-			return state.c(BambooLeaves.M) == facing;
+			return state.get(Properties.FACING) == facing;
 		if (AllBlocks.PORTABLE_STORAGE_INTERFACE.has(state))
-			return state.c(PortableStorageInterfaceBlock.SHAPE) == facing;
-		if (state.b() instanceof AttachedActorBlock)
-			return state.c(BambooLeaves.O) == facing;
+			return state.get(PortableStorageInterfaceBlock.FACING) == facing;
+		if (state.getBlock() instanceof AttachedActorBlock)
+			return state.get(Properties.HORIZONTAL_FACING) == facing;
 		if (AllBlocks.ROPE_PULLEY.has(state))
 			return facing == Direction.DOWN;
-		if (state.b() instanceof WitherSkullBlock)
+		if (state.getBlock() instanceof CarpetBlock)
 			return facing == Direction.UP;
-		if (state.b() instanceof SailBlock)
-			return facing.getAxis() == state.c(SailBlock.SHAPE)
+		if (state.getBlock() instanceof SailBlock)
+			return facing.getAxis() == state.get(SailBlock.FACING)
+				.getAxis();
+		if (AllBlocks.PISTON_EXTENSION_POLE.has(state))
+			return facing.getAxis() != state.get(Properties.FACING)
+				.getAxis();
+		if (AllBlocks.MECHANICAL_PISTON_HEAD.has(state))
+			return facing.getAxis() != state.get(Properties.FACING)
 				.getAxis();
 		return isBrittle(state);
 	}

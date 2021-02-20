@@ -1,17 +1,18 @@
-package com.simibubi.kinetic_api.content.curiosities.tools;
+package com.simibubi.create.content.curiosities.tools;
 
 import java.util.List;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
-import com.simibubi.kinetic_api.content.curiosities.tools.SandPaperPolishingRecipe.SandPaperInv;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.world.GameMode;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
+import com.simibubi.create.content.curiosities.tools.SandPaperPolishingRecipe.SandPaperInv;
+
+import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
 
@@ -23,9 +24,9 @@ public class SandPaperPolishingRecipe extends ProcessingRecipe<SandPaperInv> {
 	}
 
 	@Override
-	public boolean matches(SandPaperInv inv, GameMode worldIn) {
+	public boolean matches(SandPaperInv inv, World worldIn) {
 		return ingredients.get(0)
-			.a(inv.a(0));
+			.test(inv.getStack(0));
 	}
 
 	@Override
@@ -38,27 +39,27 @@ public class SandPaperPolishingRecipe extends ProcessingRecipe<SandPaperInv> {
 		return 1;
 	}
 
-	public static boolean canPolish(GameMode world, ItemCooldownManager stack) {
+	public static boolean canPolish(World world, ItemStack stack) {
 		return !getMatchingRecipes(world, stack).isEmpty();
 	}
 
-	public static ItemCooldownManager applyPolish(GameMode world, EntityHitResult position, ItemCooldownManager stack, ItemCooldownManager sandPaperStack) {
-		List<Ingredient<SandPaperInv>> matchingRecipes = getMatchingRecipes(world, stack);
+	public static ItemStack applyPolish(World world, Vec3d position, ItemStack stack, ItemStack sandPaperStack) {
+		List<Recipe<SandPaperInv>> matchingRecipes = getMatchingRecipes(world, stack);
 		if (!matchingRecipes.isEmpty())
 			return matchingRecipes.get(0)
-				.a(new SandPaperInv(stack))
-				.i();
+				.craft(new SandPaperInv(stack))
+				.copy();
 		return stack;
 	}
 
-	public static List<Ingredient<SandPaperInv>> getMatchingRecipes(GameMode world, ItemCooldownManager stack) {
-		return world.o()
-			.b(AllRecipeTypes.SANDPAPER_POLISHING.getType(), new SandPaperInv(stack), world);
+	public static List<Recipe<SandPaperInv>> getMatchingRecipes(World world, ItemStack stack) {
+		return world.getRecipeManager()
+			.getAllMatches(AllRecipeTypes.SANDPAPER_POLISHING.getType(), new SandPaperInv(stack), world);
 	}
 
 	public static class SandPaperInv extends RecipeWrapper {
 
-		public SandPaperInv(ItemCooldownManager stack) {
+		public SandPaperInv(ItemStack stack) {
 			super(new ItemStackHandler(1));
 			inv.setStackInSlot(0, stack);
 		}

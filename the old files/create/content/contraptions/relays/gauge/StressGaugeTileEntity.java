@@ -1,20 +1,20 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.gauge;
+package com.simibubi.create.content.contraptions.relays.gauge;
 
 import java.util.List;
-import net.minecraft.block.entity.BellBlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate.StressImpact;
-import com.simibubi.kinetic_api.content.contraptions.goggles.IHaveGoggleInformation;
-import com.simibubi.kinetic_api.foundation.item.ItemDescription;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.content.contraptions.base.IRotate.StressImpact;
+import com.simibubi.create.content.contraptions.goggles.IHaveGoggleInformation;
+import com.simibubi.create.foundation.item.ItemDescription;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import com.simibubi.create.foundation.utility.Lang;
 
 public class StressGaugeTileEntity extends GaugeTileEntity {
 
-	public StressGaugeTileEntity(BellBlockEntity<? extends StressGaugeTileEntity> type) {
+	public StressGaugeTileEntity(BlockEntityType<? extends StressGaugeTileEntity> type) {
 		super(type);
 	}
 
@@ -41,7 +41,7 @@ public class StressGaugeTileEntity extends GaugeTileEntity {
 		}
 
 		sendData();
-		X_();
+		markDirty();
 	}
 
 	@Override
@@ -49,7 +49,7 @@ public class StressGaugeTileEntity extends GaugeTileEntity {
 		super.onSpeedChanged(prevSpeed);
 		if (getSpeed() == 0) {
 			dialTarget = 0;
-			X_();
+			markDirty();
 			return;
 		}
 

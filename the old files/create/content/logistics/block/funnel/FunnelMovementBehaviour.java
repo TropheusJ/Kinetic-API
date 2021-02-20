@@ -1,16 +1,16 @@
-package com.simibubi.kinetic_api.content.logistics.block.funnel;
+package com.simibubi.create.content.logistics.block.funnel;
 
 import java.util.List;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import com.simibubi.kinetic_api.content.logistics.item.filter.FilterItem;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementBehaviour;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.content.logistics.item.filter.FilterItem;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 public class FunnelMovementBehaviour extends MovementBehaviour {
@@ -30,41 +30,41 @@ public class FunnelMovementBehaviour extends MovementBehaviour {
 	}
 
 	@Override
-	public EntityHitResult getActiveAreaOffset(MovementContext context) {
-		return EntityHitResult.b(FunnelBlock.getFunnelFacing(context.state)
-			.getVector()).a(.65);
+	public Vec3d getActiveAreaOffset(MovementContext context) {
+		return Vec3d.of(FunnelBlock.getFunnelFacing(context.state)
+			.getVector()).multiply(.65);
 	}
 
 	@Override
 	public void visitNewPosition(MovementContext context, BlockPos pos) {
 		super.visitNewPosition(context, pos);
 
-		GameMode world = context.world;
-		List<PaintingEntity> items = world.a(PaintingEntity.class, new Timer(pos));
-		ItemCooldownManager filter = getFilter(context);
+		World world = context.world;
+		List<ItemEntity> items = world.getNonSpectatingEntities(ItemEntity.class, new Box(pos));
+		ItemStack filter = getFilter(context);
 
-		for (PaintingEntity item : items) {
-			if (!item.aW())
+		for (ItemEntity item : items) {
+			if (!item.isAlive())
 				continue;
-			ItemCooldownManager toInsert = item.g();
-			if (!filter.a() && !FilterItem.test(context.world, toInsert, filter))
+			ItemStack toInsert = item.getStack();
+			if (!filter.isEmpty() && !FilterItem.test(context.world, toInsert, filter))
 				continue;
-			ItemCooldownManager remainder = ItemHandlerHelper.insertItemStacked(context.contraption.inventory, toInsert, false);
-			if (remainder.E() == toInsert.E())
+			ItemStack remainder = ItemHandlerHelper.insertItemStacked(context.contraption.inventory, toInsert, false);
+			if (remainder.getCount() == toInsert.getCount())
 				continue;
-			if (remainder.a()) {
-				item.b(ItemCooldownManager.tick);
-				item.ac();
+			if (remainder.isEmpty()) {
+				item.setStack(ItemStack.EMPTY);
+				item.remove();
 				continue;
 			}
 
-			item.b(remainder);
+			item.setStack(remainder);
 		}
 
 	}
 
-	private ItemCooldownManager getFilter(MovementContext context) {
-		return hasFilter ? ItemCooldownManager.a(context.tileData.getCompound("Filter")) : ItemCooldownManager.tick;
+	private ItemStack getFilter(MovementContext context) {
+		return hasFilter ? ItemStack.fromTag(context.tileData.getCompound("Filter")) : ItemStack.EMPTY;
 	}
 
 }

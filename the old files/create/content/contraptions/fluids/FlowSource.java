@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
 import java.lang.ref.WeakReference;
 import java.util.function.Predicate;
 
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockFace;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.world.GameMode;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.BlockFace;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
@@ -50,9 +50,9 @@ public abstract class FlowSource {
 
 	public abstract boolean isEndpoint();
 
-	public void manageSource(GameMode world) {}
+	public void manageSource(World world) {}
 	
-	public void whileFlowPresent(GameMode world, boolean pulling) {}
+	public void whileFlowPresent(World world, boolean pulling) {}
 
 	public LazyOptional<IFluidHandler> provideHandler() {
 		return EMPTY;
@@ -66,10 +66,10 @@ public abstract class FlowSource {
 			fluidHandler = EMPTY;
 		}
 
-		public void manageSource(GameMode world) {
+		public void manageSource(World world) {
 			if (fluidHandler.isPresent())
 				return;
-			BeehiveBlockEntity tileEntity = world.c(location.getConnectedPos());
+			BlockEntity tileEntity = world.getBlockEntity(location.getConnectedPos());
 			if (tileEntity != null)
 				fluidHandler = tileEntity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY,
 					location.getOppositeFace());
@@ -94,8 +94,8 @@ public abstract class FlowSource {
 		}
 
 		@Override
-		public void manageSource(GameMode world) {
-			if (cached != null && cached.get() != null && !cached.get().tileEntity.q())
+		public void manageSource(World world) {
+			if (cached != null && cached.get() != null && !cached.get().tileEntity.isRemoved())
 				return;
 			cached = null;
 			FluidTransportBehaviour fluidTransportBehaviour =

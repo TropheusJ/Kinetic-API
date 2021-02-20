@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.content.logistics;
+package com.simibubi.create.content.logistics;
 
-import static com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock.getHeatLevelOf;
+import static com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock.getHeatLevelOf;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,39 +9,40 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.components.fan.SplashingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.item.ItemHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import net.minecraft.block.AbstractButtonBlock;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.entity.BedBlockEntity;
-import net.minecraft.block.entity.DropperBlockEntity;
-import net.minecraft.block.entity.ShulkerBoxBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.fluid.FlowableFluid;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.components.fan.SplashingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipe;
+import com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.item.ItemHelper;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
+import com.simibubi.create.foundation.utility.ColorHelper;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.CampfireBlock;
+import net.minecraft.block.entity.BlastFurnaceBlockEntity;
+import net.minecraft.block.entity.FurnaceBlockEntity;
+import net.minecraft.block.entity.SmokerBlockEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.recipe.AbstractCookingRecipe;
-import net.minecraft.recipe.CookingRecipeSerializer;
-import net.minecraft.recipe.Ingredient;
+import net.minecraft.recipe.BlastingRecipe;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.SpecialRecipeSerializer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.SmeltingRecipe;
+import net.minecraft.recipe.SmokingRecipe;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
@@ -61,23 +62,23 @@ public class InWorldProcessing {
 
 		;
 
-		public static Type byBlock(MobSpawnerLogic reader, BlockPos pos) {
-			PistonHandler blockState = reader.d_(pos);
-			EmptyFluid fluidState = reader.b(pos);
-			if (fluidState.a() == FlowableFluid.c || fluidState.a() == FlowableFluid.LEVEL)
+		public static Type byBlock(BlockView reader, BlockPos pos) {
+			BlockState blockState = reader.getBlockState(pos);
+			FluidState fluidState = reader.getFluidState(pos);
+			if (fluidState.getFluid() == Fluids.WATER || fluidState.getFluid() == Fluids.FLOWING_WATER)
 				return Type.SPLASHING;
-			BeetrootsBlock block = blockState.b();
-			if (block == BellBlock.bN || AllBlocks.LIT_BLAZE_BURNER.has(blockState)
-				|| (block == BellBlock.me && blockState.c(AbstractButtonBlock.CEILING_X_SHAPE))
+			Block block = blockState.getBlock();
+			if (block == Blocks.FIRE || AllBlocks.LIT_BLAZE_BURNER.has(blockState)
+				|| (block == Blocks.CAMPFIRE && blockState.get(CampfireBlock.LIT))
 				|| getHeatLevelOf(blockState) == BlazeBurnerBlock.HeatLevel.SMOULDERING)
 				return Type.SMOKING;
-			if (block == BellBlock.B || getHeatLevelOf(blockState).isAtLeast(BlazeBurnerBlock.HeatLevel.FADING))
+			if (block == Blocks.LAVA || getHeatLevelOf(blockState).isAtLeast(BlazeBurnerBlock.HeatLevel.FADING))
 				return Type.BLASTING;
 			return null;
 		}
 	}
 
-	public static boolean canProcess(PaintingEntity entity, Type type) {
+	public static boolean canProcess(ItemEntity entity, Type type) {
 		if (entity.getPersistentData()
 			.contains("CreateData")) {
 			CompoundTag compound = entity.getPersistentData()
@@ -86,7 +87,7 @@ public class InWorldProcessing {
 				CompoundTag processing = compound.getCompound("Processing");
 
 				if (Type.valueOf(processing.getString("Type")) != type) {
-					boolean canProcess = canProcess(entity.g(), type, entity.l);
+					boolean canProcess = canProcess(entity.getStack(), type, entity.world);
 					processing.putString("Type", type.name());
 					if (!canProcess)
 						processing.putInt("Time", -1);
@@ -97,21 +98,21 @@ public class InWorldProcessing {
 					return false;
 			}
 		}
-		return canProcess(entity.g(), type, entity.l);
+		return canProcess(entity.getStack(), type, entity.world);
 	}
 
-	private static boolean canProcess(ItemCooldownManager stack, Type type, GameMode world) {
+	private static boolean canProcess(ItemStack stack, Type type, World world) {
 		if (type == Type.BLASTING) {
 			return true;
 		}
 
 		if (type == Type.SMOKING) {
 			// FIXME this does not need to be a TE
-			ShulkerBoxBlockEntity smoker = new ShulkerBoxBlockEntity();
-			smoker.a(world, BlockPos.ORIGIN);
-			smoker.a(0, stack);
-			Optional<SpecialRecipeSerializer> recipe = world.o()
-				.a(Recipe.d, smoker, world);
+			SmokerBlockEntity smoker = new SmokerBlockEntity();
+			smoker.setLocation(world, BlockPos.ORIGIN);
+			smoker.setStack(0, stack);
+			Optional<SmokingRecipe> recipe = world.getRecipeManager()
+				.getFirstMatch(RecipeType.SMOKING, smoker, world);
 			return recipe.isPresent();
 		}
 
@@ -121,35 +122,35 @@ public class InWorldProcessing {
 		return false;
 	}
 
-	public static boolean isWashable(ItemCooldownManager stack, GameMode world) {
-		splashingInv.a(0, stack);
+	public static boolean isWashable(ItemStack stack, World world) {
+		splashingInv.setStack(0, stack);
 		Optional<SplashingRecipe> recipe = AllRecipeTypes.SPLASHING.find(splashingInv, world);
 		return recipe.isPresent();
 	}
 
-	public static void applyProcessing(PaintingEntity entity, Type type) {
+	public static void applyProcessing(ItemEntity entity, Type type) {
 		if (decrementProcessingTime(entity, type) != 0)
 			return;
-		List<ItemCooldownManager> stacks = process(entity.g(), type, entity.l);
+		List<ItemStack> stacks = process(entity.getStack(), type, entity.world);
 		if (stacks == null)
 			return;
 		if (stacks.isEmpty()) {
-			entity.ac();
+			entity.remove();
 			return;
 		}
-		entity.b(stacks.remove(0));
-		for (ItemCooldownManager additional : stacks) {
-			PaintingEntity entityIn = new PaintingEntity(entity.l, entity.cC(), entity.cD(), entity.cG(), additional);
-			entityIn.f(entity.cB());
-			entity.l.c(entityIn);
+		entity.setStack(stacks.remove(0));
+		for (ItemStack additional : stacks) {
+			ItemEntity entityIn = new ItemEntity(entity.world, entity.getX(), entity.getY(), entity.getZ(), additional);
+			entityIn.setVelocity(entity.getVelocity());
+			entity.world.spawnEntity(entityIn);
 		}
 	}
 
-	public static TransportedResult applyProcessing(TransportedItemStack transported, GameMode world, Type type) {
+	public static TransportedResult applyProcessing(TransportedItemStack transported, World world, Type type) {
 		TransportedResult ignore = TransportedResult.doNothing();
 		if (transported.processedBy != type) {
 			transported.processedBy = type;
-			int timeModifierForStackSize = ((transported.stack.E() - 1) / 16) + 1;
+			int timeModifierForStackSize = ((transported.stack.getCount() - 1) / 16) + 1;
 			int processingTime =
 				(int) (AllConfigs.SERVER.kinetics.inWorldProcessingTime.get() * timeModifierForStackSize) + 1;
 			transported.processingTime = processingTime;
@@ -162,22 +163,22 @@ public class InWorldProcessing {
 		if (transported.processingTime-- > 0)
 			return ignore;
 
-		List<ItemCooldownManager> stacks = process(transported.stack, type, world);
+		List<ItemStack> stacks = process(transported.stack, type, world);
 		if (stacks == null)
 			return ignore;
 
 		List<TransportedItemStack> transportedStacks = new ArrayList<>();
-		for (ItemCooldownManager additional : stacks) {
+		for (ItemStack additional : stacks) {
 			TransportedItemStack newTransported = transported.getSimilar();
-			newTransported.stack = additional.i();
+			newTransported.stack = additional.copy();
 			transportedStacks.add(newTransported);
 		}
 		return TransportedResult.convertTo(transportedStacks);
 	}
 
-	private static List<ItemCooldownManager> process(ItemCooldownManager stack, Type type, GameMode world) {
+	private static List<ItemStack> process(ItemStack stack, Type type, World world) {
 		if (type == Type.SPLASHING) {
-			splashingInv.a(0, stack);
+			splashingInv.setStack(0, stack);
 			Optional<SplashingRecipe> recipe = AllRecipeTypes.SPLASHING.find(splashingInv, world);
 			if (recipe.isPresent())
 				return applyRecipeOn(stack, recipe.get());
@@ -185,30 +186,30 @@ public class InWorldProcessing {
 		}
 
 		// FIXME this does not need to be a TE
-		ShulkerBoxBlockEntity smoker = new ShulkerBoxBlockEntity();
-		smoker.a(world, BlockPos.ORIGIN);
-		smoker.a(0, stack);
-		Optional<SpecialRecipeSerializer> smokingRecipe = world.o()
-			.a(Recipe.d, smoker, world);
+		SmokerBlockEntity smoker = new SmokerBlockEntity();
+		smoker.setLocation(world, BlockPos.ORIGIN);
+		smoker.setStack(0, stack);
+		Optional<SmokingRecipe> smokingRecipe = world.getRecipeManager()
+			.getFirstMatch(RecipeType.SMOKING, smoker, world);
 
 		if (type == Type.BLASTING) {
 			// FIXME this does not need to be a TE
-			DropperBlockEntity furnace = new DropperBlockEntity();
-			furnace.a(world, BlockPos.ORIGIN);
-			furnace.a(0, stack);
-			Optional<CookingRecipeSerializer> smeltingRecipe = world.o()
-				.a(Recipe.b, furnace, world);
+			FurnaceBlockEntity furnace = new FurnaceBlockEntity();
+			furnace.setLocation(world, BlockPos.ORIGIN);
+			furnace.setStack(0, stack);
+			Optional<SmeltingRecipe> smeltingRecipe = world.getRecipeManager()
+				.getFirstMatch(RecipeType.SMELTING, furnace, world);
 
 			if (!smokingRecipe.isPresent()) {
 				if (smeltingRecipe.isPresent())
 					return applyRecipeOn(stack, smeltingRecipe.get());
 
 				// FIXME this does not need to be a TE
-				BedBlockEntity blastFurnace = new BedBlockEntity();
-				blastFurnace.a(world, BlockPos.ORIGIN);
-				blastFurnace.a(0, stack);
-				Optional<AbstractCookingRecipe> blastingRecipe = world.o()
-					.a(Recipe.c, blastFurnace, world);
+				BlastFurnaceBlockEntity blastFurnace = new BlastFurnaceBlockEntity();
+				blastFurnace.setLocation(world, BlockPos.ORIGIN);
+				blastFurnace.setStack(0, stack);
+				Optional<BlastingRecipe> blastingRecipe = world.getRecipeManager()
+					.getFirstMatch(RecipeType.BLASTING, blastFurnace, world);
 
 				if (blastingRecipe.isPresent())
 					return applyRecipeOn(stack, blastingRecipe.get());
@@ -223,7 +224,7 @@ public class InWorldProcessing {
 		return null;
 	}
 
-	private static int decrementProcessingTime(PaintingEntity entity, Type type) {
+	private static int decrementProcessingTime(ItemEntity entity, Type type) {
 		CompoundTag nbt = entity.getPersistentData();
 
 		if (!nbt.contains("CreateData"))
@@ -236,8 +237,8 @@ public class InWorldProcessing {
 
 		if (!processing.contains("Type") || Type.valueOf(processing.getString("Type")) != type) {
 			processing.putString("Type", type.name());
-			int timeModifierForStackSize = ((entity.g()
-				.E() - 1) / 16) + 1;
+			int timeModifierForStackSize = ((entity.getStack()
+				.getCount() - 1) / 16) + 1;
 			int processingTime =
 				(int) (AllConfigs.SERVER.kinetics.inWorldProcessingTime.get() * timeModifierForStackSize) + 1;
 			processing.putInt("Time", processingTime);
@@ -248,75 +249,75 @@ public class InWorldProcessing {
 		return value;
 	}
 
-	public static void applyRecipeOn(PaintingEntity entity, Ingredient<?> recipe) {
-		List<ItemCooldownManager> stacks = applyRecipeOn(entity.g(), recipe);
+	public static void applyRecipeOn(ItemEntity entity, Recipe<?> recipe) {
+		List<ItemStack> stacks = applyRecipeOn(entity.getStack(), recipe);
 		if (stacks == null)
 			return;
 		if (stacks.isEmpty()) {
-			entity.ac();
+			entity.remove();
 			return;
 		}
-		entity.b(stacks.remove(0));
-		for (ItemCooldownManager additional : stacks) {
-			PaintingEntity entityIn = new PaintingEntity(entity.l, entity.cC(), entity.cD(), entity.cG(), additional);
-			entityIn.f(entity.cB());
-			entity.l.c(entityIn);
+		entity.setStack(stacks.remove(0));
+		for (ItemStack additional : stacks) {
+			ItemEntity entityIn = new ItemEntity(entity.world, entity.getX(), entity.getY(), entity.getZ(), additional);
+			entityIn.setVelocity(entity.getVelocity());
+			entity.world.spawnEntity(entityIn);
 		}
 	}
 
-	private static List<ItemCooldownManager> applyRecipeOn(ItemCooldownManager stackIn, Ingredient<?> recipe) {
-		List<ItemCooldownManager> stacks;
+	private static List<ItemStack> applyRecipeOn(ItemStack stackIn, Recipe<?> recipe) {
+		List<ItemStack> stacks;
 
 		if (recipe instanceof ProcessingRecipe) {
 			stacks = new ArrayList<>();
-			for (int i = 0; i < stackIn.E(); i++) {
-				List<ItemCooldownManager> rollResults = ((ProcessingRecipe<?>) recipe).rollResults();
-				for (ItemCooldownManager stack : rollResults) {
-					for (ItemCooldownManager previouslyRolled : stacks) {
-						if (stack.a())
+			for (int i = 0; i < stackIn.getCount(); i++) {
+				List<ItemStack> rollResults = ((ProcessingRecipe<?>) recipe).rollResults();
+				for (ItemStack stack : rollResults) {
+					for (ItemStack previouslyRolled : stacks) {
+						if (stack.isEmpty())
 							continue;
 						if (!ItemHandlerHelper.canItemStacksStack(stack, previouslyRolled))
 							continue;
-						int amount = Math.min(previouslyRolled.c() - previouslyRolled.E(),
-							stack.E());
-						previouslyRolled.f(amount);
-						stack.g(amount);
+						int amount = Math.min(previouslyRolled.getMaxCount() - previouslyRolled.getCount(),
+							stack.getCount());
+						previouslyRolled.increment(amount);
+						stack.decrement(amount);
 					}
 
-					if (stack.a())
+					if (stack.isEmpty())
 						continue;
 
 					stacks.add(stack);
 				}
 			}
 		} else {
-			ItemCooldownManager out = recipe.c()
-				.i();
+			ItemStack out = recipe.getOutput()
+				.copy();
 			stacks = ItemHelper.multipliedOutput(stackIn, out);
 		}
 
 		return stacks;
 	}
-	public static void spawnParticlesForProcessing(@Nullable GameMode world, EntityHitResult vec, Type type) {
-		if (world == null || !world.v)
+	public static void spawnParticlesForProcessing(@Nullable World world, Vec3d vec, Type type) {
+		if (world == null || !world.isClient)
 			return;
-		if (world.t.nextInt(8) != 0)
+		if (world.random.nextInt(8) != 0)
 			return;
 
 		switch (type) {
 		case BLASTING:
-			world.addParticle(ParticleTypes.LARGE_SMOKE, vec.entity, vec.c + .25f, vec.d, 0, 1 / 16f, 0);
+			world.addParticle(ParticleTypes.LARGE_SMOKE, vec.x, vec.y + .25f, vec.z, 0, 1 / 16f, 0);
 			break;
 		case SMOKING:
-			world.addParticle(ParticleTypes.POOF, vec.entity, vec.c + .25f, vec.d, 0, 1 / 16f, 0);
+			world.addParticle(ParticleTypes.POOF, vec.x, vec.y + .25f, vec.z, 0, 1 / 16f, 0);
 			break;
 		case SPLASHING:
-			EntityHitResult color = ColorHelper.getRGB(0x0055FF);
-			world.addParticle(new DustParticleEffect((float) color.entity, (float) color.c, (float) color.d, 1),
-				vec.entity + (world.t.nextFloat() - .5f) * .5f, vec.c + .5f, vec.d + (world.t.nextFloat() - .5f) * .5f,
+			Vec3d color = ColorHelper.getRGB(0x0055FF);
+			world.addParticle(new DustParticleEffect((float) color.x, (float) color.y, (float) color.z, 1),
+				vec.x + (world.random.nextFloat() - .5f) * .5f, vec.y + .5f, vec.z + (world.random.nextFloat() - .5f) * .5f,
 				0, 1 / 8f, 0);
-			world.addParticle(ParticleTypes.SPIT, vec.entity + (world.t.nextFloat() - .5f) * .5f, vec.c + .5f,
-				vec.d + (world.t.nextFloat() - .5f) * .5f, 0, 1 / 8f, 0);
+			world.addParticle(ParticleTypes.SPIT, vec.x + (world.random.nextFloat() - .5f) * .5f, vec.y + .5f,
+				vec.z + (world.random.nextFloat() - .5f) * .5f, 0, 1 / 8f, 0);
 			break;
 		default:
 			break;

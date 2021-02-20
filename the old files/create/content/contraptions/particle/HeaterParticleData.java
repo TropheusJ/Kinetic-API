@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.particle;
+package com.simibubi.create.content.contraptions.particle;
 
 import java.util.Locale;
 
@@ -8,12 +8,12 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.simibubi.kinetic_api.AllParticleTypes;
+import com.simibubi.create.AllParticleTypes;
 
 import mcp.MethodsReturnNonnullByDefault;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.particle.ItemPickupParticle.b;
+import net.minecraft.client.particle.ParticleManager.SpriteAwareFactory;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
@@ -77,7 +77,7 @@ public class HeaterParticleData implements ParticleEffect, ICustomParticleDataWi
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public b<HeaterParticleData> getMetaFactory() {
+	public SpriteAwareFactory<HeaterParticleData> getMetaFactory() {
 		return HeaterParticle.Factory::new;
 	}
 

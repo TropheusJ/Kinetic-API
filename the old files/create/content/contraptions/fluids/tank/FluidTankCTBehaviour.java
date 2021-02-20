@@ -1,11 +1,12 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.tank;
+package com.simibubi.create.content.contraptions.fluids.tank;
 
-import bqx;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShiftEntry;
-import com.simibubi.kinetic_api.foundation.block.connected.HorizontalCTBehaviour;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
+import com.simibubi.create.foundation.block.connected.HorizontalCTBehaviour;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 
 public class FluidTankCTBehaviour extends HorizontalCTBehaviour {
 
@@ -18,8 +19,8 @@ public class FluidTankCTBehaviour extends HorizontalCTBehaviour {
 	}
 
 	@Override
-	public boolean connectsTo(PistonHandler state, PistonHandler other, bqx reader, BlockPos pos, BlockPos otherPos,
+	public boolean connectsTo(BlockState state, BlockState other, BlockRenderView reader, BlockPos pos, BlockPos otherPos,
 		Direction face) {
-		return state.b() == other.b() && FluidTankConnectivityHandler.isConnected(reader, pos, otherPos);
+		return state.getBlock() == other.getBlock() && FluidTankConnectivityHandler.isConnected(reader, pos, otherPos);
 	}
 }

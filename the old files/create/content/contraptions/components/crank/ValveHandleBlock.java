@@ -1,23 +1,23 @@
-package com.simibubi.kinetic_api.content.contraptions.components.crank;
+package com.simibubi.create.content.contraptions.components.crank;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.utility.DyeHelper;
-import dcg;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.utility.DyeHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.DebugStickItem;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.DyeColor;
+import net.minecraft.util.Hand;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -25,45 +25,45 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public class ValveHandleBlock extends HandCrankBlock {
 	private final boolean inCreativeTab;
 
-	public static ValveHandleBlock copper(c properties) {
+	public static ValveHandleBlock copper(Settings properties) {
 		return new ValveHandleBlock(properties, true);
 	}
 
-	public static ValveHandleBlock dyed(c properties) {
+	public static ValveHandleBlock dyed(Settings properties) {
 		return new ValveHandleBlock(properties, false);
 	}
 
-	private ValveHandleBlock(c properties, boolean inCreativeTab) {
+	private ValveHandleBlock(Settings properties, boolean inCreativeTab) {
 		super(properties);
 		this.inCreativeTab = inCreativeTab;
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode worldIn, BlockPos pos, PlayerAbilities player, ItemScatterer handIn,
-		dcg hit) {
-		ItemCooldownManager heldItem = player.b(handIn);
-		for (DebugStickItem color : DebugStickItem.values()) {
-			if (!heldItem.b()
-				.a(DyeHelper.getTagOfDye(color)))
+	public ActionResult onUse(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn,
+		BlockHitResult hit) {
+		ItemStack heldItem = player.getStackInHand(handIn);
+		for (DyeColor color : DyeColor.values()) {
+			if (!heldItem.getItem()
+				.isIn(DyeHelper.getTagOfDye(color)))
 				continue;
-			if (worldIn.v)
-				return Difficulty.SUCCESS;
+			if (worldIn.isClient)
+				return ActionResult.SUCCESS;
 
-			PistonHandler newState = AllBlocks.DYED_VALVE_HANDLES[color.ordinal()].getDefaultState()
-				.a(FACING, state.c(FACING));
+			BlockState newState = AllBlocks.DYED_VALVE_HANDLES[color.ordinal()].getDefaultState()
+				.with(FACING, state.get(FACING));
 			if (newState != state)
-				worldIn.a(pos, newState);
-			return Difficulty.SUCCESS;
+				worldIn.setBlockState(pos, newState);
+			return ActionResult.SUCCESS;
 		}
 
-		return super.a(state, worldIn, pos, player, handIn, hit);
+		return super.onUse(state, worldIn, pos, player, handIn, hit);
 	}
 
 	@Override
-	public void a(ChorusFruitItem group, DefaultedList<ItemCooldownManager> p_149666_2_) {
-		if (group != ChorusFruitItem.g && !inCreativeTab)
+	public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> p_149666_2_) {
+		if (group != ItemGroup.SEARCH && !inCreativeTab)
 			return;
-		super.a(group, p_149666_2_);
+		super.addStacksForDisplay(group, p_149666_2_);
 	}
 
 	@Override

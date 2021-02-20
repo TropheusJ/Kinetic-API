@@ -1,66 +1,67 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.elementary;
+package com.simibubi.create.content.contraptions.relays.elementary;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate;
-import com.simibubi.kinetic_api.content.contraptions.relays.advanced.SpeedControllerBlock;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.content.contraptions.base.IRotate;
+import com.simibubi.create.content.contraptions.relays.advanced.SpeedControllerBlock;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class CogWheelBlock extends AbstractShaftBlock {
 
     boolean isLarge;
 
-    private CogWheelBlock(boolean large, c properties) {
+    private CogWheelBlock(boolean large, Settings properties) {
         super(properties);
         isLarge = large;
     }
 
-    public static CogWheelBlock small(c properties) {
+    public static CogWheelBlock small(Settings properties) {
         return new CogWheelBlock(false, properties);
     }
 
-    public static CogWheelBlock large(c properties) {
+    public static CogWheelBlock large(Settings properties) {
         return new CogWheelBlock(true, properties);
     }
 
-    public static boolean isSmallCog(PistonHandler state) {
+    public static boolean isSmallCog(BlockState state) {
         return AllBlocks.COGWHEEL.has(state);
     }
 
-    public static boolean isLargeCog(PistonHandler state) {
+    public static boolean isLargeCog(BlockState state) {
         return AllBlocks.LARGE_COGWHEEL.has(state);
     }
 
     @Override
-    public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
-        return (isLarge ? AllShapes.LARGE_GEAR : AllShapes.SMALL_GEAR).get(state.c(AXIS));
+    public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
+        return (isLarge ? AllShapes.LARGE_GEAR : AllShapes.SMALL_GEAR).get(state.get(AXIS));
     }
 
     @Override
-    public boolean a(PistonHandler state, ItemConvertible worldIn, BlockPos pos) {
+    public boolean canPlaceAt(BlockState state, WorldView worldIn, BlockPos pos) {
         for (Direction facing : Iterate.directions) {
-            if (facing.getAxis() == state.c(AXIS))
+            if (facing.getAxis() == state.get(AXIS))
                 continue;
 
-            PistonHandler blockState = worldIn.d_(pos.offset(facing));
-            if (blockState.b(AXIS) && facing.getAxis() == blockState.c(AXIS))
+            BlockState blockState = worldIn.getBlockState(pos.offset(facing));
+            if (blockState.contains(AXIS) && facing.getAxis() == blockState.get(AXIS))
             	continue;
             
             if (isLargeCog(blockState) || isLarge && isSmallCog(blockState))
@@ -70,37 +71,37 @@ public class CogWheelBlock extends AbstractShaftBlock {
     }
 
     @Override
-    public PistonHandler a(PotionUtil context) {
-        BlockPos placedOnPos = context.a().offset(context.j().getOpposite());
-        GameMode world = context.p();
-        PistonHandler placedAgainst = world.d_(placedOnPos);
-        BeetrootsBlock block = placedAgainst.b();
+    public BlockState getPlacementState(ItemPlacementContext context) {
+        BlockPos placedOnPos = context.getBlockPos().offset(context.getSide().getOpposite());
+        World world = context.getWorld();
+        BlockState placedAgainst = world.getBlockState(placedOnPos);
+        Block block = placedAgainst.getBlock();
 
-        if (context.n() != null && context.n().bt())
-			return this.n().a(AXIS, context.j().getAxis());
+        if (context.getPlayer() != null && context.getPlayer().isSneaking())
+			return this.getDefaultState().with(AXIS, context.getSide().getAxis());
         
-        PistonHandler stateBelow = world.d_(context.a()
+        BlockState stateBelow = world.getBlockState(context.getBlockPos()
                 .down());
-        EmptyFluid FluidState = context.p().b(context.a());
+        FluidState FluidState = context.getWorld().getFluidState(context.getBlockPos());
         if (AllBlocks.ROTATION_SPEED_CONTROLLER.has(stateBelow) && isLarge) {
-            return this.n()
-                    .a(BambooLeaves.C, FluidState.a() == FlowableFluid.c)
-                    .a(AXIS, stateBelow.c(SpeedControllerBlock.HORIZONTAL_AXIS) == Axis.X ? Axis.Z : Axis.X);
+            return this.getDefaultState()
+                    .with(Properties.WATERLOGGED, FluidState.getFluid() == Fluids.WATER)
+                    .with(AXIS, stateBelow.get(SpeedControllerBlock.HORIZONTAL_AXIS) == Axis.X ? Axis.Z : Axis.X);
         }
 
         if (!(block instanceof IRotate)
                 || !(((IRotate) block).hasIntegratedCogwheel(world, placedOnPos, placedAgainst))) {
             Axis preferredAxis = getPreferredAxis(context);
             if (preferredAxis != null)
-                return this.n()
-                        .a(AXIS, preferredAxis)
-                        .a(BambooLeaves.C, FluidState.a() == FlowableFluid.c);
-            return this.n()
-                    .a(AXIS, context.j().getAxis())
-                    .a(BambooLeaves.C, FluidState.a() == FlowableFluid.c);
+                return this.getDefaultState()
+                        .with(AXIS, preferredAxis)
+                        .with(Properties.WATERLOGGED, FluidState.getFluid() == Fluids.WATER);
+            return this.getDefaultState()
+                    .with(AXIS, context.getSide().getAxis())
+                    .with(Properties.WATERLOGGED, FluidState.getFluid() == Fluids.WATER);
         }
 
-        return n().a(AXIS, ((IRotate) block).getRotationAxis(placedAgainst));
+        return getDefaultState().with(AXIS, ((IRotate) block).getRotationAxis(placedAgainst));
     }
 
     @Override
@@ -113,14 +114,14 @@ public class CogWheelBlock extends AbstractShaftBlock {
         return isLarge ? 1f : .75f;
     }
 
-    public void a(ChorusFruitItem group, DefaultedList<ItemCooldownManager> items) {
-        items.add(new ItemCooldownManager(this));
+    public void addStacksForDisplay(ItemGroup group, DefaultedList<ItemStack> items) {
+        items.add(new ItemStack(this));
     }
 
     // IRotate
 
     @Override
-    public boolean hasIntegratedCogwheel(ItemConvertible world, BlockPos pos, PistonHandler state) {
+    public boolean hasIntegratedCogwheel(WorldView world, BlockPos pos, BlockState state) {
         return !isLarge;
     }
 }

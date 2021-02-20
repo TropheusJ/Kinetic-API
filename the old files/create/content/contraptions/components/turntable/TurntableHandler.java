@@ -1,27 +1,28 @@
-package com.simibubi.kinetic_api.content.contraptions.components.turntable;
+package com.simibubi.create.content.contraptions.components.turntable;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.VecHelper;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class TurntableHandler {
 
 	public static void gameRenderTick() {
-		KeyBinding mc = KeyBinding.B();
-		BlockPos pos = mc.s.cA();
+		MinecraftClient mc = MinecraftClient.getInstance();
+		BlockPos pos = mc.player.getBlockPos();
 
-		if (!AllBlocks.TURNTABLE.has(mc.r.d_(pos)))
+		if (!AllBlocks.TURNTABLE.has(mc.world.getBlockState(pos)))
 			return;
-		if (!mc.s.an())
+		if (!mc.player.isOnGround())
 			return;
-		if (mc.S())
+		if (mc.isPaused())
 			return;
 
-		BeehiveBlockEntity tileEntity = mc.r.c(pos);
+		BlockEntity tileEntity = mc.world.getBlockEntity(pos);
 		if (!(tileEntity instanceof TurntableTileEntity))
 			return;
 		
@@ -31,14 +32,14 @@ public class TurntableHandler {
 		if (speed == 0)
 			return;
 		
-		EntityHitResult origin = VecHelper.getCenterOf(pos);
-		EntityHitResult offset = mc.s.cz().d(origin);
+		Vec3d origin = VecHelper.getCenterOf(pos);
+		Vec3d offset = mc.player.getPos().subtract(origin);
 		
-		if (offset.f() > 1/4f)
-			speed *= afj.a((1/2f - offset.f()) * 2, 0, 1);
+		if (offset.length() > 1/4f)
+			speed *= MathHelper.clamp((1/2f - offset.length()) * 2, 0, 1);
 
-		mc.s.p = mc.s.r - speed * mc.ai();
-		mc.s.aA = mc.s.p;
+		mc.player.yaw = mc.player.prevYaw - speed * AnimationTickHolder.getPartialTicks();
+		mc.player.bodyYaw = mc.player.yaw;
 	}
 
 }

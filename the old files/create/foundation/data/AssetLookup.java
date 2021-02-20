@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.data;
+package com.simibubi.create.foundation.data;
 
 import java.util.function.Function;
 
@@ -6,11 +6,12 @@ import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
 import com.tterrag.registrate.providers.RegistrateItemModelProvider;
 import com.tterrag.registrate.util.nullness.NonNullBiConsumer;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.HoeItem;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.client.model.generators.ItemModelBuilder;
 import net.minecraftforge.client.model.generators.ModelFile;
@@ -45,10 +46,10 @@ public class AssetLookup {
 	 * Generate item model inheriting from a seperate model in
 	 * models/block/x/item.json
 	 */
-	public static <I extends BannerItem> ItemModelBuilder customItemModel(DataGenContext<HoeItem, I> ctx,
+	public static <I extends BlockItem> ItemModelBuilder customItemModel(DataGenContext<Item, I> ctx,
 		RegistrateItemModelProvider prov) {
 		return prov.blockItem(() -> ctx.getEntry()
-			.e(), "/item");
+			.getBlock(), "/item");
 	}
 
 	/**
@@ -56,7 +57,7 @@ public class AssetLookup {
 	 * models/block/folders[0]/folders[1]/.../item.json "_" will be replaced by the
 	 * item name
 	 */
-	public static <I extends BannerItem> NonNullBiConsumer<DataGenContext<HoeItem, I>, RegistrateItemModelProvider> customItemModel(
+	public static <I extends BlockItem> NonNullBiConsumer<DataGenContext<Item, I>, RegistrateItemModelProvider> customItemModel(
 		String... folders) {
 		return (c, p) -> {
 			String path = "block";
@@ -66,25 +67,25 @@ public class AssetLookup {
 		};
 	}
 
-	public static Function<PistonHandler, ModelFile> forPowered(DataGenContext<?, ?> ctx,
+	public static Function<BlockState, ModelFile> forPowered(DataGenContext<?, ?> ctx,
 		RegistrateBlockstateProvider prov) {
-		return state -> state.c(BambooLeaves.w) ? partialBaseModel(ctx, prov, "powered")
+		return state -> state.get(Properties.POWERED) ? partialBaseModel(ctx, prov, "powered")
 			: partialBaseModel(ctx, prov);
 	}
 
-	public static Function<PistonHandler, ModelFile> forPowered(DataGenContext<?, ?> ctx,
+	public static Function<BlockState, ModelFile> forPowered(DataGenContext<?, ?> ctx,
 		RegistrateBlockstateProvider prov, String path) {
 		return state -> prov.models()
 			.getExistingFile(
-				prov.modLoc("block/" + path + (state.c(BambooLeaves.w) ? "_powered" : "")));
+				prov.modLoc("block/" + path + (state.get(Properties.POWERED) ? "_powered" : "")));
 	}
 
-	public static Function<PistonHandler, ModelFile> withIndicator(DataGenContext<?, ?> ctx,
-		RegistrateBlockstateProvider prov, Function<PistonHandler, ModelFile> baseModelFunc, DoubleBlockHalf property) {
+	public static Function<BlockState, ModelFile> withIndicator(DataGenContext<?, ?> ctx,
+		RegistrateBlockstateProvider prov, Function<BlockState, ModelFile> baseModelFunc, IntProperty property) {
 		return state -> {
 			Identifier baseModel = baseModelFunc.apply(state)
 				.getLocation();
-			Integer integer = state.c(property);
+			Integer integer = state.get(property);
 			return prov.models()
 				.withExistingParent(ctx.getName() + "_" + integer, baseModel)
 				.texture("indicator", "block/indicator/" + integer);
@@ -95,11 +96,11 @@ public class AssetLookup {
 		return "block/oxidized/" + name + "_" + level;
 	}
 
-	public static <T extends HoeItem> NonNullBiConsumer<DataGenContext<HoeItem, T>, RegistrateItemModelProvider> existingItemModel() {
+	public static <T extends Item> NonNullBiConsumer<DataGenContext<Item, T>, RegistrateItemModelProvider> existingItemModel() {
 		return (c, p) -> p.getExistingFile(p.modLoc("item/" + c.getName()));
 	}
 
-	public static <T extends HoeItem> NonNullBiConsumer<DataGenContext<HoeItem, T>, RegistrateItemModelProvider> itemModelWithPartials() {
+	public static <T extends Item> NonNullBiConsumer<DataGenContext<Item, T>, RegistrateItemModelProvider> itemModelWithPartials() {
 		return (c, p) -> p.withExistingParent("item/" + c.getName(), p.modLoc("item/" + c.getName() + "/item"));
 	}
 

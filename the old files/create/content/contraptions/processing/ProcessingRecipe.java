@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,38 +9,38 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import org.apache.logging.log4j.Logger;
 
 import com.google.gson.JsonObject;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
-import com.simibubi.kinetic_api.foundation.fluid.FluidIngredient;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
+import com.simibubi.create.foundation.fluid.FluidIngredient;
+import com.simibubi.create.foundation.utility.Lang;
 
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.recipe.FireworkRocketRecipe;
 import net.minecraft.recipe.Ingredient;
-import net.minecraft.recipe.MapExtendingRecipe;
 import net.minecraft.recipe.Recipe;
+import net.minecraft.recipe.RecipeSerializer;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraftforge.fluids.FluidStack;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public abstract class ProcessingRecipe<T extends BossBar> implements Ingredient<T> {
+public abstract class ProcessingRecipe<T extends Inventory> implements Recipe<T> {
 
 	protected Identifier id;
-	protected DefaultedList<FireworkRocketRecipe> ingredients;
+	protected DefaultedList<Ingredient> ingredients;
 	protected DefaultedList<ProcessingOutput> results;
 	protected DefaultedList<FluidIngredient> fluidIngredients;
 	protected DefaultedList<FluidStack> fluidResults;
 	protected int processingDuration;
 	protected HeatCondition requiredHeat;
 
-	private Recipe<?> type;
-	private MapExtendingRecipe<?> serializer;
+	private RecipeType<?> type;
+	private RecipeSerializer<?> serializer;
 	private AllRecipeTypes enumType;
 
 	public ProcessingRecipe(AllRecipeTypes recipeType, ProcessingRecipeParams params) {
@@ -117,7 +117,7 @@ public abstract class ProcessingRecipe<T extends BossBar> implements Ingredient<
 	}
 
 	@Override
-	public DefaultedList<FireworkRocketRecipe> a() {
+	public DefaultedList<Ingredient> getPreviewInputs() {
 		return ingredients;
 	}
 	
@@ -133,17 +133,17 @@ public abstract class ProcessingRecipe<T extends BossBar> implements Ingredient<
 		return fluidResults;
 	}
 
-	public List<ItemCooldownManager> getRollableResultsAsItemStacks() {
+	public List<ItemStack> getRollableResultsAsItemStacks() {
 		return getRollableResults().stream()
 			.map(ProcessingOutput::getStack)
 			.collect(Collectors.toList());
 	}
 
-	public List<ItemCooldownManager> rollResults() {
-		List<ItemCooldownManager> results = new ArrayList<>();
+	public List<ItemStack> rollResults() {
+		List<ItemStack> results = new ArrayList<>();
 		for (ProcessingOutput output : getRollableResults()) {
-			ItemCooldownManager stack = output.rollOutput();
-			if (!stack.a())
+			ItemStack stack = output.rollOutput();
+			if (!stack.isEmpty())
 				results.add(stack);
 		}
 		return results;
@@ -160,40 +160,40 @@ public abstract class ProcessingRecipe<T extends BossBar> implements Ingredient<
 	// IRecipe<> paperwork
 	
 	@Override
-	public ItemCooldownManager a(T inv) {
-		return c();
+	public ItemStack craft(T inv) {
+		return getOutput();
 	}
 
 	@Override
-	public boolean a(int width, int height) {
+	public boolean fits(int width, int height) {
 		return true;
 	}
 
 	@Override
-	public ItemCooldownManager c() {
-		return getRollableResults().isEmpty() ? ItemCooldownManager.tick
+	public ItemStack getOutput() {
+		return getRollableResults().isEmpty() ? ItemStack.EMPTY
 			: getRollableResults().get(0)
 				.getStack();
 	}
 
 	@Override
-	public Identifier f() {
+	public Identifier getId() {
 		return id;
 	}
 
 	@Override
-	public MapExtendingRecipe<?> ag_() {
+	public RecipeSerializer<?> getSerializer() {
 		return serializer;
 	}
 
 	// Processing recipes do not show up in the recipe book
 	@Override
-	public String d() {
+	public String getGroup() {
 		return "processing";
 	}
 
 	@Override
-	public Recipe<?> g() {
+	public RecipeType<?> getType() {
 		return type;
 	}
 

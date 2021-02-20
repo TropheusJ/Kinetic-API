@@ -1,12 +1,14 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter.attribute;
+package com.simibubi.create.content.logistics.item.filter.attribute;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.google.gson.JsonParseException;
+import com.simibubi.create.content.logistics.item.filter.ItemAttribute;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.Text;
-import com.google.gson.JsonParseException;
-import com.simibubi.kinetic_api.content.logistics.item.filter.ItemAttribute;
 
 public class ItemNameAttribute implements ItemAttribute {
     String itemName;
@@ -16,12 +18,12 @@ public class ItemNameAttribute implements ItemAttribute {
     }
 
     @Override
-    public boolean appliesTo(ItemCooldownManager itemStack) {
+    public boolean appliesTo(ItemStack itemStack) {
         return extractCustomName(itemStack).equals(itemName);
     }
 
     @Override
-    public List<ItemAttribute> listAttributesOf(ItemCooldownManager itemStack) {
+    public List<ItemAttribute> listAttributesOf(ItemStack itemStack) {
         String name = extractCustomName(itemStack);
 
         List<ItemAttribute> atts = new ArrayList<>();
@@ -51,8 +53,8 @@ public class ItemNameAttribute implements ItemAttribute {
         return new ItemNameAttribute(nbt.getString("name"));
     }
 
-    private String extractCustomName(ItemCooldownManager stack) {
-        CompoundTag compoundnbt = stack.b("display");
+    private String extractCustomName(ItemStack stack) {
+        CompoundTag compoundnbt = stack.getSubTag("display");
         if (compoundnbt != null && compoundnbt.contains("Name", 8)) {
             try {
                 Text itextcomponent = Text.Serializer.fromJson(compoundnbt.getString("Name"));

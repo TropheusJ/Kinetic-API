@@ -1,56 +1,58 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.mounted;
+package com.simibubi.create.content.contraptions.components.structureMovement.mounted;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.util.SmoothUtil;
-import net.minecraft.item.HoeItem;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.components.tracks.ControllerRailBlock;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.components.tracks.ControllerRailBlock;
+import com.simibubi.create.foundation.utility.Lang;
 import com.tterrag.registrate.util.entry.BlockEntry;
 
-public enum CartAssembleRailType implements SmoothUtil {
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.item.Item;
+import net.minecraft.util.StringIdentifiable;
+
+public enum CartAssembleRailType implements StringIdentifiable {
 	
-	REGULAR(BellBlock.ch),
-	POWERED_RAIL(BellBlock.aN),
-	DETECTOR_RAIL(BellBlock.aO),
-	ACTIVATOR_RAIL(BellBlock.fD),
+	REGULAR(Blocks.RAIL),
+	POWERED_RAIL(Blocks.POWERED_RAIL),
+	DETECTOR_RAIL(Blocks.DETECTOR_RAIL),
+	ACTIVATOR_RAIL(Blocks.ACTIVATOR_RAIL),
 	CONTROLLER_RAIL(AllBlocks.CONTROLLER_RAIL, blockState -> AllBlocks.CONTROLLER_RAIL.has(blockState)
-		&& blockState.b(ControllerRailBlock.BACKWARDS) && !blockState.c(ControllerRailBlock.BACKWARDS)),
+		&& blockState.contains(ControllerRailBlock.BACKWARDS) && !blockState.get(ControllerRailBlock.BACKWARDS)),
 	CONTROLLER_RAIL_BACKWARDS(AllBlocks.CONTROLLER_RAIL, blockState -> AllBlocks.CONTROLLER_RAIL.has(blockState)
-		&& blockState.b(ControllerRailBlock.BACKWARDS) && blockState.c(ControllerRailBlock.BACKWARDS))
+		&& blockState.contains(ControllerRailBlock.BACKWARDS) && blockState.get(ControllerRailBlock.BACKWARDS))
 	
 	;
 
-	private final Supplier<BeetrootsBlock> railBlockSupplier;
-	private final Supplier<HoeItem> railItemSupplier;
-	public final Predicate<PistonHandler> matches;
+	private final Supplier<Block> railBlockSupplier;
+	private final Supplier<Item> railItemSupplier;
+	public final Predicate<BlockState> matches;
 
-	CartAssembleRailType(BeetrootsBlock block) {
+	CartAssembleRailType(Block block) {
 		this.railBlockSupplier = () -> block;
-		this.railItemSupplier = block::h;
-		this.matches = blockState -> blockState.b() == getBlock();
+		this.railItemSupplier = block::asItem;
+		this.matches = blockState -> blockState.getBlock() == getBlock();
 	}
 
-	CartAssembleRailType(BlockEntry<?> block, Predicate<PistonHandler> matches) {
+	CartAssembleRailType(BlockEntry<?> block, Predicate<BlockState> matches) {
 		this.railBlockSupplier = block::get;
-		this.railItemSupplier = () -> block.get().h();
+		this.railItemSupplier = () -> block.get().asItem();
 		this.matches = matches;
 	}
 
-	public BeetrootsBlock getBlock() {
+	public Block getBlock() {
 		return railBlockSupplier.get();
 	}
 
-	public HoeItem getItem() {
+	public Item getItem() {
 		return railItemSupplier.get();
 	}
 	
 	@Override
-	public String a() {
+	public String asString() {
 		return Lang.asId(name());
 	}
 

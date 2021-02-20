@@ -1,8 +1,9 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
-import net.minecraft.world.GameMode;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
+
+import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
 
@@ -13,8 +14,8 @@ public class EmptyingRecipe extends ProcessingRecipe<RecipeWrapper> {
 	}
 
 	@Override
-	public boolean matches(RecipeWrapper inv, GameMode p_77569_2_) {
-		return ingredients.get(0).a(inv.a(0));
+	public boolean matches(RecipeWrapper inv, World p_77569_2_) {
+		return ingredients.get(0).test(inv.getStack(0));
 	}
 
 	@Override

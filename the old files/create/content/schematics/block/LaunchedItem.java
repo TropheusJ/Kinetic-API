@@ -1,31 +1,33 @@
-package com.simibubi.kinetic_api.content.schematics.block;
+package com.simibubi.create.content.schematics.block;
 
 import java.util.Optional;
-import afj;
-import apx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltBlock;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltPart;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.item.BeltConnectorItem;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.content.contraptions.relays.elementary.AbstractShaftBlock;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.relays.belt.BeltBlock;
+import com.simibubi.create.content.contraptions.relays.belt.BeltPart;
+import com.simibubi.create.content.contraptions.relays.belt.item.BeltConnectorItem;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.content.contraptions.relays.elementary.AbstractShaftBlock;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.tag.BlockTags;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.property.Properties;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 import net.minecraftforge.common.IPlantable;
 import net.minecraftforge.common.util.Constants;
 
@@ -34,31 +36,31 @@ public abstract class LaunchedItem {
 	public int totalTicks;
 	public int ticksRemaining;
 	public BlockPos target;
-	public ItemCooldownManager stack;
+	public ItemStack stack;
 
-	private LaunchedItem(BlockPos start, BlockPos target, ItemCooldownManager stack) {
+	private LaunchedItem(BlockPos start, BlockPos target, ItemStack stack) {
 		this(target, stack, ticksForDistance(start, target), ticksForDistance(start, target));
 	}
 
 	private static int ticksForDistance(BlockPos start, BlockPos target) {
-		return (int) (Math.max(10, afj.c(afj.a(target.getSquaredDistance(start))) * 4f));
+		return (int) (Math.max(10, MathHelper.sqrt(MathHelper.sqrt(target.getSquaredDistance(start))) * 4f));
 	}
 
 	LaunchedItem() {}
 
-	private LaunchedItem(BlockPos target, ItemCooldownManager stack, int ticksLeft, int total) {
+	private LaunchedItem(BlockPos target, ItemStack stack, int ticksLeft, int total) {
 		this.target = target;
 		this.stack = stack;
 		this.totalTicks = total;
 		this.ticksRemaining = ticksLeft;
 	}
 
-	public boolean update(GameMode world) {
+	public boolean update(World world) {
 		if (ticksRemaining > 0) {
 			ticksRemaining--;
 			return false;
 		}
-		if (world.v)
+		if (world.isClient)
 			return false;
 
 		place(world);
@@ -81,22 +83,22 @@ public abstract class LaunchedItem {
 		return launched;
 	}
 
-	abstract void place(GameMode world);
+	abstract void place(World world);
 
 	void readNBT(CompoundTag c) {
 		target = NbtHelper.toBlockPos(c.getCompound("Target"));
 		ticksRemaining = c.getInt("TicksLeft");
 		totalTicks = c.getInt("TotalTicks");
-		stack = ItemCooldownManager.a(c.getCompound("Stack"));
+		stack = ItemStack.fromTag(c.getCompound("Stack"));
 	}
 
 	public static class ForBlockState extends LaunchedItem {
-		public PistonHandler state;
+		public BlockState state;
 		public CompoundTag data;
 
 		ForBlockState() {}
 
-		public ForBlockState(BlockPos start, BlockPos target, ItemCooldownManager stack, PistonHandler state, CompoundTag data) {
+		public ForBlockState(BlockPos start, BlockPos target, ItemStack stack, BlockState state, CompoundTag data) {
 			super(start, target, stack);
 			this.state = state;
 			this.data = data;
@@ -105,7 +107,7 @@ public abstract class LaunchedItem {
 		@Override
 		public CompoundTag serializeNBT() {
 			CompoundTag serializeNBT = super.serializeNBT();
-			serializeNBT.put("BlockState", NbtHelper.a(state));
+			serializeNBT.put("BlockState", NbtHelper.fromBlockState(state));
 			if (data != null) {
 				data.remove("x");
 				data.remove("y");
@@ -119,54 +121,54 @@ public abstract class LaunchedItem {
 		@Override
 		void readNBT(CompoundTag nbt) {
 			super.readNBT(nbt);
-			state = NbtHelper.c(nbt.getCompound("BlockState"));
+			state = NbtHelper.toBlockState(nbt.getCompound("BlockState"));
 			if (nbt.contains("Data", Constants.NBT.TAG_COMPOUND)) {
 				data = nbt.getCompound("Data");
 			}
 		}
 
 		@Override
-		void place(GameMode world) {
+		void place(World world) {
 			// Piston
-			if (BlockHelper.hasBlockStateProperty(state, BambooLeaves.g))
-				state = state.a(BambooLeaves.g, Boolean.FALSE);
-			if (BlockHelper.hasBlockStateProperty(state, BambooLeaves.C))
-				state = state.a(BambooLeaves.C, Boolean.FALSE);
+			if (BlockHelper.hasBlockStateProperty(state, Properties.EXTENDED))
+				state = state.with(Properties.EXTENDED, Boolean.FALSE);
+			if (BlockHelper.hasBlockStateProperty(state, Properties.WATERLOGGED))
+				state = state.with(Properties.WATERLOGGED, Boolean.FALSE);
 
 			if (AllBlocks.BELT.has(state)) {
-				world.a(target, state, 2);
+				world.setBlockState(target, state, 2);
 				return;
 			}
-			else if (state.b() == BellBlock.na)
-				state = BellBlock.na.n();
-			else if (state.b() != BellBlock.kU && state.b() instanceof IPlantable)
-				state = ((IPlantable) state.b()).getPlant(world, target);
+			else if (state.getBlock() == Blocks.COMPOSTER)
+				state = Blocks.COMPOSTER.getDefaultState();
+			else if (state.getBlock() != Blocks.SEA_PICKLE && state.getBlock() instanceof IPlantable)
+				state = ((IPlantable) state.getBlock()).getPlant(world, target);
 
-			if (world.k().d() && state.m().a().a(BlockTags.field_15481)) {
+			if (world.getDimension().isUltrawarm() && state.getFluidState().getFluid().isIn(FluidTags.WATER)) {
 				int i = target.getX();
 				int j = target.getY();
 				int k = target.getZ();
-				world.a(null, target, MusicType.ej, SoundEvent.e, 0.5F, 2.6F + (world.t.nextFloat() - world.t.nextFloat()) * 0.8F);
+				world.playSound(null, target, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F);
 
 				for (int l = 0; l < 8; ++l) {
 					world.addParticle(ParticleTypes.LARGE_SMOKE, i + Math.random(), j + Math.random(), k + Math.random(), 0.0D, 0.0D, 0.0D);
 				}
-				BeetrootsBlock.c(state, world, target);
+				Block.dropStacks(state, world, target);
 				return;
 			}
-			world.a(target, state, 18);
+			world.setBlockState(target, state, 18);
 			if (data != null) {
-				BeehiveBlockEntity tile = world.c(target);
+				BlockEntity tile = world.getBlockEntity(target);
 				if (tile != null) {
 					data.putInt("x", target.getX());
 					data.putInt("y", target.getY());
 					data.putInt("z", target.getZ());
 					if (tile instanceof KineticTileEntity)
 						((KineticTileEntity) tile).warnOfMovement();
-					tile.a(state, data);
+					tile.fromTag(state, data);
 				}
 			}
-			state.b().a(world, target, state, null, stack);
+			state.getBlock().onPlaced(world, target, state, null, stack);
 		}
 
 	}
@@ -189,19 +191,19 @@ public abstract class LaunchedItem {
 			super.readNBT(nbt);
 		}
 
-		public ForBelt(BlockPos start, BlockPos target, ItemCooldownManager stack, PistonHandler state, int length) {
+		public ForBelt(BlockPos start, BlockPos target, ItemStack stack, BlockState state, int length) {
 			super(start, target, stack, state, null);
 			this.length = length;
 		}
 
 		@Override
-		void place(GameMode world) {
+		void place(World world) {
 			// todo place belt
-			boolean isStart = state.c(BeltBlock.PART) == BeltPart.START;
+			boolean isStart = state.get(BeltBlock.PART) == BeltPart.START;
 			BlockPos offset = BeltBlock.nextSegmentPosition(state, BlockPos.ORIGIN, isStart);
 			int i = length - 1;
-			Axis axis = state.c(BeltBlock.HORIZONTAL_FACING).rotateYClockwise().getAxis();
-			world.a(target, AllBlocks.SHAFT.getDefaultState().a(AbstractShaftBlock.AXIS, axis));
+			Axis axis = state.get(BeltBlock.HORIZONTAL_FACING).rotateYClockwise().getAxis();
+			world.setBlockState(target, AllBlocks.SHAFT.getDefaultState().with(AbstractShaftBlock.AXIS, axis));
 			BeltConnectorItem
 					.createBelts(world, target, target.add(offset.getX() * i, offset.getY() * i, offset.getZ() * i));
 		}
@@ -209,21 +211,21 @@ public abstract class LaunchedItem {
 	}
 
 	public static class ForEntity extends LaunchedItem {
-		public apx entity;
+		public Entity entity;
 		private CompoundTag deferredTag;
 
 		ForEntity() {}
 
-		public ForEntity(BlockPos start, BlockPos target, ItemCooldownManager stack, apx entity) {
+		public ForEntity(BlockPos start, BlockPos target, ItemStack stack, Entity entity) {
 			super(start, target, stack);
 			this.entity = entity;
 		}
 
 		@Override
-		public boolean update(GameMode world) {
+		public boolean update(World world) {
 			if (deferredTag != null && entity == null) {
 				try {
-					Optional<apx> loadEntityUnchecked = EntityDimensions.a(deferredTag, world);
+					Optional<Entity> loadEntityUnchecked = EntityType.getEntityFromTag(deferredTag, world);
 					if (!loadEntityUnchecked.isPresent())
 						return true;
 					entity = loadEntityUnchecked.get();
@@ -251,8 +253,8 @@ public abstract class LaunchedItem {
 		}
 
 		@Override
-		void place(GameMode world) {
-			world.c(entity);
+		void place(World world) {
+			world.spawnEntity(entity);
 		}
 
 	}

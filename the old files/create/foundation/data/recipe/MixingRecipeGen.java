@@ -1,15 +1,16 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
-import com.simibubi.kinetic_api.AllFluids;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.AllTags;
-import com.simibubi.kinetic_api.content.contraptions.processing.HeatCondition;
-import net.minecraft.block.BellBlock;
+import com.simibubi.create.AllFluids;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.AllTags;
+import com.simibubi.create.content.contraptions.processing.HeatCondition;
+
+import net.minecraft.block.Blocks;
 import net.minecraft.data.DataGenerator;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.tag.EntityTypeTags;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.Items;
+import net.minecraft.tag.ItemTags;
 import net.minecraftforge.common.Tags;
 
 public class MixingRecipeGen extends ProcessingRecipeGen {
@@ -17,18 +18,18 @@ public class MixingRecipeGen extends ProcessingRecipeGen {
 	GeneratedRecipe
 
 		TEMP_LAVA = create("lava_from_cobble", b -> b.require(Tags.Items.COBBLESTONE)
-			.output(FlowableFluid.field_15901, 50)
+			.output(Fluids.LAVA, 50)
 			.requiresHeat(HeatCondition.SUPERHEATED)),
 
-		TEA = create("tea", b -> b.require(FlowableFluid.c, 250)
+		TEA = create("tea", b -> b.require(Fluids.WATER, 250)
 			.require(AllTags.forgeFluidTag("milk"), 250)
-			.require(EntityTypeTags.G)
+			.require(ItemTags.LEAVES)
 			.output(AllFluids.TEA.get(), 500)
 			.requiresHeat(HeatCondition.HEATED)),
 
 		CHOCOLATE = create("chocolate", b -> b.require(AllTags.forgeFluidTag("milk"), 250)
-			.require(AliasedBlockItem.mM)
-			.require(AliasedBlockItem.ms)
+			.require(Items.SUGAR)
+			.require(Items.COCOA_BEANS)
 			.output(AllFluids.CHOCOLATE.get(), 250)
 			.requiresHeat(HeatCondition.HEATED)),
 
@@ -52,11 +53,11 @@ public class MixingRecipeGen extends ProcessingRecipeGen {
 			.output(AllItems.CHROMATIC_COMPOUND.get(), 1)
 			.requiresHeat(HeatCondition.SUPERHEATED)),
 
-		ANDESITE_ALLOY = create("andesite_alloy", b -> b.require(BellBlock.BELL_LIP_SHAPE)
+		ANDESITE_ALLOY = create("andesite_alloy", b -> b.require(Blocks.ANDESITE)
 			.require(AllTags.forgeItemTag("nuggets/iron"))
 			.output(I.andesite(), 1)),
 
-		ANDESITE_ALLOY_FROM_ZINC = create("andesite_alloy_from_zinc", b -> b.require(BellBlock.BELL_LIP_SHAPE)
+		ANDESITE_ALLOY_FROM_ZINC = create("andesite_alloy_from_zinc", b -> b.require(Blocks.ANDESITE)
 			.require(I.zincNugget())
 			.output(I.andesite(), 1))
 

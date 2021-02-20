@@ -1,20 +1,20 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
-import net.minecraft.client.render.BufferVertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 
 public class MatrixStacker {
 
-	static EntityHitResult center = VecHelper.getCenterOf(BlockPos.ORIGIN);
+	static Vec3d center = VecHelper.getCenterOf(BlockPos.ORIGIN);
 	static MatrixStacker instance;
 
-	BufferVertexConsumer ms;
+	MatrixStack ms;
 
-	public static MatrixStacker of(BufferVertexConsumer ms) {
+	public static MatrixStacker of(MatrixStack ms) {
 		if (instance == null)
 			instance = new MatrixStacker();
 		instance.ms = ms;
@@ -48,17 +48,17 @@ public class MatrixStacker {
 	}
 
 	public MatrixStacker translate(Vec3i vec) {
-		ms.a(vec.getX(), vec.getY(), vec.getZ());
+		ms.translate(vec.getX(), vec.getY(), vec.getZ());
 		return this;
 	}
 
-	public MatrixStacker translate(EntityHitResult vec) {
-		ms.a(vec.entity, vec.c, vec.d);
+	public MatrixStacker translate(Vec3d vec) {
+		ms.translate(vec.x, vec.y, vec.z);
 		return this;
 	}
 
-	public MatrixStacker translateBack(EntityHitResult vec) {
-		ms.a(-vec.entity, -vec.c, -vec.d);
+	public MatrixStacker translateBack(Vec3d vec) {
+		ms.translate(-vec.x, -vec.y, -vec.z);
 		return this;
 	}
 
@@ -68,14 +68,14 @@ public class MatrixStacker {
 		float xNudge = (((float) (randomBits >> 16 & 7L) + 0.5F) / 8.0F - 0.5F) * 0.004F;
 		float yNudge = (((float) (randomBits >> 20 & 7L) + 0.5F) / 8.0F - 0.5F) * 0.004F;
 		float zNudge = (((float) (randomBits >> 24 & 7L) + 0.5F) / 8.0F - 0.5F) * 0.004F;
-		ms.a(xNudge, yNudge, zNudge);
+		ms.translate(xNudge, yNudge, zNudge);
 		return this;
 	}
 
 	private MatrixStacker multiply(Vector3f axis, double angle) {
 		if (angle == 0)
 			return this;
-		ms.a(axis.getDegreesQuaternion((float) angle));
+		ms.multiply(axis.getDegreesQuaternion((float) angle));
 		return this;
 	}
 

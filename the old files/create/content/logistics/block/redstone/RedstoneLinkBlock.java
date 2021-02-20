@@ -1,50 +1,50 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
-import bnx;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.FunnelBlock;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import com.simibubi.kinetic_api.foundation.block.ProperDirectionalBlock;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import dcg;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.util.ItemScatterer;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.block.ProperDirectionalBlock;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public class RedstoneLinkBlock extends ProperDirectionalBlock implements ITE<RedstoneLinkTileEntity> {
 
-	public static final BedPart POWERED = BambooLeaves.w;
-	public static final BedPart RECEIVER = BedPart.a("receiver");
+	public static final BooleanProperty POWERED = Properties.POWERED;
+	public static final BooleanProperty RECEIVER = BooleanProperty.of("receiver");
 
-	public RedstoneLinkBlock(c properties) {
+	public RedstoneLinkBlock(Settings properties) {
 		super(properties);
-		j(n().a(POWERED, false)
-			.a(RECEIVER, false));
+		setDefaultState(getDefaultState().with(POWERED, false)
+			.with(RECEIVER, false));
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, BeetrootsBlock blockIn, BlockPos fromPos,
+	public void neighborUpdate(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos,
 		boolean isMoving) {
-		Direction blockFacing = state.c(SHAPE);
+		Direction blockFacing = state.get(FACING);
 
 		if (fromPos.equals(pos.offset(blockFacing.getOpposite()))) {
-			if (!a(state, worldIn, pos)) {
-				worldIn.b(pos, true);
+			if (!canPlaceAt(state, worldIn, pos)) {
+				worldIn.breakBlock(pos, true);
 				return;
 			}
 		}
@@ -53,50 +53,50 @@ public class RedstoneLinkBlock extends ProperDirectionalBlock implements ITE<Red
 	}
 
 	@Override
-	public void b(PistonHandler state, GameMode worldIn, BlockPos pos, PistonHandler oldState, boolean isMoving) {
-		updateTransmittedSignal(state, worldIn, pos, state.c(SHAPE));
+	public void onBlockAdded(BlockState state, World worldIn, BlockPos pos, BlockState oldState, boolean isMoving) {
+		updateTransmittedSignal(state, worldIn, pos, state.get(FACING));
 	}
 
-	private void updateTransmittedSignal(PistonHandler state, GameMode worldIn, BlockPos pos, Direction blockFacing) {
-		if (worldIn.v)
+	private void updateTransmittedSignal(BlockState state, World worldIn, BlockPos pos, Direction blockFacing) {
+		if (worldIn.isClient)
 			return;
-		if (state.c(RECEIVER))
+		if (state.get(RECEIVER))
 			return;
 
 		int power = getPower(worldIn, pos);
 
-		boolean previouslyPowered = state.c(POWERED);
+		boolean previouslyPowered = state.get(POWERED);
 		if (previouslyPowered != power > 0)
-			worldIn.a(pos, state.a(POWERED), 2);
+			worldIn.setBlockState(pos, state.cycle(POWERED), 2);
 
 		int transmit = power;
 		withTileEntityDo(worldIn, pos, te -> te.transmit(transmit));
 	}
 
-	private int getPower(GameMode worldIn, BlockPos pos) {
+	private int getPower(World worldIn, BlockPos pos) {
 		int power = 0;
 		for (Direction direction : Iterate.directions)
-			power = Math.max(worldIn.b(pos.offset(direction), direction), power);
+			power = Math.max(worldIn.getEmittedRedstonePower(pos.offset(direction), direction), power);
 		for (Direction direction : Iterate.directions)
-			power = Math.max(worldIn.b(pos.offset(direction), Direction.UP), power);
+			power = Math.max(worldIn.getEmittedRedstonePower(pos.offset(direction), Direction.UP), power);
 		return power;
 	}
 
 	@Override
-	public boolean b_(PistonHandler state) {
-		return state.c(POWERED) && state.c(RECEIVER);
+	public boolean emitsRedstonePower(BlockState state) {
+		return state.get(POWERED) && state.get(RECEIVER);
 	}
 
 	@Override
-	public int b(PistonHandler blockState, MobSpawnerLogic blockAccess, BlockPos pos, Direction side) {
-		if (side != blockState.c(SHAPE))
+	public int getStrongRedstonePower(BlockState blockState, BlockView blockAccess, BlockPos pos, Direction side) {
+		if (side != blockState.get(FACING))
 			return 0;
-		return a(blockState, blockAccess, pos, side);
+		return getWeakRedstonePower(blockState, blockAccess, pos, side);
 	}
 
 	@Override
-	public int a(PistonHandler state, MobSpawnerLogic blockAccess, BlockPos pos, Direction side) {
-		if (!state.c(RECEIVER))
+	public int getWeakRedstonePower(BlockState state, BlockView blockAccess, BlockPos pos, Direction side) {
+		if (!state.get(RECEIVER))
 			return 0;
 		try {
 			RedstoneLinkTileEntity tileEntity = getTileEntity(blockAccess, pos);
@@ -107,82 +107,80 @@ public class RedstoneLinkBlock extends ProperDirectionalBlock implements ITE<Red
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(POWERED, RECEIVER);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(POWERED, RECEIVER);
+		super.appendProperties(builder);
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.REDSTONE_LINK.create();
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode worldIn, BlockPos pos, PlayerAbilities player, ItemScatterer handIn,
-		dcg hit) {
-		if (player.bt())
+	public ActionResult onUse(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn,
+		BlockHitResult hit) {
+		if (player.isSneaking())
 			return toggleMode(state, worldIn, pos);
-		return Difficulty.PASS;
+		return ActionResult.PASS;
 	}
 
-	public Difficulty toggleMode(PistonHandler state, GameMode worldIn, BlockPos pos) {
-		if (worldIn.v)
-			return Difficulty.SUCCESS;
+	public ActionResult toggleMode(BlockState state, World worldIn, BlockPos pos) {
+		if (worldIn.isClient)
+			return ActionResult.SUCCESS;
 		try {
 			RedstoneLinkTileEntity te = getTileEntity(worldIn, pos);
-			Boolean wasReceiver = state.c(RECEIVER);
-			boolean blockPowered = worldIn.r(pos);
-			worldIn.a(pos, state.a(RECEIVER)
-				.a(POWERED, blockPowered), 3);
+			Boolean wasReceiver = state.get(RECEIVER);
+			boolean blockPowered = worldIn.isReceivingRedstonePower(pos);
+			worldIn.setBlockState(pos, state.cycle(RECEIVER)
+				.with(POWERED, blockPowered), 3);
 			te.transmit(wasReceiver ? 0 : getPower(worldIn, pos));
-			return Difficulty.SUCCESS;
+			return ActionResult.SUCCESS;
 		} catch (TileEntityException e) {
 		}
-		return Difficulty.PASS;
+		return ActionResult.PASS;
 	}
 
 	@Override
-	public Difficulty onWrenched(PistonHandler state, bnx context) {
-		if (toggleMode(state, context.p(), context.a()) == Difficulty.SUCCESS)
-			return Difficulty.SUCCESS;
+	public ActionResult onWrenched(BlockState state, ItemUsageContext context) {
+		if (toggleMode(state, context.getWorld(), context.getBlockPos()) == ActionResult.SUCCESS)
+			return ActionResult.SUCCESS;
 		return super.onWrenched(state, context);
 	}
 
 	@Override
-	public PistonHandler getRotatedBlockState(PistonHandler originalState, Direction _targetedFace) {
+	public BlockState getRotatedBlockState(BlockState originalState, Direction _targetedFace) {
 		return originalState;
 	}
 
 	@Override
-	public boolean canConnectRedstone(PistonHandler state, MobSpawnerLogic world, BlockPos pos, Direction side) {
+	public boolean canConnectRedstone(BlockState state, BlockView world, BlockPos pos, Direction side) {
 		return side != null;
 	}
 
 	@Override
-	public boolean a(PistonHandler state, ItemConvertible worldIn, BlockPos pos) {
-		BlockPos neighbourPos = pos.offset(state.c(SHAPE)
+	public boolean canPlaceAt(BlockState state, WorldView worldIn, BlockPos pos) {
+		BlockPos neighbourPos = pos.offset(state.get(FACING)
 			.getOpposite());
-		PistonHandler neighbour = worldIn.d_(neighbourPos);
-		if (FunnelBlock.isFunnel(neighbour))
-			return true;
-		return BlockHelper.hasBlockSolidSide(neighbour, worldIn, neighbourPos, state.c(SHAPE));
+		BlockState neighbour = worldIn.getBlockState(neighbourPos);
+		return !neighbour.getMaterial().isReplaceable();
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		PistonHandler state = n();
-		state = state.a(SHAPE, context.j());
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		BlockState state = getDefaultState();
+		state = state.with(FACING, context.getSide());
 		return state;
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
-		return AllShapes.REDSTONE_BRIDGE.get(state.c(SHAPE));
+	public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
+		return AllShapes.REDSTONE_BRIDGE.get(state.get(FACING));
 	}
 
 	@Override

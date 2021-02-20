@@ -1,95 +1,96 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.processing.EmptyingByBasin;
-import com.simibubi.kinetic_api.content.contraptions.wrench.IWrenchable;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import dcg;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.inventory.Inventory;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.processing.EmptyingByBasin;
+import com.simibubi.create.content.contraptions.wrench.IWrenchable;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
-public class ItemDrainBlock extends BeetrootsBlock implements IWrenchable, ITE<ItemDrainTileEntity> {
+public class ItemDrainBlock extends Block implements IWrenchable, ITE<ItemDrainTileEntity> {
 
-	public ItemDrainBlock(c p_i48440_1_) {
+	public ItemDrainBlock(Settings p_i48440_1_) {
 		super(p_i48440_1_);
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode worldIn, BlockPos pos, PlayerAbilities player, ItemScatterer handIn,
-		dcg hit) {
-		ItemCooldownManager heldItem = player.b(handIn);
+	public ActionResult onUse(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn,
+		BlockHitResult hit) {
+		ItemStack heldItem = player.getStackInHand(handIn);
 
 		try {
 			ItemDrainTileEntity te = getTileEntity(worldIn, pos);
-			if (!heldItem.a()) {
+			if (!heldItem.isEmpty()) {
 				te.internalTank.allowInsertion();
-				Difficulty tryExchange = tryExchange(worldIn, player, handIn, heldItem, te);
+				ActionResult tryExchange = tryExchange(worldIn, player, handIn, heldItem, te);
 				te.internalTank.forbidInsertion();
-				if (tryExchange.a())
+				if (tryExchange.isAccepted())
 					return tryExchange;
 			}
 			
-			ItemCooldownManager heldItemStack = te.getHeldItemStack();
-			if (!worldIn.v && !heldItemStack.a()) {
-				player.bm.a(worldIn, heldItemStack);
+			ItemStack heldItemStack = te.getHeldItemStack();
+			if (!worldIn.isClient && !heldItemStack.isEmpty()) {
+				player.inventory.offerOrDrop(worldIn, heldItemStack);
 				te.heldItem = null;
 				te.notifyUpdate();
 			}
-			return Difficulty.SUCCESS;
+			return ActionResult.SUCCESS;
 		} catch (TileEntityException e) {
 		}
 
-		return Difficulty.PASS;
+		return ActionResult.PASS;
 	}
 
-	protected Difficulty tryExchange(GameMode worldIn, PlayerAbilities player, ItemScatterer handIn, ItemCooldownManager heldItem,
+	protected ActionResult tryExchange(World worldIn, PlayerEntity player, Hand handIn, ItemStack heldItem,
 		ItemDrainTileEntity te) {
 		if (FluidHelper.tryEmptyItemIntoTE(worldIn, player, handIn, heldItem, te))
-			return Difficulty.SUCCESS;
+			return ActionResult.SUCCESS;
 		if (EmptyingByBasin.canItemBeEmptied(worldIn, heldItem))
-			return Difficulty.SUCCESS;
-		return Difficulty.PASS;
+			return ActionResult.SUCCESS;
+		return ActionResult.PASS;
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler p_220053_1_, MobSpawnerLogic p_220053_2_, BlockPos p_220053_3_,
-		ArrayVoxelShape p_220053_4_) {
+	public VoxelShape getOutlineShape(BlockState p_220053_1_, BlockView p_220053_2_, BlockPos p_220053_3_,
+		ShapeContext p_220053_4_) {
 		return AllShapes.CASING_13PX.get(Direction.UP);
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, PistonHandler newState, boolean isMoving) {
-		if (!state.hasTileEntity() || state.b() == newState.b())
+	public void onStateReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+		if (!state.hasTileEntity() || state.getBlock() == newState.getBlock())
 			return;
 		withTileEntityDo(worldIn, pos, te -> {
-			ItemCooldownManager heldItemStack = te.getHeldItemStack();
-			if (!heldItemStack.a())
-				Inventory.a(worldIn, pos.getX(), pos.getY(), pos.getZ(), heldItemStack);
+			ItemStack heldItemStack = te.getHeldItemStack();
+			if (!heldItemStack.isEmpty())
+				ItemScatterer.spawn(worldIn, pos.getX(), pos.getY(), pos.getZ(), heldItemStack);
 		});
-		worldIn.o(pos);
+		worldIn.removeBlockEntity(pos);
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.ITEM_DRAIN.create();
 	}
 

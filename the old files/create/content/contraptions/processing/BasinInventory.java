@@ -1,7 +1,8 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
-import com.simibubi.kinetic_api.foundation.item.SmartInventory;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.foundation.item.SmartInventory;
+
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 public class BasinInventory extends SmartInventory {
@@ -11,7 +12,7 @@ public class BasinInventory extends SmartInventory {
 	}
 	
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
 		// Only insert if no other slot already has a stack of this item
 		for (int i = 0; i < getSlots(); i++) 
 			if (i != slot && ItemHandlerHelper.canItemStacksStack(stack, inv.getStackInSlot(i)))

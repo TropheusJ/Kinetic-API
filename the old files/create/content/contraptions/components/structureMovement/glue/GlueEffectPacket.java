@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.glue;
+package com.simibubi.create.content.contraptions.components.structureMovement.glue;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -40,11 +40,11 @@ public class GlueEffectPacket extends SimplePacketBase {
 
 	@Environment(EnvType.CLIENT)
 	public void handle(Supplier<Context> context) {
-		context.get().enqueueWork(() -> DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-			KeyBinding mc = KeyBinding.B();
-			if (!mc.s.cA().isWithinDistance(pos, 100))
+		context.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+			MinecraftClient mc = MinecraftClient.getInstance();
+			if (!mc.player.getBlockPos().isWithinDistance(pos, 100))
 				return;
-			SuperGlueItem.spawnParticles(mc.r, pos, direction, fullBlock);
+			SuperGlueItem.spawnParticles(mc.world, pos, direction, fullBlock);
 		}));
 		context.get().setPacketHandled(true);
 	}

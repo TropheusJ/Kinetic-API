@@ -1,26 +1,26 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper;
+package com.simibubi.create.content.curiosities.zapper;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.content.curiosities.zapper.ZapperRenderHandler.LaserBeam;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
-import net.minecraft.client.options.KeyBinding;
+import com.simibubi.create.content.curiosities.zapper.ZapperRenderHandler.LaserBeam;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
 
 public class ZapperBeamPacket extends SimplePacketBase {
 
-	public EntityHitResult start;
-	public EntityHitResult target;
-	public ItemScatterer hand;
+	public Vec3d start;
+	public Vec3d target;
+	public Hand hand;
 	public boolean self;
 
-	public ZapperBeamPacket(EntityHitResult start, EntityHitResult target, ItemScatterer hand, boolean self) {
+	public ZapperBeamPacket(Vec3d start, Vec3d target, Hand hand, boolean self) {
 		this.start = start;
 		this.target = target;
 		this.hand = hand;
@@ -28,29 +28,29 @@ public class ZapperBeamPacket extends SimplePacketBase {
 	}
 	
 	public ZapperBeamPacket(PacketByteBuf buffer) {
-		start = new EntityHitResult(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
-		target = new EntityHitResult(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
-		hand = buffer.readBoolean()? ItemScatterer.RANDOM : ItemScatterer.b;
+		start = new Vec3d(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
+		target = new Vec3d(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
+		hand = buffer.readBoolean()? Hand.MAIN_HAND : Hand.OFF_HAND;
 		self = buffer.readBoolean();
 	}
 
 	public void write(PacketByteBuf buffer) {
-		buffer.writeDouble(start.entity);
-		buffer.writeDouble(start.c);
-		buffer.writeDouble(start.d);
-		buffer.writeDouble(target.entity);
-		buffer.writeDouble(target.c);
-		buffer.writeDouble(target.d);
+		buffer.writeDouble(start.x);
+		buffer.writeDouble(start.y);
+		buffer.writeDouble(start.z);
+		buffer.writeDouble(target.x);
+		buffer.writeDouble(target.y);
+		buffer.writeDouble(target.z);
 		
-		buffer.writeBoolean(hand == ItemScatterer.RANDOM);
+		buffer.writeBoolean(hand == Hand.MAIN_HAND);
 		buffer.writeBoolean(self);
 	}
 
 	public void handle(Supplier<Context> context) {
-		context.get().enqueueWork(() -> DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-			if (KeyBinding.B().s.cz().f(start) > 100)
+		context.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+			if (MinecraftClient.getInstance().player.getPos().distanceTo(start) > 100)
 				return;
-			ZapperRenderHandler.addBeam(new LaserBeam(start, target).followPlayer(self, hand == ItemScatterer.RANDOM));
+			ZapperRenderHandler.addBeam(new LaserBeam(start, target).followPlayer(self, hand == Hand.MAIN_HAND));
 			
 			if (self)
 				ZapperRenderHandler.shoot(hand);

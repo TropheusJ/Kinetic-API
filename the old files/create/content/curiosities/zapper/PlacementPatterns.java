@@ -1,13 +1,14 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper;
+package com.simibubi.create.content.curiosities.zapper;
 
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
 
 import com.google.common.base.Predicates;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 
@@ -28,8 +29,8 @@ public enum PlacementPatterns {
 		this.icon = icon;
 	}
 
-	public static void applyPattern(List<BlockPos> blocksIn, ItemCooldownManager stack) {
-		CompoundTag tag = stack.o();
+	public static void applyPattern(List<BlockPos> blocksIn, ItemStack stack) {
+		CompoundTag tag = stack.getTag();
 		PlacementPatterns pattern =
 			!tag.contains("Pattern") ? Solid : valueOf(tag.getString("Pattern"));
 		Random r = new Random();

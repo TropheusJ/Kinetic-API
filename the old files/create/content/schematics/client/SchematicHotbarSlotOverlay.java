@@ -1,18 +1,18 @@
-package com.simibubi.kinetic_api.content.schematics.client;
+package com.simibubi.create.content.schematics.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import dew;
-import dkt;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.util.Window;
+import net.minecraft.client.util.math.MatrixStack;
 
-public class SchematicHotbarSlotOverlay extends dkt {
+public class SchematicHotbarSlotOverlay extends DrawableHelper {
 	
-	public void renderOn(BufferVertexConsumer matrixStack, int slot) {
-		dew mainWindow = KeyBinding.B().aB();
-		int x = mainWindow.o() / 2 - 88;
-		int y = mainWindow.p() - 19;
+	public void renderOn(MatrixStack matrixStack, int slot) {
+		Window mainWindow = MinecraftClient.getInstance().getWindow();
+		int x = mainWindow.getScaledWidth() / 2 - 88;
+		int y = mainWindow.getScaledHeight() - 19;
 		RenderSystem.enableAlphaTest();
 		RenderSystem.enableDepthTest();
 		RenderSystem.enableBlend();

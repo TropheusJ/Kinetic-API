@@ -1,63 +1,65 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
-import static net.minecraft.block.HayBlock.aq;
+import static net.minecraft.block.HorizontalBlock.HORIZONTAL_FACING;
 
-import bnx;
-import com.simibubi.kinetic_api.content.contraptions.components.actors.PloughBlock.PloughFakePlayer;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import dcg;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.LecternBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.AliasedBlockItem;
+import com.simibubi.create.content.contraptions.components.actors.PloughBlock.PloughFakePlayer;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.FarmlandBlock;
+import net.minecraft.block.FluidBlock;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.Items;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult.Type;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.BlockView.a;
-import net.minecraft.world.BlockView.b;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.RaycastContext.FluidHandling;
+import net.minecraft.world.RaycastContext.ShapeType;
+import net.minecraft.world.World;
 
 public class PloughMovementBehaviour extends BlockBreakingMovementBehaviour {
 
 	@Override
 	public boolean isActive(MovementContext context) {
-		return !VecHelper.isVecPointingTowards(context.relativeMotion, context.state.c(aq)
+		return !VecHelper.isVecPointingTowards(context.relativeMotion, context.state.get(FACING)
 			.getOpposite());
 	}
 
 	@Override
 	public void visitNewPosition(MovementContext context, BlockPos pos) {
 		super.visitNewPosition(context, pos);
-		GameMode world = context.world;
-		if (world.v)
+		World world = context.world;
+		if (world.isClient)
 			return;
 		BlockPos below = pos.down();
-		if (!world.p(below))
+		if (!world.canSetBlock(below))
 			return;
 
-		EntityHitResult vec = VecHelper.getCenterOf(pos);
+		Vec3d vec = VecHelper.getCenterOf(pos);
 		PloughFakePlayer player = getPlayer(context);
 
 		if (player == null)
 			return;
 
-		dcg ray = world
-			.a(new BlockView(vec, vec.b(0, -1, 0), a.b, b.a, player));
-		if (ray.c() != net.minecraft.util.math.Box.a.b)
+		BlockHitResult ray = world
+			.raycast(new RaycastContext(vec, vec.add(0, -1, 0), ShapeType.OUTLINE, FluidHandling.NONE, player));
+		if (ray.getType() != Type.BLOCK)
 			return;
 
-		bnx ctx = new bnx(player, ItemScatterer.RANDOM, ray);
-		new ItemCooldownManager(AliasedBlockItem.kJ).a(ctx);
+		ItemUsageContext ctx = new ItemUsageContext(player, Hand.MAIN_HAND, ray);
+		new ItemStack(Items.DIAMOND_HOE).useOnBlock(ctx);
 	}
 
 	@Override
-	public EntityHitResult getActiveAreaOffset(MovementContext context) {
-		return EntityHitResult.b(context.state.c(aq)
-			.getVector()).a(.45);
+	public Vec3d getActiveAreaOffset(MovementContext context) {
+		return Vec3d.of(context.state.get(FACING)
+			.getVector()).multiply(.45);
 	}
 
 	@Override
@@ -66,24 +68,24 @@ public class PloughMovementBehaviour extends BlockBreakingMovementBehaviour {
 	}
 
 	@Override
-	public boolean canBreak(GameMode world, BlockPos breakingPos, PistonHandler state) {
-		return state.k(world, breakingPos)
-			.b() && !(state.b() instanceof LecternBlock)
-			&& !(world.d_(breakingPos.down())
-				.b() instanceof BlockEntityProvider);
+	public boolean canBreak(World world, BlockPos breakingPos, BlockState state) {
+		return state.getCollisionShape(world, breakingPos)
+			.isEmpty() && !(state.getBlock() instanceof FluidBlock)
+			&& !(world.getBlockState(breakingPos.down())
+				.getBlock() instanceof FarmlandBlock);
 	}
 
 	@Override
 	public void stopMoving(MovementContext context) {
 		super.stopMoving(context);
 		if (context.temporaryData instanceof PloughFakePlayer)
-			((PloughFakePlayer) context.temporaryData).ac();
+			((PloughFakePlayer) context.temporaryData).remove();
 	}
 
 	private PloughFakePlayer getPlayer(MovementContext context) {
 		if (!(context.temporaryData instanceof PloughFakePlayer) && context.world != null) {
 			PloughFakePlayer player = new PloughFakePlayer((ServerWorld) context.world);
-			player.a(ItemScatterer.RANDOM, new ItemCooldownManager(AliasedBlockItem.kJ));
+			player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.DIAMOND_HOE));
 			context.temporaryData = player;
 		}
 		return (PloughFakePlayer) context.temporaryData;

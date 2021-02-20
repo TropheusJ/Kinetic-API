@@ -1,17 +1,19 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter;
+package com.simibubi.create.content.logistics.item.filter;
 
 import java.util.Arrays;
 import java.util.List;
+
+import com.simibubi.create.content.logistics.item.filter.FilterScreenPacket.Option;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.gui.widgets.IconButton;
+import com.simibubi.create.foundation.gui.widgets.Indicator;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import bfs;
-import com.simibubi.kinetic_api.content.logistics.item.filter.FilterScreenPacket.Option;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.gui.widgets.IconButton;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Indicator;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
 
 public class FilterScreen extends AbstractFilterScreen<FilterContainer> {
 
@@ -32,15 +34,15 @@ public class FilterScreen extends AbstractFilterScreen<FilterContainer> {
 	private Indicator whitelistIndicator, blacklistIndicator;
 	private Indicator respectNBTIndicator, ignoreNBTIndicator;
 
-	public FilterScreen(FilterContainer container, bfs inv, Text title) {
+	public FilterScreen(FilterContainer container, PlayerInventory inv, Text title) {
 		super(container, inv, title, AllGuiTextures.FILTER);
 	}
 
 	@Override
-	protected void b() {
-		super.b();
-		int x = w;
-		int y = x;
+	protected void init() {
+		super.init();
+		int x = x;
+		int y = y;
 
 		blacklist = new IconButton(x + 18, y + 73, AllIcons.I_BLACKLIST);
 		blacklist.setToolTip(denyN);
@@ -61,32 +63,32 @@ public class FilterScreen extends AbstractFilterScreen<FilterContainer> {
 	}
 
 	@Override
-	public boolean a(double x, double y, int button) {
-		boolean mouseClicked = super.a(x, y, button);
+	public boolean mouseClicked(double x, double y, int button) {
+		boolean mouseClicked = super.mouseClicked(x, y, button);
 
 		if (button != 0)
 			return mouseClicked;
 
-		if (blacklist.g()) {
-			t.blacklist = true;
+		if (blacklist.isHovered()) {
+			handler.blacklist = true;
 			sendOptionUpdate(Option.BLACKLIST);
 			return true;
 		}
 
-		if (whitelist.g()) {
-			t.blacklist = false;
+		if (whitelist.isHovered()) {
+			handler.blacklist = false;
 			sendOptionUpdate(Option.WHITELIST);
 			return true;
 		}
 
-		if (respectNBT.g()) {
-			t.respectNBT = true;
+		if (respectNBT.isHovered()) {
+			handler.respectNBT = true;
 			sendOptionUpdate(Option.RESPECT_DATA);
 			return true;
 		}
 
-		if (ignoreNBT.g()) {
-			t.respectNBT = false;
+		if (ignoreNBT.isHovered()) {
+			handler.respectNBT = false;
 			sendOptionUpdate(Option.IGNORE_DATA);
 			return true;
 		}
@@ -107,26 +109,26 @@ public class FilterScreen extends AbstractFilterScreen<FilterContainer> {
 	@Override
 	protected boolean isButtonEnabled(IconButton button) {
 		if (button == blacklist)
-			return !t.blacklist;
+			return !handler.blacklist;
 		if (button == whitelist)
-			return t.blacklist;
+			return handler.blacklist;
 		if (button == respectNBT)
-			return !t.respectNBT;
+			return !handler.respectNBT;
 		if (button == ignoreNBT)
-			return t.respectNBT;
+			return handler.respectNBT;
 		return true;
 	}
 
 	@Override
 	protected boolean isIndicatorOn(Indicator indicator) {
 		if (indicator == blacklistIndicator)
-			return t.blacklist;
+			return handler.blacklist;
 		if (indicator == whitelistIndicator)
-			return !t.blacklist;
+			return !handler.blacklist;
 		if (indicator == respectNBTIndicator)
-			return t.respectNBT;
+			return handler.respectNBT;
 		if (indicator == ignoreNBTIndicator)
-			return !t.respectNBT;
+			return !handler.respectNBT;
 		return false;
 	}
 

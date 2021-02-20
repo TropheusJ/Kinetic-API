@@ -1,14 +1,16 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter.attribute.astralsorcery;
+package com.simibubi.create.content.logistics.item.filter.attribute.astralsorcery;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.content.logistics.item.filter.ItemAttribute;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import com.simibubi.kinetic_api.content.logistics.item.filter.ItemAttribute;
 
 public class AstralSorceryPerkGemAttribute implements ItemAttribute {
     String traitName;
@@ -18,7 +20,7 @@ public class AstralSorceryPerkGemAttribute implements ItemAttribute {
     }
 
     @Override
-    public boolean appliesTo(ItemCooldownManager itemStack) {
+    public boolean appliesTo(ItemStack itemStack) {
         for (Tag trait : extractTraitList(itemStack)) {
             if(((CompoundTag) trait).getString("type").equals(this.traitName))
                 return true;
@@ -27,7 +29,7 @@ public class AstralSorceryPerkGemAttribute implements ItemAttribute {
     }
 
     @Override
-    public List<ItemAttribute> listAttributesOf(ItemCooldownManager itemStack) {
+    public List<ItemAttribute> listAttributesOf(ItemStack itemStack) {
         ListTag traits = extractTraitList(itemStack);
         List<ItemAttribute> atts = new ArrayList<>();
         for (int i = 0; i < traits.size(); i++) {
@@ -58,7 +60,7 @@ public class AstralSorceryPerkGemAttribute implements ItemAttribute {
         return new AstralSorceryPerkGemAttribute(nbt.getString("type"));
     }
 
-    private ListTag extractTraitList(ItemCooldownManager stack) {
-        return stack.o() != null ? stack.o().getCompound("astralsorcery").getList("attribute_modifiers", 10) : new ListTag();
+    private ListTag extractTraitList(ItemStack stack) {
+        return stack.getTag() != null ? stack.getTag().getCompound("astralsorcery").getList("attribute_modifiers", 10) : new ListTag();
     }
 }

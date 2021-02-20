@@ -1,22 +1,23 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.sync;
+package com.simibubi.create.content.contraptions.components.structureMovement.sync;
 
 import java.util.function.Supplier;
-import apx;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
+
+import com.simibubi.create.foundation.networking.SimplePacketBase;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
 
 public class LimbSwingUpdatePacket extends SimplePacketBase {
 
 	private int entityId;
-	private EntityHitResult position;
+	private Vec3d position;
 	private float limbSwing;
 
-	public LimbSwingUpdatePacket(int entityId, EntityHitResult position, float limbSwing) {
+	public LimbSwingUpdatePacket(int entityId, Vec3d position, float limbSwing) {
 		this.entityId = entityId;
 		this.position = position;
 		this.limbSwing = limbSwing;
@@ -24,16 +25,16 @@ public class LimbSwingUpdatePacket extends SimplePacketBase {
 
 	public LimbSwingUpdatePacket(PacketByteBuf buffer) {
 		entityId = buffer.readInt();
-		position = new EntityHitResult(buffer.readFloat(), buffer.readFloat(), buffer.readFloat());
+		position = new Vec3d(buffer.readFloat(), buffer.readFloat(), buffer.readFloat());
 		limbSwing = buffer.readFloat();
 	}
 
 	@Override
 	public void write(PacketByteBuf buffer) {
 		buffer.writeInt(entityId);
-		buffer.writeFloat((float) position.entity);
-		buffer.writeFloat((float) position.c);
-		buffer.writeFloat((float) position.d);
+		buffer.writeFloat((float) position.x);
+		buffer.writeFloat((float) position.y);
+		buffer.writeFloat((float) position.z);
 		buffer.writeFloat(limbSwing);
 	}
 
@@ -41,17 +42,17 @@ public class LimbSwingUpdatePacket extends SimplePacketBase {
 	public void handle(Supplier<Context> context) {
 		context.get()
 			.enqueueWork(() -> {
-				DragonHeadEntityModel world = KeyBinding.B().r;
+				ClientWorld world = MinecraftClient.getInstance().world;
 				if (world == null)
 					return;
-				apx entity = world.a(entityId);
+				Entity entity = world.getEntityById(entityId);
 				if (entity == null)
 					return;
 				CompoundTag data = entity.getPersistentData();
 				data.putInt("LastOverrideLimbSwingUpdate", 0);
 				data.putFloat("OverrideLimbSwing", limbSwing);
-				entity.a(position.entity, position.c, position.d, entity.p,
-					entity.q, 2, false);
+				entity.updateTrackedPositionAndAngles(position.x, position.y, position.z, entity.yaw,
+					entity.pitch, 2, false);
 			});
 		context.get()
 			.setPacketHandled(true);

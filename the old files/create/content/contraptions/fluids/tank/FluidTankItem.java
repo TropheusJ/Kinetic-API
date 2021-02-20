@@ -1,41 +1,41 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.tank;
+package com.simibubi.create.content.contraptions.fluids.tank;
 
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.BannerItem;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.potion.PotionUtil;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
-public class FluidTankItem extends BannerItem {
+public class FluidTankItem extends BlockItem {
 
-	public FluidTankItem(BeetrootsBlock p_i48527_1_, a p_i48527_2_) {
+	public FluidTankItem(Block p_i48527_1_, Settings p_i48527_2_) {
 		super(p_i48527_1_, p_i48527_2_);
 	}
 
 	@Override
-	public Difficulty a(PotionUtil ctx) {
-		Difficulty initialResult = super.a(ctx);
-		if (!initialResult.a())
+	public ActionResult place(ItemPlacementContext ctx) {
+		ActionResult initialResult = super.place(ctx);
+		if (!initialResult.isAccepted())
 			return initialResult;
 		tryMultiPlace(ctx);
 		return initialResult;
 	}
 
 	@Override
-	protected boolean a(BlockPos p_195943_1_, GameMode p_195943_2_, PlayerAbilities p_195943_3_,
-		ItemCooldownManager p_195943_4_, PistonHandler p_195943_5_) {
-		MinecraftServer minecraftserver = p_195943_2_.l();
+	protected boolean postPlacement(BlockPos p_195943_1_, World p_195943_2_, PlayerEntity p_195943_3_,
+		ItemStack p_195943_4_, BlockState p_195943_5_) {
+		MinecraftServer minecraftserver = p_195943_2_.getServer();
 		if (minecraftserver == null)
 			return false;
-		CompoundTag nbt = p_195943_4_.b("BlockEntityTag");
+		CompoundTag nbt = p_195943_4_.getSubTag("BlockEntityTag");
 		if (nbt != null) {
 			nbt.remove("Luminosity");
 			nbt.remove("Size");
@@ -50,24 +50,24 @@ public class FluidTankItem extends BannerItem {
 				}
 			}
 		}
-		return super.a(p_195943_1_, p_195943_2_, p_195943_3_, p_195943_4_, p_195943_5_);
+		return super.postPlacement(p_195943_1_, p_195943_2_, p_195943_3_, p_195943_4_, p_195943_5_);
 	}
 
-	private void tryMultiPlace(PotionUtil ctx) {
-		PlayerAbilities player = ctx.n();
+	private void tryMultiPlace(ItemPlacementContext ctx) {
+		PlayerEntity player = ctx.getPlayer();
 		if (player == null)
 			return;
-		if (player.bt())
+		if (player.isSneaking())
 			return;
-		Direction face = ctx.j();
+		Direction face = ctx.getSide();
 		if (!face.getAxis()
 			.isVertical())
 			return;
-		ItemCooldownManager stack = ctx.m();
-		GameMode world = ctx.p();
-		BlockPos pos = ctx.a();
+		ItemStack stack = ctx.getStack();
+		World world = ctx.getWorld();
+		BlockPos pos = ctx.getBlockPos();
 		BlockPos placedOnPos = pos.offset(face.getOpposite());
-		PistonHandler placedOnState = world.d_(placedOnPos);
+		BlockState placedOnState = world.getBlockState(placedOnPos);
 
 		if (!FluidTankBlock.isTank(placedOnState))
 			return;
@@ -83,9 +83,9 @@ public class FluidTankItem extends BannerItem {
 			return;
 
 		int tanksToPlace = 0;
-		BlockPos startPos = face == Direction.DOWN ? controllerTE.o()
+		BlockPos startPos = face == Direction.DOWN ? controllerTE.getPos()
 			.down()
-			: controllerTE.o()
+			: controllerTE.getPos()
 				.up(controllerTE.height);
 
 		if (startPos.getY() != pos.getY())
@@ -94,29 +94,29 @@ public class FluidTankItem extends BannerItem {
 		for (int xOffset = 0; xOffset < width; xOffset++) {
 			for (int zOffset = 0; zOffset < width; zOffset++) {
 				BlockPos offsetPos = startPos.add(xOffset, 0, zOffset);
-				PistonHandler blockState = world.d_(offsetPos);
+				BlockState blockState = world.getBlockState(offsetPos);
 				if (FluidTankBlock.isTank(blockState))
 					continue;
-				if (!blockState.c()
-					.e())
+				if (!blockState.getMaterial()
+					.isReplaceable())
 					return;
 				tanksToPlace++;
 			}
 		}
 
-		if (!player.b_() && stack.E() < tanksToPlace)
+		if (!player.isCreative() && stack.getCount() < tanksToPlace)
 			return;
 
 		for (int xOffset = 0; xOffset < width; xOffset++) {
 			for (int zOffset = 0; zOffset < width; zOffset++) {
 				BlockPos offsetPos = startPos.add(xOffset, 0, zOffset);
-				PistonHandler blockState = world.d_(offsetPos);
+				BlockState blockState = world.getBlockState(offsetPos);
 				if (FluidTankBlock.isTank(blockState))
 					continue;
-				PotionUtil context = PotionUtil.a(ctx, offsetPos, face);
+				ItemPlacementContext context = ItemPlacementContext.offset(ctx, offsetPos, face);
 				player.getPersistentData()
 					.putBoolean("SilenceTankSound", true);
-				super.a(context);
+				super.place(context);
 				player.getPersistentData()
 					.remove("SilenceTankSound");
 			}

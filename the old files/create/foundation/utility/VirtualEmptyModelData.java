@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.client.model.data.ModelProperty;
 
 /**
- * This model data_unused instance is passed whenever a model is rendered without
+ * This model data instance is passed whenever a model is rendered without
  * available in-world context. IBakedModel#getModelData can react accordingly
- * and avoid looking for model data_unused itself
+ * and avoid looking for model data itself
  **/
 public enum VirtualEmptyModelData implements IModelData {
 

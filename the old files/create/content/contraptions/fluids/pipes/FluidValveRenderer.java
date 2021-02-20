@@ -1,38 +1,39 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.pipes;
+package com.simibubi.create.content.contraptions.fluids.pipes;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.base.KineticTileEntityRenderer;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.MathHelper;
 
 public class FluidValveRenderer extends KineticTileEntityRenderer {
 
-	public FluidValveRenderer(ebv dispatcher) {
+	public FluidValveRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(KineticTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(KineticTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
 		super.renderSafe(te, partialTicks, ms, buffer, light, overlay);
-		PistonHandler blockState = te.p();
+		BlockState blockState = te.getCachedState();
 		SuperByteBuffer pointer = AllBlockPartials.FLUID_VALVE_POINTER.renderOn(blockState);
-		Direction facing = blockState.c(FluidValveBlock.FACING);
+		Direction facing = blockState.get(FluidValveBlock.FACING);
 
 		if (!(te instanceof FluidValveTileEntity))
 			return;
 		FluidValveTileEntity valve = (FluidValveTileEntity) te;
-		float pointerRotation = afj.g(valve.pointer.getValue(partialTicks), 0, -90);
+		float pointerRotation = MathHelper.lerp(valve.pointer.getValue(partialTicks), 0, -90);
 		Axis pipeAxis = FluidValveBlock.getPipeAxis(blockState);
 		Axis shaftAxis = KineticTileEntityRenderer.getRotationAxisOf(te);
 
@@ -48,11 +49,11 @@ public class FluidValveRenderer extends KineticTileEntityRenderer {
 			.unCentre();
 
 		pointer.light(light)
-			.renderInto(ms, buffer.getBuffer(VertexConsumerProvider.c()));
+			.renderInto(ms, buffer.getBuffer(RenderLayer.getSolid()));
 	}
 
 	@Override
-	protected PistonHandler getRenderedBlockState(KineticTileEntity te) {
+	protected BlockState getRenderedBlockState(KineticTileEntity te) {
 		return KineticTileEntityRenderer.shaft(KineticTileEntityRenderer.getRotationAxisOf(te));
 	}
 

@@ -1,31 +1,32 @@
-package com.simibubi.kinetic_api.content.contraptions.components.clock;
+package com.simibubi.create.content.contraptions.components.clock;
 
-import static com.simibubi.kinetic_api.foundation.utility.AngleHelper.deg;
-import static com.simibubi.kinetic_api.foundation.utility.AngleHelper.getShortestAngleDiff;
-import static com.simibubi.kinetic_api.foundation.utility.AngleHelper.rad;
+import static com.simibubi.create.foundation.utility.AngleHelper.deg;
+import static com.simibubi.create.foundation.utility.AngleHelper.getShortestAngleDiff;
+import static com.simibubi.create.foundation.utility.AngleHelper.rad;
 
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.clock.CuckooClockTileEntity.Animation;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedChasingValue;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedValue;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.client.world.DummyClientTickScheduler;
-import net.minecraft.entity.damage.DamageRecord;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.components.clock.CuckooClockTileEntity.Animation;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedChasingValue;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedValue;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.NBTHelper;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.sound.MusicSound;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.explosion.Explosion;
 
 public class CuckooClockTileEntity extends KineticTileEntity {
 
-	public static DamageRecord CUCKOO_SURPRISE = new DamageRecord("kinetic_api.cuckoo_clock_explosion").e();
+	public static DamageSource CUCKOO_SURPRISE = new DamageSource("create.cuckoo_clock_explosion").setExplosive();
 
 	public InterpolatedChasingValue hourHand = new InterpolatedChasingValue().withSpeed(.2f);
 	public InterpolatedChasingValue minuteHand = new InterpolatedChasingValue().withSpeed(.2f);
@@ -37,13 +38,13 @@ public class CuckooClockTileEntity extends KineticTileEntity {
 		PIG, CREEPER, SURPRISE, NONE;
 	}
 
-	public CuckooClockTileEntity(BellBlockEntity<? extends CuckooClockTileEntity> type) {
+	public CuckooClockTileEntity(BlockEntityType<? extends CuckooClockTileEntity> type) {
 		super(type);
 		animationType = Animation.NONE;
 	}
 	
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		super.fromTag(state, compound, clientPacket);
 		if (clientPacket && compound.contains("Animation")) {
 			animationType = NBTHelper.readEnum(compound, "Animation", Animation.class);
@@ -61,16 +62,16 @@ public class CuckooClockTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		if (getSpeed() == 0)
 			return;
 
-		int dayTime = (int) (d.T() % 24000);
+		int dayTime = (int) (world.getTimeOfDay() % 24000);
 		int hours = (dayTime / 1000 + 6) % 24;
 		int minutes = (dayTime % 1000) * 60 / 1000;
 
-		if (!d.v) {
+		if (!world.isClient) {
 			if (animationType == Animation.NONE) {
 				if (hours == 12 && minutes < 5)
 					startAnimation(Animation.PIG);
@@ -83,23 +84,23 @@ public class CuckooClockTileEntity extends KineticTileEntity {
 					animationType = Animation.NONE;
 
 				if (animationType == Animation.SURPRISE && animationProgress.value == 50) {
-					EntityHitResult center = VecHelper.getCenterOf(e);
-					d.b(e, false);
-					d.a(null, CUCKOO_SURPRISE, null, center.entity, center.c, center.d, 3, false,
-						DummyClientTickScheduler.a.b);
+					Vec3d center = VecHelper.getCenterOf(pos);
+					world.breakBlock(pos, false);
+					world.createExplosion(null, CUCKOO_SURPRISE, null, center.x, center.y, center.z, 3, false,
+						Explosion.DestructionType.BREAK);
 				}
 
 			}
 		}
 
-		if (d.v) {
+		if (world.isClient) {
 			moveHands(hours, minutes);
 
 			if (animationType == Animation.NONE) {
-				if (AnimationTickHolder.ticks % 32 == 0)
-					playSound(MusicType.jw, 1 / 16f, 2f);
-				else if (AnimationTickHolder.ticks % 16 == 0)
-					playSound(MusicType.jw, 1 / 16f, 1.5f);
+				if (AnimationTickHolder.getTicks() % 32 == 0)
+					playSound(SoundEvents.BLOCK_NOTE_BLOCK_HAT, 1 / 16f, 2f);
+				else if (AnimationTickHolder.getTicks() % 16 == 0)
+					playSound(SoundEvents.BLOCK_NOTE_BLOCK_HAT, 1 / 16f, 1.5f);
 			} else {
 
 				boolean isSurprise = animationType == Animation.SURPRISE;
@@ -111,29 +112,29 @@ public class CuckooClockTileEntity extends KineticTileEntity {
 				// sounds
 
 				if (value == 1)
-					playSound(MusicType.js, 2, .5f);
+					playSound(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 2, .5f);
 				if (value == 21)
-					playSound(MusicType.js, 2, 0.793701f);
+					playSound(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 2, 0.793701f);
 
 				if (value > 30 && isSurprise) {
-					EntityHitResult pos = VecHelper.offsetRandomly(VecHelper.getCenterOf(this.e), d.t, .5f);
-					d.addParticle(ParticleTypes.LARGE_SMOKE, pos.entity, pos.c, pos.d, 0, 0, 0);
+					Vec3d pos = VecHelper.offsetRandomly(VecHelper.getCenterOf(this.pos), world.random, .5f);
+					world.addParticle(ParticleTypes.LARGE_SMOKE, pos.x, pos.y, pos.z, 0, 0, 0);
 				}
 				if (value == 40 && isSurprise)
-					playSound(MusicType.pb, 1f, 1f);
+					playSound(SoundEvents.ENTITY_TNT_PRIMED, 1f, 1f);
 
 				int step = isSurprise ? 3 : 15;
 				for (int phase = 30; phase <= 60; phase += step) {
 					if (value == phase - step / 3)
-						playSound(MusicType.bG, 1 / 16f, 2f);
+						playSound(SoundEvents.BLOCK_CHEST_OPEN, 1 / 16f, 2f);
 					if (value == phase) {
 						if (animationType == Animation.PIG)
-							playSound(MusicType.kN, 1 / 4f, 1f);
+							playSound(SoundEvents.ENTITY_PIG_AMBIENT, 1 / 4f, 1f);
 						else
-							playSound(MusicType.co, 1 / 4f, 3f);
+							playSound(SoundEvents.ENTITY_CREEPER_HURT, 1 / 4f, 3f);
 					}
 					if (value == phase + step / 3)
-						playSound(MusicType.bE, 1 / 16f, 2f);
+						playSound(SoundEvents.BLOCK_CHEST_CLOSE, 1 / 16f, 2f);
 
 				}
 
@@ -145,14 +146,14 @@ public class CuckooClockTileEntity extends KineticTileEntity {
 
 	public void startAnimation(Animation animation) {
 		animationType = animation;
-		if (animation != null && CuckooClockBlock.containsSurprise(p()))
+		if (animation != null && CuckooClockBlock.containsSurprise(getCachedState()))
 			animationType = Animation.SURPRISE;
 		animationProgress.lastValue = 0;
 		animationProgress.value = 0;
 		sendAnimationUpdate = true;
 		
 		if (animation == Animation.CREEPER)
-			AllTriggers.triggerForNearbyPlayers(AllTriggers.CUCKOO, d, e, 10);
+			AllTriggers.triggerForNearbyPlayers(AllTriggers.CUCKOO, world, pos, 10);
 		
 		sendData();
 	}
@@ -168,9 +169,13 @@ public class CuckooClockTileEntity extends KineticTileEntity {
 		minuteHand.tick();
 	}
 
-	private void playSound(MusicSound sound, float volume, float pitch) {
-		EntityHitResult vec = VecHelper.getCenterOf(e);
-		d.a(vec.entity, vec.c, vec.d, sound, SoundEvent.e, volume, pitch, false);
+	private void playSound(SoundEvent sound, float volume, float pitch) {
+		Vec3d vec = VecHelper.getCenterOf(pos);
+		world.playSound(vec.x, vec.y, vec.z, sound, SoundCategory.BLOCKS, volume, pitch, false);
 	}
 
+	@Override
+	public boolean shouldRenderAsTE() {
+		return true;
+	}
 }

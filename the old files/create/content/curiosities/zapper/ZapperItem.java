@@ -1,66 +1,69 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper;
+package com.simibubi.create.content.curiosities.zapper;
 
 import java.util.List;
 
 import javax.annotation.Nonnull;
-import bnx;
-import com.simibubi.kinetic_api.AllSoundEvents;
-import com.simibubi.kinetic_api.AllTags.AllBlockTags;
-import com.simibubi.kinetic_api.foundation.item.ItemDescription;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import dcg;
+
+import com.simibubi.create.AllSoundEvents;
+import com.simibubi.create.AllTags.AllBlockTags;
+import com.simibubi.create.foundation.item.ItemDescription;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.NBTProcessors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.SkullItem;
-import net.minecraft.item.TippedArrowItem;
-import net.minecraft.item.ToolItem;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.item.TooltipContext;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Arm;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Rarity;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.UseAction;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.BlockView.b;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.LocalDifficulty;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.RaycastContext.FluidHandling;
+import net.minecraft.world.RaycastContext.ShapeType;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.network.PacketDistributor;
 
-public abstract class ZapperItem extends HoeItem {
+public abstract class ZapperItem extends Item {
 
-	public ZapperItem(a properties) {
-		super(properties.a(1)
-			.a(SkullItem.b));
+	public ZapperItem(Settings properties) {
+		super(properties.maxCount(1)
+			.rarity(Rarity.UNCOMMON));
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public void a(ItemCooldownManager stack, GameMode worldIn, List<Text> tooltip, ToolItem flagIn) {
-		if (stack.n() && stack.o()
+	public void appendTooltip(ItemStack stack, World worldIn, List<Text> tooltip, TooltipContext flagIn) {
+		if (stack.hasTag() && stack.getTag()
 			.contains("BlockUsed")) {
-			String usedblock = NbtHelper.c(stack.o()
+			String usedblock = NbtHelper.toBlockState(stack.getTag()
 				.getCompound("BlockUsed"))
-				.b()
-				.i();
+				.getBlock()
+				.getTranslationKey();
 			ItemDescription.add(tooltip,
 				Lang.translate("blockzapper.usingBlock",
 					new TranslatableText(usedblock).formatted(Formatting.GRAY))
@@ -69,88 +72,88 @@ public abstract class ZapperItem extends HoeItem {
 	}
 
 	@Override
-	public boolean shouldCauseReequipAnimation(ItemCooldownManager oldStack, ItemCooldownManager newStack, boolean slotChanged) {
+	public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
 		boolean differentBlock = false;
-		if (oldStack.n() && newStack.n() && oldStack.o()
+		if (oldStack.hasTag() && newStack.hasTag() && oldStack.getTag()
 			.contains("BlockUsed")
-			&& newStack.o()
+			&& newStack.getTag()
 				.contains("BlockUsed"))
-			differentBlock = NbtHelper.c(oldStack.o()
-				.getCompound("BlockUsed")) != NbtHelper.c(
-					newStack.o()
+			differentBlock = NbtHelper.toBlockState(oldStack.getTag()
+				.getCompound("BlockUsed")) != NbtHelper.toBlockState(
+					newStack.getTag()
 						.getCompound("BlockUsed"));
 		return slotChanged || !isZapper(newStack) || differentBlock;
 	}
 
-	public boolean isZapper(ItemCooldownManager newStack) {
-		return newStack.b() instanceof ZapperItem;
+	public boolean isZapper(ItemStack newStack) {
+		return newStack.getItem() instanceof ZapperItem;
 	}
 
 	@Nonnull
 	@Override
-	public Difficulty a(bnx context) {
+	public ActionResult useOnBlock(ItemUsageContext context) {
 		// Shift -> open GUI
-		if (context.n() != null && context.n()
-			.bt()) {
-			if (context.p().v) {
-				DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-					openHandgunGUI(context.m(), context.o() == ItemScatterer.b);
+		if (context.getPlayer() != null && context.getPlayer()
+			.isSneaking()) {
+			if (context.getWorld().isClient) {
+				DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+					openHandgunGUI(context.getStack(), context.getHand() == Hand.OFF_HAND);
 				});
-				applyCooldown(context.n(), context.m(), false);
+				applyCooldown(context.getPlayer(), context.getStack(), false);
 			}
-			return Difficulty.SUCCESS;
+			return ActionResult.SUCCESS;
 		}
-		return super.a(context);
+		return super.useOnBlock(context);
 	}
 
 	@Override
-	public LocalDifficulty<ItemCooldownManager> a(GameMode world, PlayerAbilities player, ItemScatterer hand) {
-		ItemCooldownManager item = player.b(hand);
-		CompoundTag nbt = item.p();
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
+		ItemStack item = player.getStackInHand(hand);
+		CompoundTag nbt = item.getOrCreateTag();
 
 		// Shift -> Open GUI
-		if (player.bt()) {
-			if (world.v) {
-				DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-					openHandgunGUI(item, hand == ItemScatterer.b);
+		if (player.isSneaking()) {
+			if (world.isClient) {
+				DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+					openHandgunGUI(item, hand == Hand.OFF_HAND);
 				});
 				applyCooldown(player, item, false);
 			}
-			return new LocalDifficulty<ItemCooldownManager>(Difficulty.SUCCESS, item);
+			return new TypedActionResult<>(ActionResult.SUCCESS, item);
 		}
 
-		boolean mainHand = hand == ItemScatterer.RANDOM;
-		boolean isSwap = item.o()
+		boolean mainHand = hand == Hand.MAIN_HAND;
+		boolean isSwap = item.getTag()
 			.contains("_Swap");
-		boolean gunInOtherHand = isZapper(player.b(mainHand ? ItemScatterer.b : ItemScatterer.RANDOM));
+		boolean gunInOtherHand = isZapper(player.getStackInHand(mainHand ? Hand.OFF_HAND : Hand.MAIN_HAND));
 
 		// Pass To Offhand
 		if (mainHand && isSwap && gunInOtherHand)
-			return new LocalDifficulty<ItemCooldownManager>(Difficulty.FAIL, item);
+			return new TypedActionResult<>(ActionResult.FAIL, item);
 		if (mainHand && !isSwap && gunInOtherHand)
-			item.o()
+			item.getTag()
 				.putBoolean("_Swap", true);
 		if (!mainHand && isSwap)
-			item.o()
+			item.getTag()
 				.remove("_Swap");
 		if (!mainHand && gunInOtherHand)
-			player.b(ItemScatterer.RANDOM)
-				.o()
+			player.getStackInHand(Hand.MAIN_HAND)
+				.getTag()
 				.remove("_Swap");
-		player.c(hand);
+		player.setCurrentHand(hand);
 
 		// Check if can be used
 		Text msg = validateUsage(item);
 		if (msg != null) {
-			world.a(player, player.cA(), AllSoundEvents.BLOCKZAPPER_DENY.get(), SoundEvent.e,
+			world.playSound(player, player.getBlockPos(), AllSoundEvents.BLOCKZAPPER_DENY.get(), SoundCategory.BLOCKS,
 				1f, 0.5f);
-			player.a(msg.copy().formatted(Formatting.RED), true);
-			return new LocalDifficulty<ItemCooldownManager>(Difficulty.FAIL, item);
+			player.sendMessage(msg.copy().formatted(Formatting.RED), true);
+			return new TypedActionResult<>(ActionResult.FAIL, item);
 		}
 
-		PistonHandler stateToUse = BellBlock.FACING.n();
+		BlockState stateToUse = Blocks.AIR.getDefaultState();
 		if (nbt.contains("BlockUsed"))
-			stateToUse = NbtHelper.c(nbt.getCompound("BlockUsed"));
+			stateToUse = NbtHelper.toBlockState(nbt.getCompound("BlockUsed"));
 		stateToUse = BlockHelper.setZeroAge(stateToUse);
 		CompoundTag data = null;
 		if (AllBlockTags.SAFE_NBT.matches(stateToUse) && nbt.contains("BlockData", NBT.TAG_COMPOUND)) {
@@ -158,97 +161,100 @@ public abstract class ZapperItem extends HoeItem {
 		}
 
 		// Raytrace - Find the target
-		EntityHitResult start = player.cz()
-			.b(0, player.cd(), 0);
-		EntityHitResult range = player.bg()
-			.a(getZappingRange(item));
-		dcg raytrace = world
-			.a(new BlockView(start, start.e(range), net.minecraft.world.BlockView.a.b, b.a, player));
-		BlockPos pos = raytrace.a();
-		PistonHandler stateReplaced = world.d_(pos);
+		Vec3d start = player.getPos()
+			.add(0, player.getStandingEyeHeight(), 0);
+		Vec3d range = player.getRotationVector()
+			.multiply(getZappingRange(item));
+		BlockHitResult raytrace = world
+			.raycast(new RaycastContext(start, start.add(range), ShapeType.OUTLINE, FluidHandling.NONE, player));
+		BlockPos pos = raytrace.getBlockPos();
+		BlockState stateReplaced = world.getBlockState(pos);
 
 		// No target
-		if (pos == null || stateReplaced.b() == BellBlock.FACING) {
+		if (pos == null || stateReplaced.getBlock() == Blocks.AIR) {
 			applyCooldown(player, item, gunInOtherHand);
-			return new LocalDifficulty<ItemCooldownManager>(Difficulty.SUCCESS, item);
+			return new TypedActionResult<>(ActionResult.SUCCESS, item);
 		}
 
 		// Find exact position of gun barrel for VFX
-		float yaw = (float) ((player.p) / -180 * Math.PI);
-		float pitch = (float) ((player.q) / -180 * Math.PI);
-		EntityHitResult barrelPosNoTransform =
-			new EntityHitResult(mainHand == (player.dU() == EquipmentSlot.RIGHT) ? -.35f : .35f, -0.1f, 1);
-		EntityHitResult barrelPos = start.e(barrelPosNoTransform.a(pitch)
-			.b(yaw));
+		float yaw = (float) ((player.yaw) / -180 * Math.PI);
+		float pitch = (float) ((player.pitch) / -180 * Math.PI);
+		Vec3d barrelPosNoTransform =
+			new Vec3d(mainHand == (player.getMainArm() == Arm.RIGHT) ? -.35f : .35f, -0.1f, 1);
+		Vec3d barrelPos = start.add(barrelPosNoTransform.rotateX(pitch)
+			.rotateY(yaw));
 
 		// Client side
-		if (world.v) {
+		if (world.isClient) {
 			ZapperRenderHandler.dontAnimateItem(hand);
-			return new LocalDifficulty<ItemCooldownManager>(Difficulty.SUCCESS, item);
+			return new TypedActionResult<>(ActionResult.SUCCESS, item);
 		}
 
 		// Server side
 		if (activate(world, player, item, stateToUse, raytrace, data)) {
 			applyCooldown(player, item, gunInOtherHand);
 			AllPackets.channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> player),
-				new ZapperBeamPacket(barrelPos, raytrace.e(), hand, false));
+				new ZapperBeamPacket(barrelPos, raytrace.getPos(), hand, false));
 			AllPackets.channel.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player),
-				new ZapperBeamPacket(barrelPos, raytrace.e(), hand, true));
+				new ZapperBeamPacket(barrelPos, raytrace.getPos(), hand, true));
 		}
 
-		return new LocalDifficulty<ItemCooldownManager>(Difficulty.SUCCESS, item);
+		return new TypedActionResult<>(ActionResult.SUCCESS, item);
 	}
 
-	public Text validateUsage(ItemCooldownManager item) {
-		CompoundTag tag = item.p();
+	public Text validateUsage(ItemStack item) {
+		CompoundTag tag = item.getOrCreateTag();
 		if (!canActivateWithoutSelectedBlock(item) && !tag.contains("BlockUsed"))
 			return Lang.createTranslationTextComponent("blockzapper.leftClickToSet");
 		return null;
 	}
 
-	protected abstract boolean activate(GameMode world, PlayerAbilities player, ItemCooldownManager item, PistonHandler stateToUse,
-		dcg raytrace, CompoundTag data);
+	protected abstract boolean activate(World world, PlayerEntity player, ItemStack item, BlockState stateToUse,
+		BlockHitResult raytrace, CompoundTag data);
 
 	@Environment(EnvType.CLIENT)
-	protected abstract void openHandgunGUI(ItemCooldownManager item, boolean b);
+	protected abstract void openHandgunGUI(ItemStack item, boolean b);
 
-	protected abstract int getCooldownDelay(ItemCooldownManager item);
+	protected abstract int getCooldownDelay(ItemStack item);
 
-	protected abstract int getZappingRange(ItemCooldownManager stack);
+	protected abstract int getZappingRange(ItemStack stack);
 
-	protected boolean canActivateWithoutSelectedBlock(ItemCooldownManager stack) {
+	protected boolean canActivateWithoutSelectedBlock(ItemStack stack) {
 		return false;
 	}
 
-	protected void applyCooldown(PlayerAbilities playerIn, ItemCooldownManager item, boolean dual) {
+	protected void applyCooldown(PlayerEntity playerIn, ItemStack item, boolean dual) {
 		int delay = getCooldownDelay(item);
-		playerIn.eS()
-			.a(item.b(), dual ? delay * 2 / 3 : delay);
+		playerIn.getItemCooldownManager()
+			.set(item.getItem(), dual ? delay * 2 / 3 : delay);
 	}
 
 	@Override
-	public boolean onEntitySwing(ItemCooldownManager stack, SaddledComponent entity) {
+	public boolean onEntitySwing(ItemStack stack, LivingEntity entity) {
 		return true;
 	}
 
 	@Override
-	public boolean a(PistonHandler state, GameMode worldIn, BlockPos pos, PlayerAbilities player) {
+	public boolean canMine(BlockState state, World worldIn, BlockPos pos, PlayerEntity player) {
 		return false;
 	}
 
 	@Override
-	public TippedArrowItem d_(ItemCooldownManager stack) {
-		return TippedArrowItem.a;
+	public UseAction getUseAction(ItemStack stack) {
+		return UseAction.NONE;
 	}
 
-	public static void setTileData(GameMode world, BlockPos pos, PistonHandler state, CompoundTag data) {
-		if (data != null) {
-			BeehiveBlockEntity tile = world.c(pos);
-			if (tile != null && !tile.t()) {
+	public static void setTileData(World world, BlockPos pos, BlockState state, CompoundTag data, PlayerEntity player) {
+		if (data != null && AllBlockTags.SAFE_NBT.matches(state)) {
+			BlockEntity tile = world.getBlockEntity(pos);
+			if (tile != null) {
+				data = NBTProcessors.process(tile, data, !player.isCreative());
+				if (data == null)
+					return;
 				data.putInt("x", pos.getX());
 				data.putInt("y", pos.getY());
 				data.putInt("z", pos.getZ());
-				tile.a(state, data);
+				tile.fromTag(state, data);
 			}
 		}
 	}

@@ -1,12 +1,14 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import net.minecraft.entity.player.PlayerAbilities;
+
+import com.simibubi.create.Create;
+
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import com.simibubi.kinetic_api.Create;
 
 public class Lang {
 
@@ -18,8 +20,8 @@ public class Lang {
 		return new TranslatableText(Create.ID + "." + key, args);
 	}
 
-	public static void sendStatus(PlayerAbilities player, String key, Object... args) {
-		player.a(createTranslationTextComponent(key, args), true);
+	public static void sendStatus(PlayerEntity player, String key, Object... args) {
+		player.sendMessage(createTranslationTextComponent(key, args), true);
 	}
 
 	public static List<Text> translatedOptions(String prefix, String... keys) {

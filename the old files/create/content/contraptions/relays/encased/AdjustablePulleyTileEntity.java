@@ -1,8 +1,9 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
 
 public class AdjustablePulleyTileEntity extends KineticTileEntity {
@@ -10,7 +11,7 @@ public class AdjustablePulleyTileEntity extends KineticTileEntity {
 	int signal;
 	boolean signalChanged;
 
-	public AdjustablePulleyTileEntity(BellBlockEntity<? extends AdjustablePulleyTileEntity> type) {
+	public AdjustablePulleyTileEntity(BlockEntityType<? extends AdjustablePulleyTileEntity> type) {
 		super(type);
 		signal = 0;
 		setLazyTickRate(40);
@@ -23,7 +24,7 @@ public class AdjustablePulleyTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		signal = compound.getInt("Signal");
 		super.fromTag(state, compound, clientPacket);
 	}
@@ -33,9 +34,9 @@ public class AdjustablePulleyTileEntity extends KineticTileEntity {
 	}
 
 	public void neighborChanged() {
-		if (!n())
+		if (!hasWorld())
 			return;
-		int power = d.s(e);
+		int power = world.getReceivedRedstonePower(pos);
 		if (power != signal) 
 			signalChanged = true;
 	}
@@ -47,11 +48,11 @@ public class AdjustablePulleyTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		if (signalChanged) {
 			signalChanged = false;
-			analogSignalChanged(d.s(e));
+			analogSignalChanged(world.getReceivedRedstonePower(pos));
 		}
 	}
 

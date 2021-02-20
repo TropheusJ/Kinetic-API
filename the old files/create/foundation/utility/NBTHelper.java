@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,12 +6,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.annotation.Nonnull;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Box;
 
 public class NBTHelper {
 
@@ -51,29 +52,29 @@ public class NBTHelper {
 		listNBT.forEach(inbt -> consumer.accept((CompoundTag) inbt));
 	}
 	
-	public static ListTag writeItemList(List<ItemCooldownManager> stacks) {
-		return writeCompoundList(stacks, ItemCooldownManager::serializeNBT);
+	public static ListTag writeItemList(List<ItemStack> stacks) {
+		return writeCompoundList(stacks, ItemStack::serializeNBT);
 	}
 	
-	public static List<ItemCooldownManager> readItemList(ListTag stacks) {
-		return readCompoundList(stacks, ItemCooldownManager::a);
+	public static List<ItemStack> readItemList(ListTag stacks) {
+		return readCompoundList(stacks, ItemStack::fromTag);
 	}
 	
-	public static ListTag writeAABB(Timer bb) {
+	public static ListTag writeAABB(Box bb) {
 		ListTag bbtag = new ListTag();
-		bbtag.add(FloatTag.of((float) bb.LOGGER));
-		bbtag.add(FloatTag.of((float) bb.callback));
-		bbtag.add(FloatTag.of((float) bb.events));
-		bbtag.add(FloatTag.of((float) bb.eventCounter));
-		bbtag.add(FloatTag.of((float) bb.eventsByName));
-		bbtag.add(FloatTag.of((float) bb.f));
+		bbtag.add(FloatTag.of((float) bb.minX));
+		bbtag.add(FloatTag.of((float) bb.minY));
+		bbtag.add(FloatTag.of((float) bb.minZ));
+		bbtag.add(FloatTag.of((float) bb.maxX));
+		bbtag.add(FloatTag.of((float) bb.maxY));
+		bbtag.add(FloatTag.of((float) bb.maxZ));
 		return bbtag;
 	}
 
-	public static Timer readAABB(ListTag bbtag) {
+	public static Box readAABB(ListTag bbtag) {
 		if (bbtag == null || bbtag.isEmpty())
 			return null;
-		return new Timer(bbtag.getFloat(0), bbtag.getFloat(1), bbtag.getFloat(2), bbtag.getFloat(3),
+		return new Box(bbtag.getFloat(0), bbtag.getFloat(1), bbtag.getFloat(2), bbtag.getFloat(3),
 				bbtag.getFloat(4), bbtag.getFloat(5));
 
 	}

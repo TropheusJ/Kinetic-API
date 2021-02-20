@@ -1,27 +1,27 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter;
+package com.simibubi.create.content.logistics.item.filter;
 
-import static com.simibubi.kinetic_api.foundation.gui.AllGuiTextures.PLAYER_INVENTORY;
-import static net.minecraft.util.Formatting.GRAY;
+import static com.simibubi.create.foundation.gui.AllGuiTextures.PLAYER_INVENTORY;
+import static net.minecraft.util.text.TextFormatting.GRAY;
 
-import bfs;
 import java.util.Collections;
 import java.util.List;
-import net.minecraft.client.gui.widget.OptionSliderWidget;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.texture.StatusEffectSpriteManager;
+import com.simibubi.create.content.logistics.item.filter.FilterScreenPacket.Option;
+import com.simibubi.create.foundation.gui.AbstractSimiContainerScreen;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import com.simibubi.create.foundation.gui.widgets.IconButton;
+import com.simibubi.create.foundation.gui.widgets.Indicator;
+import com.simibubi.create.foundation.gui.widgets.Indicator.State;
+import com.simibubi.create.foundation.item.ItemDescription.Palette;
+import com.simibubi.create.foundation.item.TooltipHelper;
+import com.simibubi.create.foundation.networking.AllPackets;
+import net.minecraft.client.gui.widget.AbstractButtonWidget;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import com.simibubi.kinetic_api.content.logistics.item.filter.FilterScreenPacket.Option;
-import com.simibubi.kinetic_api.foundation.gui.AbstractSimiContainerScreen;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import com.simibubi.kinetic_api.foundation.gui.widgets.IconButton;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Indicator;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Indicator.State;
-import com.simibubi.kinetic_api.foundation.item.ItemDescription.Palette;
-import com.simibubi.kinetic_api.foundation.item.TooltipHelper;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
 
 public abstract class AbstractFilterScreen<F extends AbstractFilterContainer> extends AbstractSimiContainerScreen<F> {
 
@@ -30,61 +30,61 @@ public abstract class AbstractFilterScreen<F extends AbstractFilterContainer> ex
 	private IconButton resetButton;
 	private IconButton confirmButton;
 
-	protected AbstractFilterScreen(F container, bfs inv, Text title, AllGuiTextures background) {
+	protected AbstractFilterScreen(F container, PlayerInventory inv, Text title, AllGuiTextures background) {
 		super(container, inv, title);
 		this.background = background;
 	}
 
 	@Override
-	protected void b() {
+	protected void init() {
 		setWindowSize(background.width + 80, background.height + PLAYER_INVENTORY.height + 20);
-		super.b();
+		super.init();
 		widgets.clear();
 
 		resetButton =
-			new IconButton(w + background.width - 62, x + background.height - 24, AllIcons.I_TRASH);
+			new IconButton(x + background.width - 62, y + background.height - 24, AllIcons.I_TRASH);
 		confirmButton =
-			new IconButton(w + background.width - 33, x + background.height - 24, AllIcons.I_CONFIRM);
+			new IconButton(x + background.width - 33, y + background.height - 24, AllIcons.I_CONFIRM);
 
 		widgets.add(resetButton);
 		widgets.add(confirmButton);
 	}
 
 	@Override
-	protected void renderWindow(BufferVertexConsumer ms, int mouseX, int mouseY, float partialTicks) {
-		int x = w;
-		int y = x;
+	protected void renderWindow(MatrixStack ms, int mouseX, int mouseY, float partialTicks) {
+		int x = x;
+		int y = y;
 		background.draw(ms, this, x, y);
 
 		int invX = x + 50;
 		int invY = y + background.height + 10;
 		PLAYER_INVENTORY.draw(ms, this, invX, invY);
-		o.b(ms, u.d(), invX + 7, invY + 6, 0x666666);
-		o.b(ms, StatusEffectSpriteManager.a(t.filterItem.j()), x + 15, y + 3, 0xdedede);
+		textRenderer.draw(ms, playerInventory.getDisplayName(), invX + 7, invY + 6, 0x666666);
+		textRenderer.draw(ms, I18n.translate(handler.filterItem.getTranslationKey()), x + 15, y + 3, 0xdedede);
 
-		GuiGameElement.of(t.filterItem)
-			.at(w + background.width, x + background.height + 25, -150)
+		GuiGameElement.of(handler.filterItem)
+			.at(x + background.width, y + background.height + 25, -150)
 			.scale(5)
 			.render(ms);
 
 	}
 
 	@Override
-	public void d() {
+	public void tick() {
 		handleTooltips();
 		super.tick();
 		handleIndicators();
 
-		if (!t.player.dC()
-			.equals(t.filterItem, false))
-			i.s.m();
+		if (!handler.player.getMainHandStack()
+			.equals(handler.filterItem, false))
+			client.player.updateSubmergedInWaterState();
 	}
 
 	public void handleIndicators() {
 		List<IconButton> tooltipButtons = getTooltipButtons();
 		for (IconButton button : tooltipButtons)
-			button.o = isButtonEnabled(button);
-		for (OptionSliderWidget w : widgets)
+			button.active = isButtonEnabled(button);
+		for (AbstractButtonWidget w : widgets)
 			if (w instanceof Indicator)
 				((Indicator) w).state = isIndicatorOn((Indicator) w) ? State.ON : State.OFF;
 	}
@@ -102,11 +102,11 @@ public abstract class AbstractFilterScreen<F extends AbstractFilterContainer> ex
 				button.setToolTip(button.getToolTip()
 					.get(0));
 				button.getToolTip()
-					.add(TooltipHelper.holdShift(Palette.Yellow, y()));
+					.add(TooltipHelper.holdShift(Palette.Yellow, hasShiftDown()));
 			}
 		}
 
-		if (y()) {
+		if (hasShiftDown()) {
 			List<MutableText> tooltipDescriptions = getTooltipDescriptions();
 			for (int i = 0; i < tooltipButtons.size(); i++)
 				fillToolTip(tooltipButtons.get(i), tooltipDescriptions.get(i));
@@ -122,23 +122,23 @@ public abstract class AbstractFilterScreen<F extends AbstractFilterContainer> ex
 	}
 
 	private void fillToolTip(IconButton button, Text tooltip) {
-		if (!button.g())
+		if (!button.isHovered())
 			return;
 		List<Text> tip = button.getToolTip();
 		tip.addAll(TooltipHelper.cutTextComponent(tooltip, GRAY, GRAY));
 	}
 
 	@Override
-	public boolean a(double x, double y, int button) {
-		boolean mouseClicked = super.a(x, y, button);
+	public boolean mouseClicked(double x, double y, int button) {
+		boolean mouseClicked = super.mouseClicked(x, y, button);
 
 		if (button == 0) {
-			if (confirmButton.g()) {
-				i.s.m();
+			if (confirmButton.isHovered()) {
+				client.player.updateSubmergedInWaterState();
 				return true;
 			}
-			if (resetButton.g()) {
-				t.clearContents();
+			if (resetButton.isHovered()) {
+				handler.clearContents();
 				contentsCleared();
 				sendOptionUpdate(Option.CLEAR);
 				return true;

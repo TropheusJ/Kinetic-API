@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.foundation.block.connected;
+package com.simibubi.create.foundation.block.connected;
 
-import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.Direction;
 
 public class StandardCTBehaviour extends ConnectedTextureBehaviour {
@@ -12,7 +12,7 @@ public class StandardCTBehaviour extends ConnectedTextureBehaviour {
 	}
 
 	@Override
-	public CTSpriteShiftEntry get(PistonHandler state, Direction direction) {
+	public CTSpriteShiftEntry get(BlockState state, Direction direction) {
 		return shift;
 	}
 

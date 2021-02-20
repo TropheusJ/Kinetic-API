@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api;
+package com.simibubi.create;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -7,12 +7,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.client.sound.MusicType;
+import com.simibubi.create.foundation.utility.Lang;
 import net.minecraft.data.DataCache;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
-import net.minecraft.sound.MusicSound;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.registries.IForgeRegistry;
@@ -22,24 +22,24 @@ public enum AllSoundEvents implements DataProvider {
 	CUCKOO_PIG("pigclock"),
 	CUCKOO_CREEPER("creeperclock"),
 
-	SCHEMATICANNON_LAUNCH_BLOCK(MusicType.eL),
-	SCHEMATICANNON_FINISH(MusicType.jr),
-	SLIME_ADDED(MusicType.nN),
-	MECHANICAL_PRESS_ACTIVATION(MusicType.F),
-	MECHANICAL_PRESS_ITEM_BREAK(MusicType.gK),
-	BLOCKZAPPER_PLACE(MusicType.jp),
-	BLOCKZAPPER_CONFIRM(MusicType.jr),
-	BLOCKZAPPER_DENY(MusicType.jq),
-	BLOCK_FUNNEL_EAT(MusicType.eK),
-	BLAZE_MUNCH(MusicType.eK)
+	SCHEMATICANNON_LAUNCH_BLOCK(SoundEvents.ENTITY_GENERIC_EXPLODE),
+	SCHEMATICANNON_FINISH(SoundEvents.BLOCK_NOTE_BLOCK_BELL),
+	SLIME_ADDED(SoundEvents.BLOCK_SLIME_BLOCK_PLACE),
+	MECHANICAL_PRESS_ACTIVATION(SoundEvents.BLOCK_ANVIL_LAND),
+	MECHANICAL_PRESS_ITEM_BREAK(SoundEvents.ENTITY_ITEM_BREAK),
+	BLOCKZAPPER_PLACE(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM),
+	BLOCKZAPPER_CONFIRM(SoundEvents.BLOCK_NOTE_BLOCK_BELL),
+	BLOCKZAPPER_DENY(SoundEvents.BLOCK_NOTE_BLOCK_BASS),
+	BLOCK_FUNNEL_EAT(SoundEvents.ENTITY_GENERIC_EAT),
+	BLAZE_MUNCH(SoundEvents.ENTITY_GENERIC_EAT)
 
 	;
 
 	String id;
-	MusicSound event, child;
+	SoundEvent event, child;
 	private DataGenerator generator;
 
-	// For adding our own sounds at assets/kinetic_api/sounds/name.ogg
+	// For adding our own sounds at assets/create/sounds/name.ogg
 	AllSoundEvents() {
 		id = Lang.asId(name());
 	}
@@ -49,14 +49,14 @@ public enum AllSoundEvents implements DataProvider {
 	}
 
 	// For wrapping a existing sound with new subtitle
-	AllSoundEvents(MusicSound child) {
+	AllSoundEvents(SoundEvent child) {
 		this();
 		this.child = child;
 	}
 
-	// subtitles are taken from the lang file (kinetic_api.subtitle.sound_event_name)
+	// subtitles are taken from the lang file (create.subtitle.sound_event_name)
 
-	public MusicSound get() {
+	public SoundEvent get() {
 		return event;
 	}
 
@@ -69,13 +69,13 @@ public enum AllSoundEvents implements DataProvider {
 		return this;
 	}
 
-	public static void register(RegistryEvent.Register<MusicSound> event) {
-		IForgeRegistry<MusicSound> registry = event.getRegistry();
+	public static void register(RegistryEvent.Register<SoundEvent> event) {
+		IForgeRegistry<SoundEvent> registry = event.getRegistry();
 
 		for (AllSoundEvents entry : values()) {
 
 			Identifier rec = new Identifier(Create.ID, entry.getEventName());
-			MusicSound sound = new MusicSound(rec).setRegistryName(rec);
+			SoundEvent sound = new SoundEvent(rec).setRegistryName(rec);
 			registry.register(sound);
 			entry.event = sound;
 		}
@@ -85,7 +85,7 @@ public enum AllSoundEvents implements DataProvider {
 		Gson GSON = (new GsonBuilder()).setPrettyPrinting()
 			.disableHtmlEscaping()
 			.create();
-		path = path.resolve("assets/kinetic_api");
+		path = path.resolve("assets/create");
 
 		try {
 			JsonObject json = new JsonObject();
@@ -95,7 +95,7 @@ public enum AllSoundEvents implements DataProvider {
 				if (soundEvent.child != null) {
 					// wrapper
 					JsonObject s = new JsonObject();
-					s.addProperty("name", soundEvent.child.a()
+					s.addProperty("name", soundEvent.child.getId()
 						.toString());
 					s.addProperty("type", "event");
 					arr.add(s);
@@ -122,6 +122,6 @@ public enum AllSoundEvents implements DataProvider {
 
 	@Override
 	public String getName() {
-		return "KineticAPI's Custom Sound: " + name();
+		return "Create's Custom Sound: " + name();
 	}
 }

@@ -1,9 +1,8 @@
-package com.simibubi.kinetic_api.foundation.item;
+package com.simibubi.create.foundation.item;
 
-import static net.minecraft.util.Formatting.GOLD;
-import static net.minecraft.util.Formatting.GRAY;
+import static net.minecraft.util.text.TextFormatting.GOLD;
+import static net.minecraft.util.text.TextFormatting.GRAY;
 
-import aqc;
 import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,30 +14,31 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Strings;
 import com.mojang.bridge.game.Language;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.content.AllSections;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate;
-import com.simibubi.kinetic_api.content.contraptions.components.flywheel.engine.EngineBlock;
-import com.simibubi.kinetic_api.content.contraptions.goggles.IHaveGoggleInformation;
-import com.simibubi.kinetic_api.content.curiosities.tools.AllToolTiers;
-import com.simibubi.kinetic_api.foundation.item.ItemDescription.Palette;
-import com.simibubi.kinetic_api.foundation.utility.Couple;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.client.color.item.ItemColorProvider;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.texture.StatusEffectSpriteManager;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.SwordItem;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.content.AllSections;
+import com.simibubi.create.content.contraptions.base.IRotate;
+import com.simibubi.create.content.contraptions.components.flywheel.engine.EngineBlock;
+import com.simibubi.create.content.contraptions.goggles.IHaveGoggleInformation;
+import com.simibubi.create.content.curiosities.tools.AllToolTiers;
+import com.simibubi.create.foundation.item.ItemDescription.Palette;
+import com.simibubi.create.foundation.utility.Couple;
+import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.font.TextVisitFactory;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ToolItem;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.collection.ReusableStream;
-import net.minecraft.world.GameRules;
 import net.minecraftforge.client.MinecraftForgeClient;
 
 public class TooltipHelper {
@@ -47,7 +47,7 @@ public class TooltipHelper {
 	public static final Map<String, ItemDescription> cachedTooltips = new HashMap<>();
 	public static Language cachedLanguage;
 	private static boolean gogglesMode;
-	private static final Map<HoeItem, Supplier<String>> tooltipReferrals = new HashMap<>();
+	private static final Map<Item, Supplier<String>> tooltipReferrals = new HashMap<>();
 
 	public static MutableText holdShift(Palette color, boolean highlighted) {
 		Formatting colorFormat = highlighted ? color.hColor : color.color;
@@ -63,14 +63,14 @@ public class TooltipHelper {
 		for (Text component : cutComponent) tooltip.add(spacing.copy().append(component));
 	}
 	
-	public static void referTo(GameRules item, Supplier<? extends GameRules> itemWithTooltip) {
-		tooltipReferrals.put(item.h(), () -> itemWithTooltip.get()
-			.h()
-			.a());
+	public static void referTo(ItemConvertible item, Supplier<? extends ItemConvertible> itemWithTooltip) {
+		tooltipReferrals.put(item.asItem(), () -> itemWithTooltip.get()
+			.asItem()
+			.getTranslationKey());
 	}
 
-	public static void referTo(GameRules item, String string) {
-		tooltipReferrals.put(item.h(), () -> string);
+	public static void referTo(ItemConvertible item, String string) {
+		tooltipReferrals.put(item.asItem(), () -> string);
 	}
 
 	@Deprecated
@@ -95,12 +95,12 @@ public class TooltipHelper {
 		}
 
 		// Apply hard wrap
-		ItemColorProvider font = KeyBinding.B().category;
+		TextRenderer font = MinecraftClient.getInstance().textRenderer;
 		List<String> lines = new LinkedList<>();
 		StringBuilder currentLine = new StringBuilder();
 		int width = 0;
 		for (String word : words) {
-			int newWidth = font.b(word);
+			int newWidth = font.getWidth(word);
 			if (width + newWidth > maxWidthPerLine) {
 				if (width > 0) {
 					String line = currentLine.toString();
@@ -164,12 +164,12 @@ public class TooltipHelper {
 		}
 
 		// Apply hard wrap
-		ItemColorProvider font = KeyBinding.B().category;
+		TextRenderer font = MinecraftClient.getInstance().textRenderer;
 		List<String> lines = new LinkedList<>();
 		StringBuilder currentLine = new StringBuilder();
 		int width = 0;
 		for (String word : words) {
-			int newWidth = font.b(word.replaceAll("_", ""));
+			int newWidth = font.getWidth(word.replaceAll("_", ""));
 			if (width + newWidth > maxWidthPerLine) {
 				if (width > 0) {
 					String line = currentLine.toString();
@@ -251,19 +251,19 @@ public class TooltipHelper {
 //	}
 
 	private static void checkLocale() {
-		Language currentLanguage = KeyBinding.B()
-			.Q()
-			.b();
+		Language currentLanguage = MinecraftClient.getInstance()
+			.getLanguageManager()
+			.getLanguage();
 		if (cachedLanguage != currentLanguage) {
 			cachedTooltips.clear();
 			cachedLanguage = currentLanguage;
 		}
 	}
 
-	public static boolean hasTooltip(ItemCooldownManager stack, PlayerAbilities player) {
+	public static boolean hasTooltip(ItemStack stack, PlayerEntity player) {
 		checkLocale();
 
-		boolean hasGlasses = AllItems.GOGGLES.isIn(player.b(aqc.f));
+		boolean hasGlasses = AllItems.GOGGLES.isIn(player.getEquippedStack(EquipmentSlot.HEAD));
 
 		if (hasGlasses != gogglesMode) {
 			gogglesMode = hasGlasses;
@@ -276,7 +276,7 @@ public class TooltipHelper {
 		return findTooltip(stack);
 	}
 
-	public static ItemDescription getTooltip(ItemCooldownManager stack) {
+	public static ItemDescription getTooltip(ItemStack stack) {
 		checkLocale();
 		String key = getTooltipTranslationKey(stack);
 		if (cachedTooltips.containsKey(key)) {
@@ -287,9 +287,9 @@ public class TooltipHelper {
 		return null;
 	}
 
-	private static boolean findTooltip(ItemCooldownManager stack) {
+	private static boolean findTooltip(ItemStack stack) {
 		String key = getTooltipTranslationKey(stack);
-		if (StatusEffectSpriteManager.a(key)) {
+		if (I18n.hasTranslation(key)) {
 			cachedTooltips.put(key, buildToolTip(key, stack));
 			return true;
 		}
@@ -297,9 +297,9 @@ public class TooltipHelper {
 		return false;
 	}
 
-	private static ItemDescription buildToolTip(String translationKey, ItemCooldownManager stack) {
+	private static ItemDescription buildToolTip(String translationKey, ItemStack stack) {
 		AllSections module = AllSections.of(stack);
-		if (StatusEffectSpriteManager.a(translationKey)
+		if (I18n.translate(translationKey)
 			.equals("WIP"))
 			return new WipScription(module.getTooltipPalette());
 
@@ -307,14 +307,14 @@ public class TooltipHelper {
 		String summaryKey = translationKey + ".summary";
 
 		// Summary
-		if (StatusEffectSpriteManager.a(summaryKey))
-			tooltip = tooltip.withSummary(new LiteralText(StatusEffectSpriteManager.a(summaryKey)));
+		if (I18n.hasTranslation(summaryKey))
+			tooltip = tooltip.withSummary(new LiteralText(I18n.translate(summaryKey)));
 
 		// Requirements
-		if (stack.b() instanceof BannerItem) {
-			BannerItem item = (BannerItem) stack.b();
-			if (item.e() instanceof IRotate || item.e() instanceof EngineBlock) {
-				tooltip = tooltip.withKineticStats(item.e());
+		if (stack.getItem() instanceof BlockItem) {
+			BlockItem item = (BlockItem) stack.getItem();
+			if (item.getBlock() instanceof IRotate || item.getBlock() instanceof EngineBlock) {
+				tooltip = tooltip.withKineticStats(item.getBlock());
 			}
 		}
 
@@ -322,41 +322,41 @@ public class TooltipHelper {
 		for (int i = 1; i < 100; i++) {
 			String conditionKey = translationKey + ".condition" + i;
 			String behaviourKey = translationKey + ".behaviour" + i;
-			if (!StatusEffectSpriteManager.a(conditionKey))
+			if (!I18n.hasTranslation(conditionKey))
 				break;
-			tooltip.withBehaviour(StatusEffectSpriteManager.a(conditionKey), StatusEffectSpriteManager.a(behaviourKey));
+			tooltip.withBehaviour(I18n.translate(conditionKey), I18n.translate(behaviourKey));
 		}
 
 		// Controls
 		for (int i = 1; i < 100; i++) {
 			String controlKey = translationKey + ".control" + i;
 			String actionKey = translationKey + ".action" + i;
-			if (!StatusEffectSpriteManager.a(controlKey))
+			if (!I18n.hasTranslation(controlKey))
 				break;
-			tooltip.withControl(StatusEffectSpriteManager.a(controlKey), StatusEffectSpriteManager.a(actionKey));
+			tooltip.withControl(I18n.translate(controlKey), I18n.translate(actionKey));
 		}
 
 		return tooltip.createTabs();
 	}
 
-	public static String getTooltipTranslationKey(ItemCooldownManager stack) {
-		HoeItem item = stack.b();
-		if (item instanceof SwordItem) {
-			SwordItem tieredItem = (SwordItem) item;
-			if (tieredItem.g() instanceof AllToolTiers) {
-				AllToolTiers allToolTiers = (AllToolTiers) tieredItem.g();
-				return "tool.kinetic_api." + Lang.asId(allToolTiers.name()) + ".tooltip";
+	public static String getTooltipTranslationKey(ItemStack stack) {
+		Item item = stack.getItem();
+		if (item instanceof ToolItem) {
+			ToolItem tieredItem = (ToolItem) item;
+			if (tieredItem.getMaterial() instanceof AllToolTiers) {
+				AllToolTiers allToolTiers = (AllToolTiers) tieredItem.getMaterial();
+				return "tool.create." + Lang.asId(allToolTiers.name()) + ".tooltip";
 			}
 		}
 
 		if (tooltipReferrals.containsKey(item))
 			return tooltipReferrals.get(item).get() + ".tooltip";
-		return item.f(stack) + ".tooltip";
+		return item.getTranslationKey(stack) + ".tooltip";
 	}
 
 	private static int getComponentLength(Text component) {
 		AtomicInteger l = new AtomicInteger();
-		ReusableStream.a(component, Style.EMPTY, (s, style, charConsumer) -> {
+		TextVisitFactory.visitFormatted(component, Style.EMPTY, (s, style, charConsumer) -> {
 			l.getAndIncrement();
 			return true;
 		});

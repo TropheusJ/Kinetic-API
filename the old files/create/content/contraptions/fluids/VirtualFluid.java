@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
-import cut;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.HoeItem;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
 import net.minecraftforge.fluids.ForgeFlowingFluid;
 
 public class VirtualFluid extends ForgeFlowingFluid {
@@ -15,32 +15,32 @@ public class VirtualFluid extends ForgeFlowingFluid {
 	}
 
 	@Override
-	public cut e() {
-		return super.e();
+	public Fluid getStill() {
+		return super.getStill();
 	}
 
 	@Override
-	public cut d() {
+	public Fluid getFlowing() {
 		return this;
 	}
 
 	@Override
-	public HoeItem a() {
-		return AliasedBlockItem.a;
+	public Item getBucketItem() {
+		return Items.AIR;
 	}
 
 	@Override
-	protected PistonHandler b(EmptyFluid state) {
-		return BellBlock.FACING.n();
+	protected BlockState toBlockState(FluidState state) {
+		return Blocks.AIR.getDefaultState();
 	}
 
 	@Override
-	public boolean c(EmptyFluid p_207193_1_) {
+	public boolean isStill(FluidState p_207193_1_) {
 		return false;
 	}
 
 	@Override
-	public int d(EmptyFluid p_207192_1_) {
+	public int getLevel(FluidState p_207192_1_) {
 		return 0;
 	}
 

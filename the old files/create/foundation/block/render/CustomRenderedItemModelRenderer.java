@@ -1,31 +1,31 @@
-package com.simibubi.kinetic_api.foundation.block.render;
+package com.simibubi.create.foundation.block.render;
 
-import com.simibubi.kinetic_api.foundation.item.PartialItemModelRenderer;
-import net.minecraft.client.input.Input;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.model.json.ModelElementTexture;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.foundation.item.PartialItemModelRenderer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.item.BuiltinModelItemRenderer;
+import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
 
-public class CustomRenderedItemModelRenderer<M extends CustomRenderedItemModel> extends Input {
+public class CustomRenderedItemModelRenderer<M extends CustomRenderedItemModel> extends BuiltinModelItemRenderer {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void a(ItemCooldownManager stack, ModelElementTexture.b p_239207_2_, BufferVertexConsumer ms, BackgroundRenderer buffer, int light, int overlay) {
-		M mainModel = ((M) KeyBinding.B()
-			.ac()
-			.a(stack, null, null));
+	public void render(ItemStack stack, ModelTransformation.Mode p_239207_2_, MatrixStack ms, VertexConsumerProvider buffer, int light, int overlay) {
+		M mainModel = ((M) MinecraftClient.getInstance()
+			.getItemRenderer()
+			.getHeldItemModel(stack, null, null));
 		PartialItemModelRenderer renderer = PartialItemModelRenderer.of(stack, p_239207_2_, ms, buffer, overlay);
 
-		ms.a();
-		ms.a(0.5F, 0.5F, 0.5F);
+		ms.push();
+		ms.translate(0.5F, 0.5F, 0.5F);
 		render(stack, mainModel, renderer, ms, buffer, light, overlay);
-		ms.b();
+		ms.pop();
 	}
 
-	protected void render(ItemCooldownManager stack, M model, PartialItemModelRenderer renderer, BufferVertexConsumer ms,
-		BackgroundRenderer buffer, int light, int overlay) {
+	protected void render(ItemStack stack, M model, PartialItemModelRenderer renderer, MatrixStack ms,
+		VertexConsumerProvider buffer, int light, int overlay) {
 
 	}
 

@@ -1,40 +1,46 @@
-package com.simibubi.kinetic_api.content.logistics.block.mechanicalArm;
+package com.simibubi.create.content.logistics.block.mechanicalArm;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntityRenderer;
-import com.simibubi.kinetic_api.content.logistics.block.mechanicalArm.ArmTileEntity.Phase;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.base.KineticTileEntityRenderer;
+import com.simibubi.create.content.logistics.block.mechanicalArm.ArmTileEntity.Phase;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.entity.HorseEntityRenderer;
-import net.minecraft.client.render.model.json.ModelElementTexture.b;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.BannerItem;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.model.json.ModelTransformation.Mode;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.MathHelper;
 
 public class ArmRenderer extends KineticTileEntityRenderer {
 
-	public ArmRenderer(ebv dispatcher) {
+	public ArmRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(KineticTileEntity te, float pt, BufferVertexConsumer ms, BackgroundRenderer buffer, int light,
+	public boolean isGlobalRenderer(KineticTileEntity te) {
+		return true;
+	}
+
+	@Override
+	protected void renderSafe(KineticTileEntity te, float pt, MatrixStack ms, VertexConsumerProvider buffer, int light,
 		int overlay) {
 		super.renderSafe(te, pt, ms, buffer, light, overlay);
 		ArmTileEntity arm = (ArmTileEntity) te;
-		OverlayVertexConsumer builder = buffer.getBuffer(VertexConsumerProvider.c());
-		PistonHandler blockState = te.p();
+		VertexConsumer builder = buffer.getBuffer(RenderLayer.getSolid());
+		BlockState blockState = te.getCachedState();
 		MatrixStacker msr = MatrixStacker.of(ms);
 		int color = 0xFFFFFF;
 
@@ -43,17 +49,17 @@ public class ArmRenderer extends KineticTileEntityRenderer {
 		float upperArmAngle = arm.upperArmAngle.get(pt) - 90;
 		float headAngle = arm.headAngle.get(pt);
 		
-		boolean rave = te instanceof ArmTileEntity && ((ArmTileEntity) te).phase == Phase.DANCING;
+		boolean rave = arm.phase == Phase.DANCING;
 		float renderTick = AnimationTickHolder.getRenderTick() + (te.hashCode() % 64);
 		if (rave) {
 			baseAngle = (renderTick * 10) % 360;
-			lowerArmAngle = afj.g((afj.a(renderTick / 4) + 1) / 2, -45, 15);
-			upperArmAngle = afj.g((afj.a(renderTick / 8) + 1) / 4, -45, 95);
+			lowerArmAngle = MathHelper.lerp((MathHelper.sin(renderTick / 4) + 1) / 2, -45, 15);
+			upperArmAngle = MathHelper.lerp((MathHelper.sin(renderTick / 8) + 1) / 4, -45, 95);
 			headAngle = -lowerArmAngle;
-			color = ColorHelper.rainbowColor(AnimationTickHolder.ticks * 100);
+			color = ColorHelper.rainbowColor(AnimationTickHolder.getTicks() * 100);
 		}
 		
-		ms.a();
+		ms.push();
 
 		SuperByteBuffer base = AllBlockPartials.ARM_BASE.renderOn(blockState).light(light);
 		SuperByteBuffer lowerBody = AllBlockPartials.ARM_LOWER_BODY.renderOn(blockState).light(light);
@@ -64,61 +70,61 @@ public class ArmRenderer extends KineticTileEntityRenderer {
 
 		msr.centre();
 		
-		if (blockState.c(ArmBlock.CEILING))
+		if (blockState.get(ArmBlock.CEILING))
 			msr.rotateX(180);
 
-		ms.a(0, 4 / 16d, 0);
+		ms.translate(0, 4 / 16d, 0);
 		msr.rotateY(baseAngle);
 		base.renderInto(ms, builder);
 
-		ms.a(0, 1 / 16d, -2 / 16d);
+		ms.translate(0, 1 / 16d, -2 / 16d);
 		msr.rotateX(lowerArmAngle);
-		ms.a(0, -1 / 16d, 0);
+		ms.translate(0, -1 / 16d, 0);
 		lowerBody.color(color)
 			.renderInto(ms, builder);
 
-		ms.a(0, 12 / 16d, 12 / 16d);
+		ms.translate(0, 12 / 16d, 12 / 16d);
 		msr.rotateX(upperArmAngle);
 		upperBody.color(color)
 			.renderInto(ms, builder);
 
-		ms.a(0, 11 / 16d, -11 / 16d);
+		ms.translate(0, 11 / 16d, -11 / 16d);
 		msr.rotateX(headAngle);
 		head.renderInto(ms, builder);
 
-		ms.a(0, 0, -4 / 16d);
+		ms.translate(0, 0, -4 / 16d);
 		claw.renderInto(ms, builder);
-		ItemCooldownManager item = arm.heldItem;
-		HorseEntityRenderer itemRenderer = KeyBinding.B()
-			.ac();
-		boolean hasItem = !item.a();
-		boolean isBlockItem = hasItem && (item.b() instanceof BannerItem)
-			&& itemRenderer.a(item, KeyBinding.B().r, null)
-				.b();
+		ItemStack item = arm.heldItem;
+		ItemRenderer itemRenderer = MinecraftClient.getInstance()
+			.getItemRenderer();
+		boolean hasItem = !item.isEmpty();
+		boolean isBlockItem = hasItem && (item.getItem() instanceof BlockItem)
+			&& itemRenderer.getHeldItemModel(item, MinecraftClient.getInstance().world, null)
+				.hasDepth();
 		
 		for (int flip : Iterate.positiveAndNegative) {
-			ms.a();
-			ms.a(0, flip * 3 / 16d, -1 / 16d);
+			ms.push();
+			ms.translate(0, flip * 3 / 16d, -1 / 16d);
 			msr.rotateX(flip * (hasItem ? isBlockItem ? 0 : -35 : 0));
 			clawGrip.light(light).renderInto(ms, builder);
-			ms.b();
+			ms.pop();
 		}
 
 		if (hasItem) {
 			float itemScale = isBlockItem ? .5f : .625f;
 			msr.rotateX(90);
-			ms.a(0, -4 / 16f, 0);
-			ms.a(itemScale, itemScale, itemScale);
+			ms.translate(0, -4 / 16f, 0);
+			ms.scale(itemScale, itemScale, itemScale);
 			itemRenderer
-				.a(item, b.i, light, overlay, ms, buffer);
+				.renderItem(item, Mode.FIXED, light, overlay, ms, buffer);
 		}
 
-		ms.b();
+		ms.pop();
 	}
 
 	@Override
 	protected SuperByteBuffer getRotatedModel(KineticTileEntity te) {
-		return AllBlockPartials.ARM_COG.renderOn(te.p());
+		return AllBlockPartials.ARM_COG.renderOn(te.getCachedState());
 	}
 
 }

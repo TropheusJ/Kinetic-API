@@ -1,37 +1,38 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.renderer;
+package com.simibubi.create.foundation.tileEntity.renderer;
 
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.gl.JsonGlProgram;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
-public abstract class ColoredOverlayTileEntityRenderer<T extends BeehiveBlockEntity> extends SafeTileEntityRenderer<T> {
+public abstract class ColoredOverlayTileEntityRenderer<T extends BlockEntity> extends SafeTileEntityRenderer<T> {
 
-	public ColoredOverlayTileEntityRenderer(ebv dispatcher) {
+	public ColoredOverlayTileEntityRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(T te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(T te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 			int light, int overlay) {
-		SuperByteBuffer render = render(te.v(), te.o(), te.p(), getOverlayBuffer(te),
+		SuperByteBuffer render = render(te.getWorld(), te.getPos(), te.getCachedState(), getOverlayBuffer(te),
 				getColor(te, partialTicks));
-		render.renderInto(ms, buffer.getBuffer(VertexConsumerProvider.c()));
+		render.renderInto(ms, buffer.getBuffer(RenderLayer.getSolid()));
 	}
 
 	protected abstract int getColor(T te, float partialTicks);
 
 	protected abstract SuperByteBuffer getOverlayBuffer(T te);
 
-	public static SuperByteBuffer render(GameMode world, BlockPos pos, PistonHandler state, SuperByteBuffer buffer,
+	public static SuperByteBuffer render(World world, BlockPos pos, BlockState state, SuperByteBuffer buffer,
 			int color) {
-		int packedLightmapCoords = JsonGlProgram.a(world, state, pos);
+		int packedLightmapCoords = WorldRenderer.getLightmapCoordinates(world, state, pos);
 		return buffer.color(color).light(packedLightmapCoords);
 	}
 

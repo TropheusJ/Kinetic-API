@@ -1,52 +1,54 @@
-package com.simibubi.kinetic_api.content.contraptions.components.fan;
+package com.simibubi.create.content.contraptions.components.fan;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
-import afj;
-import apx;
-import com.simibubi.kinetic_api.AllTags;
-import com.simibubi.kinetic_api.content.contraptions.particle.AirFlowParticleData;
-import com.simibubi.kinetic_api.content.logistics.InWorldProcessing;
-import com.simibubi.kinetic_api.content.logistics.InWorldProcessing.Type;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import dcg;
-import ddb;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.entity.CrossbowUser;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.damage.DamageRecord;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.PlayerAbilities;
+
+import com.simibubi.create.AllTags;
+import com.simibubi.create.content.contraptions.particle.AirFlowParticleData;
+import com.simibubi.create.content.logistics.InWorldProcessing;
+import com.simibubi.create.content.logistics.InWorldProcessing.Type;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.mob.EndermanEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.util.shape.ArrayVoxelShape;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.world.World;
 
 public class AirCurrent {
 
-	private static final DamageRecord damageSourceFire = new DamageRecord("kinetic_api.fan_fire").r()
-		.o();
-	private static final DamageRecord damageSourceLava = new DamageRecord("kinetic_api.fan_lava").r()
-		.o();
+	private static final DamageSource damageSourceFire = new DamageSource("create.fan_fire").setScaledWithDifficulty()
+		.setFire();
+	private static final DamageSource damageSourceLava = new DamageSource("create.fan_lava").setScaledWithDifficulty()
+		.setFire();
 
 	public final IAirCurrentSource source;
-	public Timer bounds = new Timer(0, 0, 0, 0, 0, 0);
+	public Box bounds = new Box(0, 0, 0, 0, 0, 0);
 	public List<AirCurrentSegment> segments = new ArrayList<>();
 	public Direction direction;
 	public boolean pushing;
@@ -54,7 +56,7 @@ public class AirCurrent {
 
 	protected List<Pair<TransportedItemStackHandlerBehaviour, InWorldProcessing.Type>> affectedItemHandlers =
 		new ArrayList<>();
-	protected List<apx> caughtEntities = new ArrayList<>();
+	protected List<Entity> caughtEntities = new ArrayList<>();
 
 	public AirCurrent(IAirCurrentSource source) {
 		this.source = source;
@@ -63,49 +65,49 @@ public class AirCurrent {
 	public void tick() {
 		if (direction == null)
 			rebuild();
-		GameMode world = source.getAirCurrentWorld();
+		World world = source.getAirCurrentWorld();
 		Direction facing = direction;
-		if (world != null && world.v) {
+		if (world != null && world.isClient) {
 			float offset = pushing ? 0.5f : maxDistance + .5f;
-			EntityHitResult pos = VecHelper.getCenterOf(source.getAirCurrentPos())
-				.e(EntityHitResult.b(facing.getVector()).a(offset));
-			if (world.t.nextFloat() < AllConfigs.CLIENT.fanParticleDensity.get())
-				world.addParticle(new AirFlowParticleData(source.getAirCurrentPos()), pos.entity, pos.c, pos.d, 0, 0, 0);
+			Vec3d pos = VecHelper.getCenterOf(source.getAirCurrentPos())
+				.add(Vec3d.of(facing.getVector()).multiply(offset));
+			if (world.random.nextFloat() < AllConfigs.CLIENT.fanParticleDensity.get())
+				world.addParticle(new AirFlowParticleData(source.getAirCurrentPos()), pos.x, pos.y, pos.z, 0, 0, 0);
 		}
 
 		tickAffectedEntities(world, facing);
 		tickAffectedHandlers();
 	}
 
-	protected void tickAffectedEntities(GameMode world, Direction facing) {
-		for (Iterator<apx> iterator = caughtEntities.iterator(); iterator.hasNext();) {
-			apx entity = iterator.next();
-			if (!entity.cb()
-				.c(bounds)) {
+	protected void tickAffectedEntities(World world, Direction facing) {
+		for (Iterator<Entity> iterator = caughtEntities.iterator(); iterator.hasNext();) {
+			Entity entity = iterator.next();
+			if (!entity.isAlive() || !entity.getBoundingBox()
+				.intersects(bounds)) {
 				iterator.remove();
 				continue;
 			}
 
-			EntityHitResult center = VecHelper.getCenterOf(source.getAirCurrentPos());
+			Vec3d center = VecHelper.getCenterOf(source.getAirCurrentPos());
 			Vec3i flow = (pushing ? facing : facing.getOpposite()).getVector();
 
-			float sneakModifier = entity.bt() ? 4096f : 512f;
+			float sneakModifier = entity.isSneaking() ? 4096f : 512f;
 			float speed = Math.abs(source.getSpeed());
-			double entityDistance = entity.cz()
-				.f(center);
+			double entityDistance = entity.getPos()
+				.distanceTo(center);
 			float acceleration = (float) (speed / sneakModifier / (entityDistance / maxDistance));
-			EntityHitResult previousMotion = entity.cB();
+			Vec3d previousMotion = entity.getVelocity();
 			float maxAcceleration = 5;
 
 			double xIn =
-				afj.a(flow.getX() * acceleration - previousMotion.entity, -maxAcceleration, maxAcceleration);
+				MathHelper.clamp(flow.getX() * acceleration - previousMotion.x, -maxAcceleration, maxAcceleration);
 			double yIn =
-				afj.a(flow.getY() * acceleration - previousMotion.c, -maxAcceleration, maxAcceleration);
+				MathHelper.clamp(flow.getY() * acceleration - previousMotion.y, -maxAcceleration, maxAcceleration);
 			double zIn =
-				afj.a(flow.getZ() * acceleration - previousMotion.d, -maxAcceleration, maxAcceleration);
+				MathHelper.clamp(flow.getZ() * acceleration - previousMotion.z, -maxAcceleration, maxAcceleration);
 
-			entity.f(previousMotion.e(new EntityHitResult(xIn, yIn, zIn).a(1 / 8f)));
-			entity.C = 0;
+			entity.setVelocity(previousMotion.add(new Vec3d(xIn, yIn, zIn).multiply(1 / 8f)));
+			entity.fallDistance = 0;
 
 			if (entity instanceof ServerPlayerEntity)
 				((ServerPlayerEntity) entity).networkHandler.floatingTicks = 0;
@@ -115,52 +117,52 @@ public class AirCurrent {
 
 			if (processingType == null) {
 				if (entity instanceof ServerPlayerEntity)
-					AllTriggers.triggerFor(AllTriggers.FAN, (PlayerAbilities) entity);
+					AllTriggers.triggerFor(AllTriggers.FAN, (PlayerEntity) entity);
 				continue;
 			}
 
-			if (entity instanceof PaintingEntity) {
-				InWorldProcessing.spawnParticlesForProcessing(world, entity.cz(), processingType);
-				PaintingEntity itemEntity = (PaintingEntity) entity;
-				if (world.v)
+			if (entity instanceof ItemEntity) {
+				InWorldProcessing.spawnParticlesForProcessing(world, entity.getPos(), processingType);
+				ItemEntity itemEntity = (ItemEntity) entity;
+				if (world.isClient)
 					continue;
 				if (InWorldProcessing.canProcess(itemEntity, processingType))
 					InWorldProcessing.applyProcessing(itemEntity, processingType);
 				continue;
 			}
 
-			if (world.v)
+			if (world.isClient)
 				continue;
 
 			switch (processingType) {
 			case BLASTING:
-				if (!entity.aC()) {
-					entity.f(10);
-					entity.a(damageSourceLava, 4);
+				if (!entity.isFireImmune()) {
+					entity.setOnFireFor(10);
+					entity.damage(damageSourceLava, 4);
 				}
 				if (entity instanceof ServerPlayerEntity)
-					AllTriggers.triggerFor(AllTriggers.FAN_LAVA, (PlayerAbilities) entity);
+					AllTriggers.triggerFor(AllTriggers.FAN_LAVA, (PlayerEntity) entity);
 				break;
 			case SMOKING:
-				if (!entity.aC()) {
-					entity.f(2);
-					entity.a(damageSourceFire, 2);
+				if (!entity.isFireImmune()) {
+					entity.setOnFireFor(2);
+					entity.damage(damageSourceFire, 2);
 				}
 				if (entity instanceof ServerPlayerEntity)
-					AllTriggers.triggerFor(AllTriggers.FAN_SMOKE, (PlayerAbilities) entity);
+					AllTriggers.triggerFor(AllTriggers.FAN_SMOKE, (PlayerEntity) entity);
 				break;
 			case SPLASHING:
-				if (entity instanceof CrossbowUser || entity.W() == EntityDimensions.az
-					|| entity.W() == EntityDimensions.f) {
-					entity.a(DamageRecord.h, 2);
+				if (entity instanceof EndermanEntity || entity.getType() == EntityType.SNOW_GOLEM
+					|| entity.getType() == EntityType.BLAZE) {
+					entity.damage(DamageSource.DROWN, 2);
 				}
 				if (entity instanceof ServerPlayerEntity)
-					AllTriggers.triggerFor(AllTriggers.FAN_WATER, (PlayerAbilities) entity);
-				if (!entity.bp())
+					AllTriggers.triggerFor(AllTriggers.FAN_WATER, (PlayerEntity) entity);
+				if (!entity.isOnFire())
 					break;
-				entity.al();
-				world.a(null, entity.cA(), MusicType.eM,
-					SoundEvent.g, 0.7F, 1.6F + (world.t.nextFloat() - world.t.nextFloat()) * 0.4F);
+				entity.extinguish();
+				world.playSound(null, entity.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXTINGUISH_FIRE,
+					SoundCategory.NEUTRAL, 0.7F, 1.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.4F);
 				break;
 			default:
 				break;
@@ -173,7 +175,7 @@ public class AirCurrent {
 		if (source.getSpeed() == 0) {
 			maxDistance = 0;
 			segments.clear();
-			bounds = new Timer(0, 0, 0, 0, 0, 0);
+			bounds = new Box(0, 0, 0, 0, 0, 0);
 			return;
 		}
 
@@ -181,11 +183,11 @@ public class AirCurrent {
 		pushing = source.getAirFlowDirection() == direction;
 		maxDistance = source.getMaxDistance();
 
-		GameMode world = source.getAirCurrentWorld();
+		World world = source.getAirCurrentWorld();
 		BlockPos start = source.getAirCurrentPos();
 		float max = this.maxDistance;
 		Direction facing = direction;
-		EntityHitResult directionVec = EntityHitResult.b(facing.getVector());
+		Vec3d directionVec = Vec3d.of(facing.getVector());
 		maxDistance = getFlowLimit(world, start, max, facing);
 
 		// Determine segments with transported fluids/gases
@@ -218,61 +220,61 @@ public class AirCurrent {
 
 		// Build Bounding Box
 		if (maxDistance < 0.25f)
-			bounds = new Timer(0, 0, 0, 0, 0, 0);
+			bounds = new Box(0, 0, 0, 0, 0, 0);
 		else {
 			float factor = maxDistance - 1;
-			EntityHitResult scale = directionVec.a(factor);
+			Vec3d scale = directionVec.multiply(factor);
 			if (factor > 0)
-				bounds = new Timer(start.offset(direction)).b(scale);
+				bounds = new Box(start.offset(direction)).stretch(scale);
 			else {
-				bounds = new Timer(start.offset(direction)).a(scale.entity, scale.c, scale.d)
-					.c(scale);
+				bounds = new Box(start.offset(direction)).shrink(scale.x, scale.y, scale.z)
+					.offset(scale);
 			}
 		}
 		findAffectedHandlers();
 	}
 
-	public static float getFlowLimit(GameMode world, BlockPos start, float max, Direction facing) {
-		EntityHitResult directionVec = EntityHitResult.b(facing.getVector());
-		EntityHitResult planeVec = VecHelper.axisAlingedPlaneOf(directionVec);
+	public static float getFlowLimit(World world, BlockPos start, float max, Direction facing) {
+		Vec3d directionVec = Vec3d.of(facing.getVector());
+		Vec3d planeVec = VecHelper.axisAlingedPlaneOf(directionVec);
 
 		// 4 Rays test for holes in the shapes blocking the flow
 		float offsetDistance = .25f;
-		EntityHitResult[] offsets = new EntityHitResult[] { planeVec.d(offsetDistance, offsetDistance, offsetDistance),
-			planeVec.d(-offsetDistance, -offsetDistance, offsetDistance),
-			planeVec.d(offsetDistance, -offsetDistance, -offsetDistance),
-			planeVec.d(-offsetDistance, offsetDistance, -offsetDistance), };
+		Vec3d[] offsets = new Vec3d[] { planeVec.multiply(offsetDistance, offsetDistance, offsetDistance),
+			planeVec.multiply(-offsetDistance, -offsetDistance, offsetDistance),
+			planeVec.multiply(offsetDistance, -offsetDistance, -offsetDistance),
+			planeVec.multiply(-offsetDistance, offsetDistance, -offsetDistance), };
 
 		float limitedDistance = 0;
 
 		// Determine the distance of the air flow
 		Outer: for (int i = 1; i <= max; i++) {
 			BlockPos currentPos = start.offset(facing, i);
-			if (!world.p(currentPos))
+			if (!world.canSetBlock(currentPos))
 				break;
-			PistonHandler state = world.d_(currentPos);
+			BlockState state = world.getBlockState(currentPos);
 			if (shouldAlwaysPass(state))
 				continue;
-			VoxelShapes voxelshape = state.b(world, currentPos, ArrayVoxelShape.a());
-			if (voxelshape.b())
+			VoxelShape voxelshape = state.getCollisionShape(world, currentPos, ShapeContext.absent());
+			if (voxelshape.isEmpty())
 				continue;
-			if (voxelshape == ddb.b()) {
+			if (voxelshape == VoxelShapes.fullCube()) {
 				max = i - 1;
 				break;
 			}
 
-			for (EntityHitResult offset : offsets) {
-				EntityHitResult rayStart = VecHelper.getCenterOf(currentPos)
-					.d(directionVec.a(.5f + 1 / 32f))
-					.e(offset);
-				EntityHitResult rayEnd = rayStart.e(directionVec.a(1 + 1 / 32f));
-				dcg blockraytraceresult =
-					world.a(rayStart, rayEnd, currentPos, voxelshape, state);
+			for (Vec3d offset : offsets) {
+				Vec3d rayStart = VecHelper.getCenterOf(currentPos)
+					.subtract(directionVec.multiply(.5f + 1 / 32f))
+					.add(offset);
+				Vec3d rayEnd = rayStart.add(directionVec.multiply(1 + 1 / 32f));
+				BlockHitResult blockraytraceresult =
+					world.raycastBlock(rayStart, rayEnd, currentPos, voxelshape, state);
 				if (blockraytraceresult == null)
 					continue Outer;
 
-				double distance = i - 1 + blockraytraceresult.e()
-					.f(rayStart);
+				double distance = i - 1 + blockraytraceresult.getPos()
+					.distanceTo(rayStart);
 				if (limitedDistance < distance)
 					limitedDistance = (float) distance;
 			}
@@ -286,11 +288,11 @@ public class AirCurrent {
 	public void findEntities() {
 		caughtEntities.clear();
 		caughtEntities = source.getAirCurrentWorld()
-			.a(null, bounds);
+			.getOtherEntities(null, bounds);
 	}
 
 	public void findAffectedHandlers() {
-		GameMode world = source.getAirCurrentWorld();
+		World world = source.getAirCurrentWorld();
 		BlockPos start = source.getAirCurrentPos();
 		affectedItemHandlers.clear();
 		for (int i = 0; i < maxDistance + 1; i++) {
@@ -315,20 +317,20 @@ public class AirCurrent {
 	public void tickAffectedHandlers() {
 		for (Pair<TransportedItemStackHandlerBehaviour, Type> pair : affectedItemHandlers) {
 			TransportedItemStackHandlerBehaviour handler = pair.getKey();
-			GameMode world = handler.getWorld();
+			World world = handler.getWorld();
 			InWorldProcessing.Type processingType = pair.getRight();
 
 			handler.handleProcessingOnAllItems((transported) -> {
 				InWorldProcessing.spawnParticlesForProcessing(world, handler.getWorldPositionOf(transported),
 					processingType);
-				if (world.v)
+				if (world.isClient)
 					return TransportedResult.doNothing();
 				return InWorldProcessing.applyProcessing(transported, world, processingType);
 			});
 		}
 	}
 
-	private static boolean shouldAlwaysPass(PistonHandler state) {
+	private static boolean shouldAlwaysPass(BlockState state) {
 		return AllTags.AllBlockTags.FAN_TRANSPARENT.matches(state);
 	}
 

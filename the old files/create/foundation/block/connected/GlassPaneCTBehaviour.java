@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.foundation.block.connected;
+package com.simibubi.create.foundation.block.connected;
 
-import bqx;
-import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.world.BlockRenderView;
 
 public class GlassPaneCTBehaviour extends StandardCTBehaviour {
 
@@ -18,13 +18,13 @@ public class GlassPaneCTBehaviour extends StandardCTBehaviour {
 	}
 
 	@Override
-	public boolean connectsTo(PistonHandler state, PistonHandler other, bqx reader, BlockPos pos, BlockPos otherPos,
+	public boolean connectsTo(BlockState state, BlockState other, BlockRenderView reader, BlockPos pos, BlockPos otherPos,
 		Direction face) {
-		return state.b() == other.b();
+		return state.getBlock() == other.getBlock();
 	}
 
 	@Override
-	protected boolean reverseUVsHorizontally(PistonHandler state, net.minecraft.util.math.Direction face) {
+	protected boolean reverseUVsHorizontally(BlockState state, net.minecraft.util.math.Direction face) {
 		if (face.getDirection() == AxisDirection.NEGATIVE)
 			return true;
 		return super.reverseUVsHorizontally(state, face);

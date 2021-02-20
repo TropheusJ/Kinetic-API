@@ -1,11 +1,12 @@
-package com.simibubi.kinetic_api.content.contraptions.components.flywheel;
+package com.simibubi.create.content.contraptions.components.flywheel;
 
-import com.simibubi.kinetic_api.content.contraptions.base.GeneratingKineticTileEntity;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedChasingValue;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.content.contraptions.base.GeneratingKineticTileEntity;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedChasingValue;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Box;
 
 public class FlywheelTileEntity extends GeneratingKineticTileEntity {
 
@@ -17,7 +18,7 @@ public class FlywheelTileEntity extends GeneratingKineticTileEntity {
 	InterpolatedChasingValue visualSpeed = new InterpolatedChasingValue();
 	float angle;
 
-	public FlywheelTileEntity(BellBlockEntity<? extends FlywheelTileEntity> type) {
+	public FlywheelTileEntity(BlockEntityType<? extends FlywheelTileEntity> type) {
 		super(type);
 	}
 
@@ -39,7 +40,7 @@ public class FlywheelTileEntity extends GeneratingKineticTileEntity {
 
 	@Override
 	public float getGeneratedSpeed() {
-		return convertToDirection(generatedSpeed, p().c(FlywheelBlock.HORIZONTAL_FACING));
+		return convertToDirection(generatedSpeed, getCachedState().get(FlywheelBlock.HORIZONTAL_FACING));
 	}
 
 	@Override
@@ -48,8 +49,8 @@ public class FlywheelTileEntity extends GeneratingKineticTileEntity {
 	}
 
 	@Override
-	public Timer getRenderBoundingBox() {
-		return super.getRenderBoundingBox().g(2);
+	public Box makeRenderBoundingBox() {
+		return super.makeRenderBoundingBox().expand(2);
 	}
 
 	@Override
@@ -61,7 +62,7 @@ public class FlywheelTileEntity extends GeneratingKineticTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		generatedSpeed = compound.getFloat("GeneratedSpeed");
 		generatedCapacity = compound.getFloat("GeneratedCapacity");
 		stoppingCooldown = compound.getInt("Cooldown");
@@ -72,10 +73,10 @@ public class FlywheelTileEntity extends GeneratingKineticTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 
-		if (d.v) {
+		if (world.isClient) {
 			visualSpeed.target(getGeneratedSpeed());
 			visualSpeed.tick();
 			angle += visualSpeed.value * 3 / 10f;
@@ -101,4 +102,8 @@ public class FlywheelTileEntity extends GeneratingKineticTileEntity {
 		}
 	}
 
+	@Override
+	public boolean shouldRenderAsTE() {
+		return true;
+	}
 }

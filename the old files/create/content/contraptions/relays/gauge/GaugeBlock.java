@@ -1,62 +1,62 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.gauge;
+package com.simibubi.create.content.contraptions.relays.gauge;
 
 import java.util.Random;
-import afj;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalAxisKineticBlock;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import com.simibubi.kinetic_api.foundation.utility.worldWrappers.WrappedWorld;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.util.SmoothUtil;
-import net.minecraft.fluid.FluidState;
+
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.DirectionalAxisKineticBlock;
+import com.simibubi.create.content.contraptions.base.IRotate;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.VecHelper;
+import com.simibubi.create.foundation.utility.worldWrappers.WrappedWorld;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 public class GaugeBlock extends DirectionalAxisKineticBlock {
 
 	public static final GaugeShaper GAUGE = GaugeShaper.make();
 	protected Type type;
 
-	public enum Type implements SmoothUtil {
+	public enum Type implements StringIdentifiable {
 		SPEED, STRESS;
 
 		@Override
-		public String a() {
+		public String asString() {
 			return Lang.asId(name());
 		}
 	}
 
-	public static GaugeBlock speed(c properties) {
+	public static GaugeBlock speed(Settings properties) {
 		return new GaugeBlock(properties, Type.SPEED);
 	}
 	
-	public static GaugeBlock stress(c properties) {
+	public static GaugeBlock stress(Settings properties) {
 		return new GaugeBlock(properties, Type.STRESS);
 	}
 	
-	protected GaugeBlock(c properties, Type type) {
+	protected GaugeBlock(Settings properties, Type type) {
 		super(properties);
 		this.type = type;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		switch (type) {
 		case SPEED:
 			return AllTileEntities.SPEEDOMETER.create();
@@ -75,66 +75,66 @@ public class GaugeBlock extends DirectionalAxisKineticBlock {
 	} */
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		GameMode world = context.p();
-		Direction face = context.j();
-		BlockPos placedOnPos = context.a().offset(context.j().getOpposite());
-		PistonHandler placedOnState = world.d_(placedOnPos);
-		BeetrootsBlock block = placedOnState.b();
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		World world = context.getWorld();
+		Direction face = context.getSide();
+		BlockPos placedOnPos = context.getBlockPos().offset(context.getSide().getOpposite());
+		BlockState placedOnState = world.getBlockState(placedOnPos);
+		Block block = placedOnState.getBlock();
 
 		if (block instanceof IRotate && ((IRotate) block).hasShaftTowards(world, placedOnPos, placedOnState, face)) {
-			PistonHandler toPlace = n();
-			Direction horizontalFacing = context.f();
-			Direction nearestLookingDirection = context.d();
+			BlockState toPlace = getDefaultState();
+			Direction horizontalFacing = context.getPlayerFacing();
+			Direction nearestLookingDirection = context.getPlayerLookDirection();
 			boolean lookPositive = nearestLookingDirection.getDirection() == AxisDirection.POSITIVE;
 			if (face.getAxis() == Axis.X) {
 				toPlace = toPlace
-						.a(FACING, lookPositive ? Direction.NORTH : Direction.SOUTH)
-						.a(AXIS_ALONG_FIRST_COORDINATE, true);
+						.with(FACING, lookPositive ? Direction.NORTH : Direction.SOUTH)
+						.with(AXIS_ALONG_FIRST_COORDINATE, true);
 			} else if (face.getAxis() == Axis.Y) {
 				toPlace = toPlace
-						.a(FACING, horizontalFacing.getOpposite())
-						.a(AXIS_ALONG_FIRST_COORDINATE, horizontalFacing.getAxis() == Axis.X);
+						.with(FACING, horizontalFacing.getOpposite())
+						.with(AXIS_ALONG_FIRST_COORDINATE, horizontalFacing.getAxis() == Axis.X);
 			} else {
 				toPlace = toPlace
-						.a(FACING, lookPositive ? Direction.WEST : Direction.EAST)
-						.a(AXIS_ALONG_FIRST_COORDINATE, false);
+						.with(FACING, lookPositive ? Direction.WEST : Direction.EAST)
+						.with(AXIS_ALONG_FIRST_COORDINATE, false);
 			}
 
 			return toPlace;
 		}
 
-		return super.a(context);
+		return super.getPlacementState(context);
 	}
 
 	@Override
-	protected Direction getFacingForPlacement(PotionUtil context) {
-		return context.j();
+	protected Direction getFacingForPlacement(ItemPlacementContext context) {
+		return context.getSide();
 	}
 
-	protected boolean getAxisAlignmentForPlacement(PotionUtil context) {
-		return context.f().getAxis() != Axis.X;
+	@Override
+	protected boolean getAxisAlignmentForPlacement(ItemPlacementContext context) {
+		return context.getPlayerFacing().getAxis() != Axis.X;
 	}
 
-	public boolean shouldRenderHeadOnFace(GameMode world, BlockPos pos, PistonHandler state, Direction face) {
+	public boolean shouldRenderHeadOnFace(World world, BlockPos pos, BlockState state, Direction face) {
 		if (face.getAxis().isVertical())
 			return false;
-		if (face == state.c(FACING).getOpposite())
+		if (face == state.get(FACING).getOpposite())
 			return false;
 		if (face.getAxis() == getRotationAxis(state))
 			return false;
-		if (getRotationAxis(state) == Axis.Y && face != state.c(FACING))
+		if (getRotationAxis(state) == Axis.Y && face != state.get(FACING))
 			return false;
-		PistonHandler blockState = world.d_(pos.offset(face));
-		if (BlockHelper.hasBlockSolidSide(blockState, world, pos, face.getOpposite()) && blockState.c() != FluidState.F
+		if (!Block.shouldDrawSide(state, world, pos, face)
 				&& !(world instanceof WrappedWorld))
 			return false;
 		return true;
 	}
 
 	@Override
-	public void a(PistonHandler stateIn, GameMode worldIn, BlockPos pos, Random rand) {
-		BeehiveBlockEntity te = worldIn.c(pos);
+	public void randomDisplayTick(BlockState stateIn, World worldIn, BlockPos pos, Random rand) {
+		BlockEntity te = worldIn.getBlockEntity(pos);
 		if (te == null || !(te instanceof GaugeTileEntity))
 			return;
 		GaugeTileEntity gaugeTE = (GaugeTileEntity) te;
@@ -146,25 +146,25 @@ public class GaugeBlock extends DirectionalAxisKineticBlock {
 			if (!shouldRenderHeadOnFace(worldIn, pos, stateIn, face))
 				continue;
 
-			EntityHitResult rgb = ColorHelper.getRGB(color);
-			EntityHitResult faceVec = EntityHitResult.b(face.getVector());
+			Vec3d rgb = ColorHelper.getRGB(color);
+			Vec3d faceVec = Vec3d.of(face.getVector());
 			Direction positiveFacing = Direction.get(AxisDirection.POSITIVE, face.getAxis());
-			EntityHitResult positiveFaceVec = EntityHitResult.b(positiveFacing.getVector());
+			Vec3d positiveFaceVec = Vec3d.of(positiveFacing.getVector());
 			int particleCount = gaugeTE.dialTarget > 1 ? 4 : 1;
 
 			if (particleCount == 1 && rand.nextFloat() > 1 / 4f)
 				continue;
 
 			for (int i = 0; i < particleCount; i++) {
-				EntityHitResult mul = VecHelper
-						.offsetRandomly(EntityHitResult.a, rand, .25f)
-						.h(new EntityHitResult(1, 1, 1).d(positiveFaceVec))
-						.d()
-						.a(.3f);
-				EntityHitResult offset = VecHelper.getCenterOf(pos).e(faceVec.a(.55)).e(mul);
+				Vec3d mul = VecHelper
+						.offsetRandomly(Vec3d.ZERO, rand, .25f)
+						.multiply(new Vec3d(1, 1, 1).subtract(positiveFaceVec))
+						.normalize()
+						.multiply(.3f);
+				Vec3d offset = VecHelper.getCenterOf(pos).add(faceVec.multiply(.55)).add(mul);
 				worldIn
-						.addParticle(new DustParticleEffect((float) rgb.entity, (float) rgb.c, (float) rgb.d, 1), offset.entity,
-								offset.c, offset.d, mul.entity, mul.c, mul.d);
+						.addParticle(new DustParticleEffect((float) rgb.x, (float) rgb.y, (float) rgb.z, 1), offset.x,
+								offset.y, offset.z, mul.x, mul.y, mul.z);
 			}
 
 		}
@@ -172,21 +172,21 @@ public class GaugeBlock extends DirectionalAxisKineticBlock {
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
-		return GAUGE.get(state.c(FACING), state.c(AXIS_ALONG_FIRST_COORDINATE));
+	public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
+		return GAUGE.get(state.get(FACING), state.get(AXIS_ALONG_FIRST_COORDINATE));
 	}
 
 	@Override
-	public boolean a(PistonHandler state) {
+	public boolean hasComparatorOutput(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int a(PistonHandler blockState, GameMode worldIn, BlockPos pos) {
-		BeehiveBlockEntity te = worldIn.c(pos);
+	public int getComparatorOutput(BlockState blockState, World worldIn, BlockPos pos) {
+		BlockEntity te = worldIn.getBlockEntity(pos);
 		if (te instanceof GaugeTileEntity) {
 			GaugeTileEntity gaugeTileEntity = (GaugeTileEntity) te;
-			return afj.f(afj.a(gaugeTileEntity.dialTarget * 14, 0, 15));
+			return MathHelper.ceil(MathHelper.clamp(gaugeTileEntity.dialTarget * 14, 0, 15));
 		}
 		return 0;
 	}

@@ -1,13 +1,14 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement;
+package com.simibubi.create.content.contraptions.components.structureMovement;
 
+import com.simibubi.create.content.contraptions.components.structureMovement.render.RenderedContraption;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -24,20 +25,20 @@ public abstract class MovementBehaviour {
 
 	public void visitNewPosition(MovementContext context, BlockPos pos) {}
 
-	public EntityHitResult getActiveAreaOffset(MovementContext context) {
-		return EntityHitResult.a;
+	public Vec3d getActiveAreaOffset(MovementContext context) {
+		return Vec3d.ZERO;
 	}
 
-	public void dropItem(MovementContext context, ItemCooldownManager stack) {
-		ItemCooldownManager remainder = ItemHandlerHelper.insertItem(context.contraption.inventory, stack, false);
-		if (remainder.a())
+	public void dropItem(MovementContext context, ItemStack stack) {
+		ItemStack remainder = ItemHandlerHelper.insertItem(context.contraption.inventory, stack, false);
+		if (remainder.isEmpty())
 			return;
 
-		EntityHitResult vec = context.position;
-		PaintingEntity itemEntity = new PaintingEntity(context.world, vec.entity, vec.c, vec.d, remainder);
-		itemEntity.f(context.motion.b(0, 0.5f, 0)
-			.a(context.world.t.nextFloat() * .3f));
-		context.world.c(itemEntity);
+		Vec3d vec = context.position;
+		ItemEntity itemEntity = new ItemEntity(context.world, vec.x, vec.y, vec.z, remainder);
+		itemEntity.setVelocity(context.motion.add(0, 0.5f, 0)
+			.multiply(context.world.random.nextFloat() * .3f));
+		context.world.spawnEntity(itemEntity);
 	}
 
 	public void stopMoving(MovementContext context) {
@@ -48,15 +49,21 @@ public abstract class MovementBehaviour {
 
 	}
 
-	public boolean hasSpecialMovementRenderer() {
-		return true;
+	public boolean renderAsNormalTileEntity() {
+		return false;
+	}
+
+	public boolean hasSpecialInstancedRendering() {
+		return false;
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void renderInContraption(MovementContext context, BufferVertexConsumer ms, BufferVertexConsumer msLocal,
-		BackgroundRenderer buffer) {}
+	public void renderInContraption(MovementContext context, MatrixStack ms, MatrixStack msLocal,
+		VertexConsumerProvider buffer) {}
 
-	public void onSpeedChanged(MovementContext context, EntityHitResult oldMotion, EntityHitResult motion) {
+	@Environment(EnvType.CLIENT)
+	public void addInstance(RenderedContraption contraption, MovementContext context) {}
 
+	public void onSpeedChanged(MovementContext context, Vec3d oldMotion, Vec3d motion) {
 	}
 }

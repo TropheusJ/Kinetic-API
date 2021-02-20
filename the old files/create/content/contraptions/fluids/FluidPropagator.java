@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -7,32 +7,33 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.fluids.PipeConnection.Flow;
-import com.simibubi.kinetic_api.content.contraptions.fluids.pipes.AxisPipeBlock;
-import com.simibubi.kinetic_api.content.contraptions.fluids.pipes.FluidPipeBlock;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.LecternBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.fluids.PipeConnection.Flow;
+import com.simibubi.create.content.contraptions.fluids.pipes.AxisPipeBlock;
+import com.simibubi.create.content.contraptions.fluids.pipes.FluidPipeBlock;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Pair;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.FluidBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 
 public class FluidPropagator {
 
-	public static void propagateChangedPipe(GrassColors world, BlockPos pipePos, PistonHandler pipeState) {
+	public static void propagateChangedPipe(WorldAccess world, BlockPos pipePos, BlockState pipeState) {
 		List<Pair<Integer, BlockPos>> frontier = new ArrayList<>();
 		Set<BlockPos> visited = new HashSet<>();
 		Set<Pair<PumpTileEntity, Direction>> discoveredPumps = new HashSet<>();
@@ -46,7 +47,7 @@ public class FluidPropagator {
 			if (visited.contains(currentPos))
 				continue;
 			visited.add(currentPos);
-			PistonHandler currentState = currentPos.equals(pipePos) ? pipeState : world.d_(currentPos);
+			BlockState currentState = currentPos.equals(pipePos) ? pipeState : world.getBlockState(currentPos);
 			FluidTransportBehaviour pipe = getPipe(world, currentPos);
 			if (pipe == null)
 				continue;
@@ -57,10 +58,10 @@ public class FluidPropagator {
 				if (!world.isAreaLoaded(target, 0))
 					continue;
 
-				BeehiveBlockEntity tileEntity = world.c(target);
-				PistonHandler targetState = world.d_(target);
+				BlockEntity tileEntity = world.getBlockEntity(target);
+				BlockState targetState = world.getBlockState(target);
 				if (tileEntity instanceof PumpTileEntity) {
-					if (!AllBlocks.MECHANICAL_PUMP.has(targetState) || targetState.c(PumpBlock.FACING)
+					if (!AllBlocks.MECHANICAL_PUMP.has(targetState) || targetState.get(PumpBlock.FACING)
 						.getAxis() != direction.getAxis())
 						continue;
 					discoveredPumps.add(Pair.of((PumpTileEntity) tileEntity, direction.getOpposite()));
@@ -83,7 +84,7 @@ public class FluidPropagator {
 			.updatePipesOnSide(pair.getSecond()));
 	}
 
-	public static void resetAffectedFluidNetworks(GameMode world, BlockPos start, Direction side) {
+	public static void resetAffectedFluidNetworks(World world, BlockPos start, Direction side) {
 		List<BlockPos> frontier = new ArrayList<>();
 		Set<BlockPos> visited = new HashSet<>();
 		frontier.add(start);
@@ -120,9 +121,9 @@ public class FluidPropagator {
 		}
 	}
 
-	public static Direction validateNeighbourChange(PistonHandler state, GameMode world, BlockPos pos, BeetrootsBlock otherBlock,
+	public static Direction validateNeighbourChange(BlockState state, World world, BlockPos pos, Block otherBlock,
 		BlockPos neighborPos, boolean isMoving) {
-		if (world.v)
+		if (world.isClient)
 			return null;
 		if (otherBlock instanceof FluidPipeBlock)
 			return null;
@@ -130,7 +131,7 @@ public class FluidPropagator {
 			return null;
 		if (otherBlock instanceof PumpBlock)
 			return null;
-		if (otherBlock instanceof LecternBlock)
+		if (otherBlock instanceof FluidBlock)
 			return null;
 		if (getStraightPipeAxis(state) == null)
 			return null;
@@ -143,29 +144,29 @@ public class FluidPropagator {
 		return null;
 	}
 
-	public static FluidTransportBehaviour getPipe(MobSpawnerLogic reader, BlockPos pos) {
+	public static FluidTransportBehaviour getPipe(BlockView reader, BlockPos pos) {
 		return TileEntityBehaviour.get(reader, pos, FluidTransportBehaviour.TYPE);
 	}
 
-	public static boolean isOpenEnd(MobSpawnerLogic reader, BlockPos pos, Direction side) {
+	public static boolean isOpenEnd(BlockView reader, BlockPos pos, Direction side) {
 		BlockPos connectedPos = pos.offset(side);
-		PistonHandler connectedState = reader.d_(connectedPos);
+		BlockState connectedState = reader.getBlockState(connectedPos);
 		FluidTransportBehaviour pipe = FluidPropagator.getPipe(reader, connectedPos);
 		if (pipe != null && pipe.canHaveFlowToward(connectedState, side.getOpposite()))
 			return false;
-		if (PumpBlock.isPump(connectedState) && connectedState.c(PumpBlock.FACING)
+		if (PumpBlock.isPump(connectedState) && connectedState.get(PumpBlock.FACING)
 			.getAxis() == side.getAxis())
 			return false;
 		if (BlockHelper.hasBlockSolidSide(connectedState, reader, connectedPos, side.getOpposite()))
 			return false;
-		if (!(connectedState.c()
-			.e() && connectedState.h(reader, connectedPos) != -1)
-			&& !BlockHelper.hasBlockStateProperty(connectedState, BambooLeaves.C))
+		if (!(connectedState.getMaterial()
+			.isReplaceable() && connectedState.getHardness(reader, connectedPos) != -1)
+			&& !BlockHelper.hasBlockStateProperty(connectedState, Properties.WATERLOGGED))
 			return false;
 		return true;
 	}
 
-	public static List<Direction> getPipeConnections(PistonHandler state, FluidTransportBehaviour pipe) {
+	public static List<Direction> getPipeConnections(BlockState state, FluidTransportBehaviour pipe) {
 		List<Direction> list = new ArrayList<>();
 		for (Direction d : Iterate.directions)
 			if (pipe.canHaveFlowToward(state, d))
@@ -182,7 +183,7 @@ public class FluidPropagator {
 //	@Deprecated 
 //	public static OutlineParams showBlockFace(BlockFace face) {
 //		MutableObject<OutlineParams> params = new MutableObject<>(new OutlineParams());
-//		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
+//		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
 //			Vector3d directionVec = new Vector3d(face.getFace()
 //				.getDirectionVec());
 //			Vector3d scaleVec = directionVec.scale(-.25f * face.getFace()
@@ -198,19 +199,19 @@ public class FluidPropagator {
 //			.lineWidth(1 / 16f);
 //	}
 
-	public static boolean hasFluidCapability(MobSpawnerLogic world, BlockPos pos, Direction side) {
-		BeehiveBlockEntity tileEntity = world.c(pos);
+	public static boolean hasFluidCapability(BlockView world, BlockPos pos, Direction side) {
+		BlockEntity tileEntity = world.getBlockEntity(pos);
 		return tileEntity != null && tileEntity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, side)
 			.isPresent();
 	}
 
 	@Nullable
-	public static Axis getStraightPipeAxis(PistonHandler state) {
-		if (state.b() instanceof PumpBlock)
-			return state.c(PumpBlock.FACING)
+	public static Axis getStraightPipeAxis(BlockState state) {
+		if (state.getBlock() instanceof PumpBlock)
+			return state.get(PumpBlock.FACING)
 				.getAxis();
-		if (state.b() instanceof AxisPipeBlock)
-			return state.c(AxisPipeBlock.e);
+		if (state.getBlock() instanceof AxisPipeBlock)
+			return state.get(AxisPipeBlock.AXIS);
 		if (!FluidPipeBlock.isPipe(state))
 			return null;
 		Axis axisFound = null;

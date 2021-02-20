@@ -1,33 +1,35 @@
-package com.simibubi.kinetic_api.content.contraptions.components.mixer;
+package com.simibubi.create.content.contraptions.components.mixer;
 
 import java.util.List;
 import java.util.Optional;
-import afj;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidFX;
-import com.simibubi.kinetic_api.content.contraptions.fluids.recipe.PotionMixingRecipeManager;
-import com.simibubi.kinetic_api.content.contraptions.processing.BasinOperatingTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.processing.BasinTileEntity;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.advancement.ITriggerable;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.item.SmartInventory;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour.TankSegment;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.fluids.FluidFX;
+import com.simibubi.create.content.contraptions.fluids.recipe.PotionMixingRecipeManager;
+import com.simibubi.create.content.contraptions.processing.BasinOperatingTileEntity;
+import com.simibubi.create.content.contraptions.processing.BasinTileEntity;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.advancement.ITriggerable;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.item.SmartInventory;
+import com.simibubi.create.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour.TankSegment;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.recipe.MapExtendingRecipe;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.recipe.RecipeSerializer;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
@@ -39,7 +41,7 @@ public class MechanicalMixerTileEntity extends BasinOperatingTileEntity {
 	public int processingTicks;
 	public boolean running;
 
-	public MechanicalMixerTileEntity(BellBlockEntity<? extends MechanicalMixerTileEntity> type) {
+	public MechanicalMixerTileEntity(BlockEntityType<? extends MechanicalMixerTileEntity> type) {
 		super(type);
 	}
 
@@ -50,14 +52,14 @@ public class MechanicalMixerTileEntity extends BasinOperatingTileEntity {
 			if (runningTicks < 20) {
 				localTick = runningTicks;
 				float num = (localTick + partialTicks) / 20f;
-				num = ((2 - afj.b((float) (num * Math.PI))) / 2);
+				num = ((2 - MathHelper.cos((float) (num * Math.PI))) / 2);
 				offset = num - .5f;
 			} else if (runningTicks <= 20) {
 				offset = 1;
 			} else {
 				localTick = 40 - runningTicks;
 				float num = (localTick - partialTicks) / 20f;
-				num = ((2 - afj.b((float) (num * Math.PI))) / 2);
+				num = ((2 - MathHelper.cos((float) (num * Math.PI))) / 2);
 				offset = num - .5f;
 			}
 		}
@@ -79,17 +81,17 @@ public class MechanicalMixerTileEntity extends BasinOperatingTileEntity {
 	}
 
 	@Override
-	public Timer getRenderBoundingBox() {
-		return new Timer(e).b(0, -1.5, 0);
+	public Box makeRenderBoundingBox() {
+		return new Box(pos).stretch(0, -1.5, 0);
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		running = compound.getBoolean("Running");
 		runningTicks = compound.getInt("Ticks");
 		super.fromTag(state, compound, clientPacket);
 
-		if (clientPacket && n())
+		if (clientPacket && hasWorld())
 			getBasin().ifPresent(bte -> bte.setAreFluidsMoving(running && runningTicks <= 20));
 	}
 
@@ -101,8 +103,8 @@ public class MechanicalMixerTileEntity extends BasinOperatingTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 
 		if (runningTicks >= 40) {
 			running = false;
@@ -111,13 +113,13 @@ public class MechanicalMixerTileEntity extends BasinOperatingTileEntity {
 		}
 
 		float speed = Math.abs(getSpeed());
-		if (running && d != null) {
-			if (d.v && runningTicks == 20)
+		if (running && world != null) {
+			if (world.isClient && runningTicks == 20)
 				renderParticles();
 
-			if (!d.v && runningTicks == 20) {
+			if (!world.isClient && runningTicks == 20) {
 				if (processingTicks < 0) {
-					processingTicks = afj.a((afj.f((int) (512 / speed))) * 15 + 1, 1, 512);
+					processingTicks = MathHelper.clamp((MathHelper.log2((int) (512 / speed))) * 15 + 1, 1, 512);
 				} else {
 					processingTicks--;
 					if (processingTicks == 0) {
@@ -136,14 +138,14 @@ public class MechanicalMixerTileEntity extends BasinOperatingTileEntity {
 
 	public void renderParticles() {
 		Optional<BasinTileEntity> basin = getBasin();
-		if (!basin.isPresent() || d == null)
+		if (!basin.isPresent() || world == null)
 			return;
 
 		for (SmartInventory inv : basin.get()
 			.getInvs()) {
 			for (int slot = 0; slot < inv.getSlots(); slot++) {
-				ItemCooldownManager stackInSlot = inv.a(slot);
-				if (stackInSlot.a())
+				ItemStack stackInSlot = inv.getStack(slot);
+				if (stackInSlot.isEmpty())
 					continue;
 				ItemStackParticleEffect data = new ItemStackParticleEffect(ParticleTypes.ITEM, stackInSlot);
 				spillParticle(data);
@@ -163,19 +165,19 @@ public class MechanicalMixerTileEntity extends BasinOperatingTileEntity {
 	}
 
 	protected void spillParticle(ParticleEffect data) {
-		float angle = d.t.nextFloat() * 360;
-		EntityHitResult offset = new EntityHitResult(0, 0, 0.25f);
+		float angle = world.random.nextFloat() * 360;
+		Vec3d offset = new Vec3d(0, 0, 0.25f);
 		offset = VecHelper.rotate(offset, angle, Axis.Y);
-		EntityHitResult target = VecHelper.rotate(offset, getSpeed() > 0 ? 25 : -25, Axis.Y)
-			.b(0, .25f, 0);
-		EntityHitResult center = offset.e(VecHelper.getCenterOf(e));
-		target = VecHelper.offsetRandomly(target.d(offset), d.t, 1 / 128f);
-		d.addParticle(data, center.entity, center.c - 1.75f, center.d, target.entity, target.c, target.d);
+		Vec3d target = VecHelper.rotate(offset, getSpeed() > 0 ? 25 : -25, Axis.Y)
+			.add(0, .25f, 0);
+		Vec3d center = offset.add(VecHelper.getCenterOf(pos));
+		target = VecHelper.offsetRandomly(target.subtract(offset), world.random, 1 / 128f);
+		world.addParticle(data, center.x, center.y - 1.75f, center.z, target.x, target.y, target.z);
 	}
 
 	@Override
-	protected List<Ingredient<?>> getMatchingRecipes() {
-		List<Ingredient<?>> matchingRecipes = super.getMatchingRecipes();
+	protected List<Recipe<?>> getMatchingRecipes() {
+		List<Recipe<?>> matchingRecipes = super.getMatchingRecipes();
 
 		Optional<BasinTileEntity> basin = getBasin();
 		if (!basin.isPresent())
@@ -187,11 +189,11 @@ public class MechanicalMixerTileEntity extends BasinOperatingTileEntity {
 			return matchingRecipes;
 
 		for (int i = 0; i < availableItems.getSlots(); i++) {
-			ItemCooldownManager stack = availableItems.getStackInSlot(i);
-			if (stack.a())
+			ItemStack stack = availableItems.getStackInSlot(i);
+			if (stack.isEmpty())
 				continue;
 
-			List<MixingRecipe> list = PotionMixingRecipeManager.ALL.get(stack.b());
+			List<MixingRecipe> list = PotionMixingRecipeManager.ALL.get(stack.getItem());
 			if (list == null)
 				continue;
 			for (MixingRecipe mixingRecipe : list)
@@ -203,11 +205,11 @@ public class MechanicalMixerTileEntity extends BasinOperatingTileEntity {
 	}
 
 	@Override
-	protected <C extends BossBar> boolean matchStaticFilters(Ingredient<C> r) {
-		return ((r.ag_() == MapExtendingRecipe.b
-			&& AllConfigs.SERVER.recipes.allowShapelessInMixer.get() && r.a()
+	protected <C extends Inventory> boolean matchStaticFilters(Recipe<C> r) {
+		return ((r.getSerializer() == RecipeSerializer.SHAPELESS
+			&& AllConfigs.SERVER.recipes.allowShapelessInMixer.get() && r.getPreviewInputs()
 				.size() > 1)
-			|| r.g() == AllRecipeTypes.MIXING.type);
+			|| r.getType() == AllRecipeTypes.MIXING.type);
 	}
 
 	@Override

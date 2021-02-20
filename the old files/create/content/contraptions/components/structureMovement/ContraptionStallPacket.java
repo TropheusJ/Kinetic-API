@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement;
+package com.simibubi.create.content.contraptions.components.structureMovement;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
@@ -41,7 +41,7 @@ public class ContraptionStallPacket extends SimplePacketBase {
 	@Override
 	public void handle(Supplier<Context> context) {
 		context.get().enqueueWork(
-				() -> DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> AbstractContraptionEntity.handleStallPacket(this)));
+				() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> AbstractContraptionEntity.handleStallPacket(this)));
 		context.get().setPacketHandled(true);
 	}
 

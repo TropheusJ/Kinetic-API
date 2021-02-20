@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.mounted;
+package com.simibubi.create.content.contraptions.components.structureMovement.mounted;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.ItemHandlerHelper;
 
@@ -13,104 +13,104 @@ import net.minecraftforge.items.ItemHandlerHelper;
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
 public class ItemHandlerModifiableFromIInventory implements IItemHandlerModifiable {
-	private final BossBar inventory;
+	private final Inventory inventory;
 
-	public ItemHandlerModifiableFromIInventory(BossBar inventory) {
+	public ItemHandlerModifiableFromIInventory(Inventory inventory) {
 		this.inventory = inventory;
 	}
 
 	@Override
-	public void setStackInSlot(int slot, ItemCooldownManager stack) {
-		inventory.a(slot, stack);
+	public void setStackInSlot(int slot, ItemStack stack) {
+		inventory.setStack(slot, stack);
 	}
 
 	@Override
 	public int getSlots() {
-		return inventory.Z_();
+		return inventory.size();
 	}
 
 	@Override
-	public ItemCooldownManager getStackInSlot(int slot) {
-		return inventory.a(slot);
+	public ItemStack getStackInSlot(int slot) {
+		return inventory.getStack(slot);
 	}
 
 	@Override
 	@Nonnull
-	public ItemCooldownManager insertItem(int slot, @Nonnull ItemCooldownManager stack, boolean simulate)
+	public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate)
 	{
-		if (stack.a())
-			return ItemCooldownManager.tick;
+		if (stack.isEmpty())
+			return ItemStack.EMPTY;
 
 		if (!isItemValid(slot, stack))
 			return stack;
 
 		validateSlotIndex(slot);
 
-		ItemCooldownManager existing = getStackInSlot(slot);
+		ItemStack existing = getStackInSlot(slot);
 
 		int limit = getStackLimit(slot, stack);
 
-		if (!existing.a())
+		if (!existing.isEmpty())
 		{
 			if (!ItemHandlerHelper.canItemStacksStack(stack, existing))
 				return stack;
 
-			limit -= existing.E();
+			limit -= existing.getCount();
 		}
 
 		if (limit <= 0)
 			return stack;
 
-		boolean reachedLimit = stack.E() > limit;
+		boolean reachedLimit = stack.getCount() > limit;
 
 		if (!simulate)
 		{
-			if (existing.a())
+			if (existing.isEmpty())
 			{
 				setStackInSlot(slot, reachedLimit ? ItemHandlerHelper.copyStackWithSize(stack, limit) : stack);
 			}
 			else
 			{
-				existing.f(reachedLimit ? limit : stack.E());
+				existing.increment(reachedLimit ? limit : stack.getCount());
 			}
 		}
 
-		return reachedLimit ? ItemHandlerHelper.copyStackWithSize(stack, stack.E()- limit) : ItemCooldownManager.tick;
+		return reachedLimit ? ItemHandlerHelper.copyStackWithSize(stack, stack.getCount()- limit) : ItemStack.EMPTY;
 	}
 
 	@Override
 	@Nonnull
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate)
+	public ItemStack extractItem(int slot, int amount, boolean simulate)
 	{
 		if (amount == 0)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 
 		validateSlotIndex(slot);
 
-		ItemCooldownManager existing = getStackInSlot(slot);
+		ItemStack existing = getStackInSlot(slot);
 
-		if (existing.a())
-			return ItemCooldownManager.tick;
+		if (existing.isEmpty())
+			return ItemStack.EMPTY;
 
-		int toExtract = Math.min(amount, existing.c());
+		int toExtract = Math.min(amount, existing.getMaxCount());
 
-		if (existing.E() <= toExtract)
+		if (existing.getCount() <= toExtract)
 		{
 			if (!simulate)
 			{
-				setStackInSlot(slot, ItemCooldownManager.tick);
+				setStackInSlot(slot, ItemStack.EMPTY);
 				return existing;
 			}
 			else
 			{
-				return existing.i();
+				return existing.copy();
 			}
 		}
 		else
 		{
 			if (!simulate)
 			{
-				setStackInSlot(slot, ItemHandlerHelper.copyStackWithSize(existing, existing.E() - toExtract));
+				setStackInSlot(slot, ItemHandlerHelper.copyStackWithSize(existing, existing.getCount() - toExtract));
 			}
 
 			return ItemHandlerHelper.copyStackWithSize(existing, toExtract);
@@ -119,12 +119,12 @@ public class ItemHandlerModifiableFromIInventory implements IItemHandlerModifiab
 
 	@Override
 	public int getSlotLimit(int slot) {
-		return inventory.V_();
+		return inventory.getMaxCountPerStack();
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
-		return inventory.b(slot, stack);
+	public boolean isItemValid(int slot, ItemStack stack) {
+		return inventory.isValid(slot, stack);
 	}
 
 	private void validateSlotIndex(int slot)
@@ -133,8 +133,8 @@ public class ItemHandlerModifiableFromIInventory implements IItemHandlerModifiab
 			throw new RuntimeException("Slot " + slot + " not in valid range - [0," + getSlots() + ")");
 	}
 
-	private int getStackLimit(int slot, ItemCooldownManager stack)
+	private int getStackLimit(int slot, ItemStack stack)
 	{
-		return Math.min(getSlotLimit(slot), stack.c());
+		return Math.min(getSlotLimit(slot), stack.getMaxCount());
 	}
 }

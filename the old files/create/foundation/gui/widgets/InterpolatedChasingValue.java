@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.gui.widgets;
+package com.simibubi.create.foundation.gui.widgets;
 
 public class InterpolatedChasingValue extends InterpolatedValue {
 

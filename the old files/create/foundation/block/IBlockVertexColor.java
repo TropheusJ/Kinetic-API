@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.block;
+package com.simibubi.create.foundation.block;
 
 @FunctionalInterface
 public interface IBlockVertexColor {

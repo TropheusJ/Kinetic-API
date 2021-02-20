@@ -1,25 +1,27 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train;
+package com.simibubi.create.content.contraptions.components.structureMovement.train;
 
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
-import apx;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AbstractContraptionEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.capability.CapabilityMinecartController;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.capability.MinecartController;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.utility.Couple;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.world.GameMode;
+
+import com.simibubi.create.AllItems;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.contraptions.components.structureMovement.AbstractContraptionEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.train.capability.CapabilityMinecartController;
+import com.simibubi.create.content.contraptions.components.structureMovement.train.capability.MinecartController;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.utility.Couple;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Hand;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.entity.EntityMountEvent;
 import net.minecraftforge.eventbus.api.Event.Result;
@@ -31,7 +33,7 @@ public class CouplingHandler {
 
 	@SubscribeEvent
 	public static void preventEntitiesFromMoutingOccupiedCart(EntityMountEvent event) {
-		apx e = event.getEntityBeingMounted();
+		Entity e = event.getEntityBeingMounted();
 		LazyOptional<MinecartController> optional = e.getCapability(CapabilityMinecartController.MINECART_CONTROLLER_CAPABILITY);
 		if (!optional.isPresent())
 			return;
@@ -44,7 +46,7 @@ public class CouplingHandler {
 		}
 	}
 	
-	public static void forEachLoadedCoupling(GameMode world, Consumer<Couple<MinecartController>> consumer) {
+	public static void forEachLoadedCoupling(World world, Consumer<Couple<MinecartController>> consumer) {
 		if (world == null)
 			return;
 		Set<UUID> cartsWithCoupling = CapabilityMinecartController.loadedMinecartsWithCoupling.get(world);
@@ -64,13 +66,13 @@ public class CouplingHandler {
 		});
 	}
 
-	public static boolean tryToCoupleCarts(@Nullable PlayerAbilities player, GameMode world, int cartId1, int cartId2) {
-		apx entity1 = world.a(cartId1);
-		apx entity2 = world.a(cartId2);
+	public static boolean tryToCoupleCarts(@Nullable PlayerEntity player, World world, int cartId1, int cartId2) {
+		Entity entity1 = world.getEntityById(cartId1);
+		Entity entity2 = world.getEntityById(cartId2);
 
-		if (!(entity1 instanceof ScheduleBuilder))
+		if (!(entity1 instanceof AbstractMinecartEntity))
 			return false;
-		if (!(entity2 instanceof ScheduleBuilder))
+		if (!(entity2 instanceof AbstractMinecartEntity))
 			return false;
 
 		String tooMany = "two_couplings_max";
@@ -78,8 +80,8 @@ public class CouplingHandler {
 		String noLoops = "no_loops";
 		String tooFar = "too_far";
 
-		int distanceTo = (int) entity1.cz()
-			.f(entity2.cz());
+		int distanceTo = (int) entity1.getPos()
+			.distanceTo(entity2.getPos());
 		boolean contraptionCoupling = player == null;
 		
 		if (distanceTo < 2) {
@@ -93,10 +95,10 @@ public class CouplingHandler {
 			return false;
 		}
 
-		ScheduleBuilder cart1 = (ScheduleBuilder) entity1;
-		ScheduleBuilder cart2 = (ScheduleBuilder) entity2;
-		UUID mainID = cart1.bR();
-		UUID connectedID = cart2.bR();
+		AbstractMinecartEntity cart1 = (AbstractMinecartEntity) entity1;
+		AbstractMinecartEntity cart2 = (AbstractMinecartEntity) entity2;
+		UUID mainID = cart1.getUuid();
+		UUID connectedID = cart2.getUuid();
 		MinecartController mainController = CapabilityMinecartController.getIfPresent(world, mainID);
 		MinecartController connectedController = CapabilityMinecartController.getIfPresent(world, connectedID);
 
@@ -141,13 +143,13 @@ public class CouplingHandler {
 		}
 
 		if (!contraptionCoupling) {
-			for (ItemScatterer hand : ItemScatterer.values()) {
-				if (player.b_())
+			for (Hand hand : Hand.values()) {
+				if (player.isCreative())
 					break;
-				ItemCooldownManager heldItem = player.b(hand);
+				ItemStack heldItem = player.getStackInHand(hand);
 				if (!AllItems.MINECART_COUPLING.isIn(heldItem))
 					continue;
-				heldItem.g(1);
+				heldItem.decrement(1);
 				break;
 			}
 		}
@@ -164,7 +166,7 @@ public class CouplingHandler {
 	/**
 	 * MinecartController.EMPTY if none connected, null if not yet loaded
 	 */
-	public static MinecartController getNextInCouplingChain(GameMode world, MinecartController controller,
+	public static MinecartController getNextInCouplingChain(World world, MinecartController controller,
 		boolean forward) {
 		UUID coupledCart = controller.getCoupledCart(forward);
 		if (coupledCart == null)
@@ -172,10 +174,10 @@ public class CouplingHandler {
 		return CapabilityMinecartController.getIfPresent(world, coupledCart);
 	}
 
-	public static void status(PlayerAbilities player, String key) {
+	public static void status(PlayerEntity player, String key) {
 		if (player == null)
 			return;
-		player.a(Lang.translate("minecart_coupling." + key), true);
+		player.sendMessage(Lang.translate("minecart_coupling." + key), true);
 	}
 
 }

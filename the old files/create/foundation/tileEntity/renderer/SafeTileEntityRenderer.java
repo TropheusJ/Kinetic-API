@@ -1,31 +1,31 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.renderer;
+package com.simibubi.create.foundation.tileEntity.renderer;
 
-import ebv;
-import ebw;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 
-public abstract class SafeTileEntityRenderer<T extends BeehiveBlockEntity> extends ebw<T> {
+public abstract class SafeTileEntityRenderer<T extends BlockEntity> extends BlockEntityRenderer<T> {
 
-	public SafeTileEntityRenderer(ebv dispatcher) {
+	public SafeTileEntityRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	public final void a(T te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer, int light,
+	public final void render(T te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer, int light,
 		int overlay) {
 		if (isInvalid(te))
 			return;
 		renderSafe(te, partialTicks, ms, buffer, light, overlay);
 	}
 
-	protected abstract void renderSafe(T te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer, int light,
+	protected abstract void renderSafe(T te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer, int light,
 		int overlay);
 
 	public boolean isInvalid(T te) {
-		return !te.n() || te.p()
-			.b() == BellBlock.FACING;
+		return !te.hasWorld() || te.getCachedState()
+			.getBlock() == Blocks.AIR;
 	}
 }

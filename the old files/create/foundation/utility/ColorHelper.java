@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import java.util.UUID;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.Vec3d;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 public class ColorHelper {
@@ -54,11 +54,11 @@ public class ColorHelper {
 		RenderSystem.color4f(1, 1, 1, 1);
 	}
 
-	public static EntityHitResult getRGB(int color) {
+	public static Vec3d getRGB(int color) {
 		int r = (color >> 16);
 		int g = (color >> 8) & 0xFF;
 		int b = color & 0xFF;
-		return new EntityHitResult(r, g, b).a(1 / 256d);
+		return new Vec3d(r, g, b).multiply(1 / 256d);
 	}
 
 	public static int colorFromUUID(UUID uuid) {

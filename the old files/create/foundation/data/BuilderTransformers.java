@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.foundation.data;
+package com.simibubi.create.foundation.data;
 
-import static com.simibubi.kinetic_api.foundation.data.BlockStateGen.axisBlock;
-import static com.simibubi.kinetic_api.foundation.data.CreateRegistrate.casingConnectivity;
-import static com.simibubi.kinetic_api.foundation.data.CreateRegistrate.connectedTextures;
+import static com.simibubi.create.foundation.data.BlockStateGen.axisBlock;
+import static com.simibubi.create.foundation.data.CreateRegistrate.casingConnectivity;
+import static com.simibubi.create.foundation.data.CreateRegistrate.connectedTextures;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,33 +10,33 @@ import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllTags.AllBlockTags;
-import com.simibubi.kinetic_api.AllTags.AllItemTags;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.contraptions.base.CasingBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.crank.ValveHandleBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.piston.MechanicalPistonGenerator;
-import com.simibubi.kinetic_api.content.contraptions.relays.encased.EncasedCTBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.relays.encased.EncasedShaftBlock;
-import com.simibubi.kinetic_api.content.logistics.block.belts.tunnel.BeltTunnelBlock;
-import com.simibubi.kinetic_api.content.logistics.block.belts.tunnel.BeltTunnelBlock.Shape;
-import com.simibubi.kinetic_api.content.logistics.block.belts.tunnel.BeltTunnelItem;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.FunnelBlock;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.FunnelItem;
-import com.simibubi.kinetic_api.content.logistics.block.inventories.CrateBlock;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShiftEntry;
-import com.simibubi.kinetic_api.foundation.config.StressConfigDefaults;
-import com.simibubi.kinetic_api.foundation.item.TooltipHelper;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllTags.AllBlockTags;
+import com.simibubi.create.AllTags.AllItemTags;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.contraptions.base.CasingBlock;
+import com.simibubi.create.content.contraptions.components.crank.ValveHandleBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.piston.MechanicalPistonGenerator;
+import com.simibubi.create.content.contraptions.relays.encased.EncasedCTBehaviour;
+import com.simibubi.create.content.contraptions.relays.encased.EncasedShaftBlock;
+import com.simibubi.create.content.logistics.block.belts.tunnel.BeltTunnelBlock;
+import com.simibubi.create.content.logistics.block.belts.tunnel.BeltTunnelBlock.Shape;
+import com.simibubi.create.content.logistics.block.belts.tunnel.BeltTunnelItem;
+import com.simibubi.create.content.logistics.block.funnel.FunnelBlock;
+import com.simibubi.create.content.logistics.block.funnel.FunnelItem;
+import com.simibubi.create.content.logistics.block.inventories.CrateBlock;
+import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
+import com.simibubi.create.foundation.config.StressConfigDefaults;
+import com.simibubi.create.foundation.item.TooltipHelper;
 import com.tterrag.registrate.builders.BlockBuilder;
 import com.tterrag.registrate.util.nullness.NonNullUnaryOperator;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.BlockHalf;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.item.DebugStickItem;
-import net.minecraft.item.HoeItem;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.PistonType;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.item.Item;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
@@ -45,11 +45,11 @@ import net.minecraftforge.client.model.generators.ModelFile;
 
 public class BuilderTransformers {
 
-	public static <B extends BeetrootsBlock, P> NonNullUnaryOperator<BlockBuilder<B, P>> cuckooClock() {
+	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> cuckooClock() {
 		return b -> b.initialProperties(SharedProperties::wooden)
 			.blockstate((c, p) -> p.horizontalBlock(c.get(), p.models()
 				.getExistingFile(p.modLoc("block/cuckoo_clock/block"))))
-			.addLayer(() -> VertexConsumerProvider::d)
+			.addLayer(() -> RenderLayer::getCutoutMipped)
 			.transform(StressConfigDefaults.setImpact(1.0))
 			.item()
 			.transform(ModelGen.customItemModel("cuckoo_clock", "item"));
@@ -58,29 +58,29 @@ public class BuilderTransformers {
 	public static <B extends EncasedShaftBlock, P> NonNullUnaryOperator<BlockBuilder<B, P>> encasedShaft(String casing,
 		CTSpriteShiftEntry casingShift) {
 		return builder -> builder.initialProperties(SharedProperties::stone)
-			.properties(BeetrootsBlock.Properties::b)
+			.properties(Block.Properties::nonOpaque)
 			.onRegister(CreateRegistrate.connectedTextures(new EncasedCTBehaviour(casingShift)))
 			.onRegister(CreateRegistrate.casingConnectivity(
-				(block, cc) -> cc.make(block, casingShift, (s, f) -> f.getAxis() != s.c(EncasedShaftBlock.AXIS))))
+				(block, cc) -> cc.make(block, casingShift, (s, f) -> f.getAxis() != s.get(EncasedShaftBlock.AXIS))))
 			.blockstate((c, p) -> axisBlock(c, p, blockState -> p.models()
 				.getExistingFile(p.modLoc("block/encased_shaft/block_" + casing)), true))
 			.transform(StressConfigDefaults.setNoImpact())
-			.loot((p, b) -> p.a(b, AllBlocks.SHAFT.get()))
+			.loot((p, b) -> p.addDrop(b, AllBlocks.SHAFT.get()))
 			.item()
 			.model(AssetLookup.customItemModel("encased_shaft", "item_" + casing))
 			.build();
 	}
 
 	public static <B extends ValveHandleBlock> NonNullUnaryOperator<BlockBuilder<B, CreateRegistrate>> valveHandle(
-		@Nullable DebugStickItem color) {
+		@Nullable DyeColor color) {
 		return b -> b.initialProperties(SharedProperties::softMetal)
 			.blockstate((c, p) -> {
-				String variant = color == null ? "copper" : color.a();
+				String variant = color == null ? "copper" : color.asString();
 				p.directionalBlock(c.get(), p.models()
 					.withExistingParent(variant + "_valve_handle", p.modLoc("block/valve_handle"))
 					.texture("3", p.modLoc("block/valve_handle/valve_handle_" + variant)));
 			})
-			.onRegisterAfter(HoeItem.class, v -> {
+			.onRegisterAfter(Item.class, v -> {
 				if (color != null)
 					TooltipHelper.referTo(v, AllBlocks.COPPER_VALVE_HANDLE);
 			})
@@ -103,24 +103,31 @@ public class BuilderTransformers {
 		Identifier particleTexture) {
 		return b -> {
 			return b.blockstate((c, p) -> {
-				Function<PistonHandler, ModelFile> model = s -> {
-					String powered =
-						s.d(BambooLeaves.w).orElse(false) ? "_powered" : "";
+				Function<BlockState, ModelFile> model = s -> {
+					String powered = s.get(FunnelBlock.POWERED) ? "_powered" : "";
+					String extracting = s.get(FunnelBlock.EXTRACTING) ? "_push" : "_pull";
+					String face = s.get(FunnelBlock.FACE)
+						.asString();
 					return p.models()
-						.withExistingParent("block/" + type + "_funnel" + powered, p.modLoc("block/funnel/block"))
-						.texture("0", p.modLoc("block/" + type + "_funnel_plating"))
-						.texture("1", particleTexture)
-						.texture("2", p.modLoc("block/" + type + "_funnel" + powered))
+						.withExistingParent("block/" + type + "_funnel_" + face + extracting + powered,
+							p.modLoc("block/funnel/block_" + face))
+						.texture("particle", particleTexture)
+						.texture("7", p.modLoc("block/" + type + "_funnel_plating"))
+						.texture("6", p.modLoc("block/" + type + "_funnel" + powered))
+						.texture("5", p.modLoc("block/" + type + "_funnel_tall" + powered))
+						.texture("2_2", p.modLoc("block/" + type + "_funnel" + extracting))
 						.texture("3", p.modLoc("block/" + type + "_funnel_back"));
 				};
-				p.directionalBlock(c.get(), model);
+				p.horizontalFaceBlock(c.get(), model);
 			})
 				.item(FunnelItem::new)
 				.model((c, p) -> {
 					p.withExistingParent("item/" + type + "_funnel", p.modLoc("block/funnel/item"))
-						.texture("0", p.modLoc("block/" + type + "_funnel_plating"))
-						.texture("1", particleTexture)
-						.texture("2", p.modLoc("block/" + type + "_funnel"))
+						.texture("particle", particleTexture)
+						.texture("7", p.modLoc("block/" + type + "_funnel_plating"))
+						.texture("2", p.modLoc("block/" + type + "_funnel_neutral"))
+						.texture("6", p.modLoc("block/" + type + "_funnel"))
+						.texture("5", p.modLoc("block/" + type + "_funnel_tall"))
 						.texture("3", p.modLoc("block/" + type + "_funnel_back"));
 				})
 				.build();
@@ -130,15 +137,15 @@ public class BuilderTransformers {
 	public static <B extends BeltTunnelBlock> NonNullUnaryOperator<BlockBuilder<B, CreateRegistrate>> beltTunnel(
 		String type, Identifier particleTexture) {
 		return b -> b.initialProperties(SharedProperties::stone)
-			.addLayer(() -> VertexConsumerProvider::d)
-			.properties(BeetrootsBlock.Properties::b)
+			.addLayer(() -> RenderLayer::getCutoutMipped)
+			.properties(Block.Properties::nonOpaque)
 			.blockstate((c, p) -> p.getVariantBuilder(c.get())
 				.forAllStates(state -> {
 					String id = "block/" + type + "_tunnel";
-					Shape shape = state.c(BeltTunnelBlock.SHAPE);
+					Shape shape = state.get(BeltTunnelBlock.SHAPE);
 					if (shape == BeltTunnelBlock.Shape.CLOSED)
 						shape = BeltTunnelBlock.Shape.STRAIGHT;
-					String shapeName = shape.a();
+					String shapeName = shape.asString();
 					return ConfiguredModel.builder()
 						.modelFile(p.models()
 							.withExistingParent(id + "/" + shapeName, p.modLoc("block/belt_tunnel/" + shapeName))
@@ -146,7 +153,7 @@ public class BuilderTransformers {
 							.texture("2", p.modLoc(id))
 							.texture("3", p.modLoc(id + "_top_window"))
 							.texture("particle", particleTexture))
-						.rotationY(state.c(BeltTunnelBlock.HORIZONTAL_AXIS) == Axis.X ? 0 : 90)
+						.rotationY(state.get(BeltTunnelBlock.HORIZONTAL_AXIS) == Axis.X ? 0 : 90)
 						.build();
 				}))
 			.item(BeltTunnelItem::new)
@@ -160,18 +167,18 @@ public class BuilderTransformers {
 			.build();
 	}
 
-	public static <B extends BeetrootsBlock, P> NonNullUnaryOperator<BlockBuilder<B, P>> mechanicalPiston(BlockHalf type) {
+	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> mechanicalPiston(PistonType type) {
 		return b -> b.initialProperties(SharedProperties::stone)
-			.properties(p -> p.b())
+			.properties(p -> p.nonOpaque())
 			.blockstate(new MechanicalPistonGenerator(type)::generate)
-			.addLayer(() -> VertexConsumerProvider::d)
+			.addLayer(() -> RenderLayer::getCutoutMipped)
 			.transform(StressConfigDefaults.setImpact(4.0))
-			.onRegisterAfter(HoeItem.class, v -> TooltipHelper.referTo(v, "block.kinetic_api.mechanical_piston"))
+			.onRegisterAfter(Item.class, v -> TooltipHelper.referTo(v, "block.create.mechanical_piston"))
 			.item()
-			.transform(ModelGen.customItemModel("mechanical_piston", type.a(), "item"));
+			.transform(ModelGen.customItemModel("mechanical_piston", type.asString(), "item"));
 	}
 
-	public static <B extends BeetrootsBlock, P> NonNullUnaryOperator<BlockBuilder<B, P>> bearing(String prefix,
+	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> bearing(String prefix,
 		String backTexture, boolean woodenTop) {
 		Identifier baseBlockModelLocation = Create.asResource("block/bearing/block");
 		Identifier baseItemModelLocation = Create.asResource("block/bearing/item");
@@ -181,7 +188,7 @@ public class BuilderTransformers {
 		Identifier sideTextureLocation = Create.asResource("block/" + prefix + "_bearing_side");
 		Identifier backTextureLocation = Create.asResource("block/" + backTexture);
 		return b -> b.initialProperties(SharedProperties::stone)
-			.properties(p -> p.b())
+			.properties(p -> p.nonOpaque())
 			.blockstate((c, p) -> p.directionalBlock(c.get(), p.models()
 				.withExistingParent(c.getName(), baseBlockModelLocation)
 				.texture("side", sideTextureLocation)
@@ -195,7 +202,7 @@ public class BuilderTransformers {
 			.build();
 	}
 
-	public static <B extends BeetrootsBlock, P> NonNullUnaryOperator<BlockBuilder<B, P>> crate(String type) {
+	public static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> crate(String type) {
 		return b -> b.initialProperties(SharedProperties::stone)
 			.blockstate((c, p) -> {
 				String[] variants = { "single", "top", "bottom", "left", "right" };
@@ -217,8 +224,8 @@ public class BuilderTransformers {
 						String variant = "single";
 						int yRot = 0;
 
-						if (state.c(CrateBlock.DOUBLE)) {
-							Direction direction = state.c(CrateBlock.SHAPE);
+						if (state.get(CrateBlock.DOUBLE)) {
+							Direction direction = state.get(CrateBlock.FACING);
 							if (direction.getAxis() == Axis.X)
 								yRot = 90;
 

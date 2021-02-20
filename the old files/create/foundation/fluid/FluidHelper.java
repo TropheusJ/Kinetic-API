@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.fluid;
+package com.simibubi.create.foundation.fluid;
 
 import javax.annotation.Nullable;
 
@@ -6,22 +6,23 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.contraptions.fluids.actors.GenericItemFilling;
-import com.simibubi.kinetic_api.content.contraptions.processing.EmptyingByBasin;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
-import cut;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.fluid.FlowableFluid;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.contraptions.fluids.actors.GenericItemFilling;
+import com.simibubi.create.content.contraptions.processing.EmptyingByBasin;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.utility.Pair;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.text.OrderedText;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.JsonHelper;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.ForgeFlowingFluid;
@@ -37,17 +38,17 @@ public class FluidHelper {
 		ITEM_TO_TANK, TANK_TO_ITEM;
 	}
 
-	public static boolean isWater(cut fluid) {
-		return convertToStill(fluid) == FlowableFluid.c;
+	public static boolean isWater(Fluid fluid) {
+		return convertToStill(fluid) == Fluids.WATER;
 	}
 
-	public static boolean isLava(cut fluid) {
-		return convertToStill(fluid) == FlowableFluid.field_15901;
+	public static boolean isLava(Fluid fluid) {
+		return convertToStill(fluid) == Fluids.LAVA;
 	}
 	
-	public static boolean hasBlockState(cut fluid) {
-		PistonHandler blockState = fluid.h().g();
-		return blockState != null && blockState != BellBlock.FACING.n();
+	public static boolean hasBlockState(Fluid fluid) {
+		BlockState blockState = fluid.getDefaultState().getBlockState();
+		return blockState != null && blockState != Blocks.AIR.getDefaultState();
 	}
 	
 	public static FluidStack copyStackWithAmount(FluidStack fs, int amount) {
@@ -58,23 +59,23 @@ public class FluidHelper {
 		return copy;
 	}
 
-	public static cut convertToFlowing(cut fluid) {
-		if (fluid == FlowableFluid.c)
-			return FlowableFluid.LEVEL;
-		if (fluid == FlowableFluid.field_15901)
-			return FlowableFluid.d;
+	public static Fluid convertToFlowing(Fluid fluid) {
+		if (fluid == Fluids.WATER)
+			return Fluids.FLOWING_WATER;
+		if (fluid == Fluids.LAVA)
+			return Fluids.FLOWING_LAVA;
 		if (fluid instanceof ForgeFlowingFluid)
-			return ((ForgeFlowingFluid) fluid).d();
+			return ((ForgeFlowingFluid) fluid).getFlowing();
 		return fluid;
 	}
 
-	public static cut convertToStill(cut fluid) {
-		if (fluid == FlowableFluid.LEVEL)
-			return FlowableFluid.c;
-		if (fluid == FlowableFluid.d)
-			return FlowableFluid.field_15901;
+	public static Fluid convertToStill(Fluid fluid) {
+		if (fluid == Fluids.FLOWING_WATER)
+			return Fluids.WATER;
+		if (fluid == Fluids.FLOWING_LAVA)
+			return Fluids.LAVA;
 		if (fluid instanceof ForgeFlowingFluid)
-			return ((ForgeFlowingFluid) fluid).e();
+			return ((ForgeFlowingFluid) fluid).getStill();
 		return fluid;
 	}
 
@@ -91,11 +92,11 @@ public class FluidHelper {
 	}
 
 	public static FluidStack deserializeFluidStack(JsonObject json) {
-		Identifier id = new Identifier(OrderedText.h(json, "fluid"));
-		cut fluid = ForgeRegistries.FLUIDS.getValue(id);
+		Identifier id = new Identifier(JsonHelper.getString(json, "fluid"));
+		Fluid fluid = ForgeRegistries.FLUIDS.getValue(id);
 		if (fluid == null)
 			throw new JsonSyntaxException("Unknown fluid '" + id + "'");
-		int amount = OrderedText.n(json, "amount");
+		int amount = JsonHelper.getInt(json, "amount");
 		FluidStack stack = new FluidStack(fluid, amount);
 
 		if (!json.has("nbt"))
@@ -104,7 +105,7 @@ public class FluidHelper {
 		try {
 			JsonElement element = json.get("nbt");
 			stack.setTag(StringNbtReader.parse(
-				element.isJsonObject() ? Create.GSON.toJson(element) : OrderedText.a(element, "nbt")));
+				element.isJsonObject() ? Create.GSON.toJson(element) : JsonHelper.asString(element, "nbt")));
 
 		} catch (CommandSyntaxException e) {
 			e.printStackTrace();
@@ -113,37 +114,37 @@ public class FluidHelper {
 		return stack;
 	}
 
-	public static boolean tryEmptyItemIntoTE(GameMode worldIn, PlayerAbilities player, ItemScatterer handIn, ItemCooldownManager heldItem,
+	public static boolean tryEmptyItemIntoTE(World worldIn, PlayerEntity player, Hand handIn, ItemStack heldItem,
 		SmartTileEntity te) {
 		if (!EmptyingByBasin.canItemBeEmptied(worldIn, heldItem))
 			return false;
 
-		Pair<FluidStack, ItemCooldownManager> emptyingResult = EmptyingByBasin.emptyItem(worldIn, heldItem, true);
+		Pair<FluidStack, ItemStack> emptyingResult = EmptyingByBasin.emptyItem(worldIn, heldItem, true);
 		LazyOptional<IFluidHandler> capability = te.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY);
 		IFluidHandler tank = capability.orElse(null);
 		FluidStack fluidStack = emptyingResult.getFirst();
 
 		if (tank == null || fluidStack.getAmount() != tank.fill(fluidStack, FluidAction.SIMULATE))
 			return false;
-		if (worldIn.v)
+		if (worldIn.isClient)
 			return true;
 
-		ItemCooldownManager copyOfHeld = heldItem.i();
+		ItemStack copyOfHeld = heldItem.copy();
 		emptyingResult = EmptyingByBasin.emptyItem(worldIn, copyOfHeld, false);
 		tank.fill(fluidStack, FluidAction.EXECUTE);
 
-		if (!player.b_()) {
-			if (copyOfHeld.a())
-				player.a(handIn, emptyingResult.getSecond());
+		if (!player.isCreative()) {
+			if (copyOfHeld.isEmpty())
+				player.setStackInHand(handIn, emptyingResult.getSecond());
 			else {
-				player.a(handIn, copyOfHeld);
-				player.bm.a(worldIn, emptyingResult.getSecond());
+				player.setStackInHand(handIn, copyOfHeld);
+				player.inventory.offerOrDrop(worldIn, emptyingResult.getSecond());
 			}
 		}
 		return true;
 	}
 
-	public static boolean tryFillItemFromTE(GameMode world, PlayerAbilities player, ItemScatterer handIn, ItemCooldownManager heldItem,
+	public static boolean tryFillItemFromTE(World world, PlayerEntity player, Hand handIn, ItemStack heldItem,
 		SmartTileEntity te) {
 		if (!GenericItemFilling.canItemBeFilled(world, heldItem))
 			return false;
@@ -164,19 +165,19 @@ public class FluidHelper {
 			if (requiredAmountForItem > fluid.getAmount())
 				continue;
 
-			if (world.v)
+			if (world.isClient)
 				return true;
 
-			if (player.b_())
-				heldItem = heldItem.i();
-			ItemCooldownManager out = GenericItemFilling.fillItem(world, requiredAmountForItem, heldItem, fluid.copy());
+			if (player.isCreative())
+				heldItem = heldItem.copy();
+			ItemStack out = GenericItemFilling.fillItem(world, requiredAmountForItem, heldItem, fluid.copy());
 
 			FluidStack copy = fluid.copy();
 			copy.setAmount(requiredAmountForItem);
 			tank.drain(copy, FluidAction.EXECUTE);
 
-			if (!player.b_())
-				player.bm.a(world, out);
+			if (!player.isCreative())
+				player.inventory.offerOrDrop(world, out);
 			te.notifyUpdate();
 			return true;
 		}

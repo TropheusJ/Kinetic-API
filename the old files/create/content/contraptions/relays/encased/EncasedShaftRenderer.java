@@ -1,18 +1,19 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntityRenderer;
-import ebv;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.base.KineticTileEntityRenderer;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 
 public class EncasedShaftRenderer extends KineticTileEntityRenderer {
 
-	public EncasedShaftRenderer(ebv dispatcher) {
+	public EncasedShaftRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected PistonHandler getRenderedBlockState(KineticTileEntity te) {
+	protected BlockState getRenderedBlockState(KineticTileEntity te) {
 		return shaft(getRotationAxisOf(te));
 	}
 

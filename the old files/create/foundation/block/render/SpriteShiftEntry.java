@@ -1,16 +1,16 @@
-package com.simibubi.kinetic_api.foundation.block.render;
+package com.simibubi.create.foundation.block.render;
 
 import java.util.function.Function;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.texture.MipmapHelper;
-import net.minecraft.screen.GrindstoneScreenHandler;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Identifier;
 
 public class SpriteShiftEntry {
 	protected Identifier originalTextureLocation;
 	protected Identifier targetTextureLocation;
-	protected MipmapHelper original;
-	protected MipmapHelper target;
+	protected Sprite original;
+	protected Sprite target;
 
 	public void set(Identifier originalTextureLocation, Identifier targetTextureLocation) {
 		this.originalTextureLocation = originalTextureLocation;
@@ -18,8 +18,8 @@ public class SpriteShiftEntry {
 	}
 
 	protected void loadTextures() {
-		Function<Identifier, MipmapHelper> textureMap = KeyBinding.B()
-			.a(GrindstoneScreenHandler.result);
+		Function<Identifier, Sprite> textureMap = MinecraftClient.getInstance()
+			.getSpriteAtlas(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE);
 		original = textureMap.apply(originalTextureLocation);
 		target = textureMap.apply(targetTextureLocation);
 	}
@@ -28,13 +28,13 @@ public class SpriteShiftEntry {
 		return targetTextureLocation;
 	}
 
-	public MipmapHelper getTarget() {
+	public Sprite getTarget() {
 		if (target == null)
 			loadTextures();
 		return target;
 	}
 
-	public MipmapHelper getOriginal() {
+	public Sprite getOriginal() {
 		if (original == null)
 			loadTextures();
 		return original;

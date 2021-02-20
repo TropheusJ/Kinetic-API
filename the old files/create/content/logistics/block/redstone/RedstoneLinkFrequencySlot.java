@@ -1,14 +1,15 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.Vec3d;
 
 public class RedstoneLinkFrequencySlot extends ValueBoxTransform.Dual {
 
@@ -16,31 +17,31 @@ public class RedstoneLinkFrequencySlot extends ValueBoxTransform.Dual {
 		super(first);
 	}
 
-	EntityHitResult horizontal = VecHelper.voxelSpace(10f, 5.5f, 2.5f);
-	EntityHitResult vertical = VecHelper.voxelSpace(10f, 2.5f, 5.5f);
+	Vec3d horizontal = VecHelper.voxelSpace(10f, 5.5f, 2.5f);
+	Vec3d vertical = VecHelper.voxelSpace(10f, 2.5f, 5.5f);
 
 	@Override
-	protected EntityHitResult getLocalOffset(PistonHandler state) {
-		Direction facing = state.c(RedstoneLinkBlock.SHAPE);
-		EntityHitResult location = vertical;
+	protected Vec3d getLocalOffset(BlockState state) {
+		Direction facing = state.get(RedstoneLinkBlock.FACING);
+		Vec3d location = vertical;
 
 		if (facing.getAxis()
 			.isHorizontal()) {
 			location = horizontal;
 			if (!isFirst())
-				location = location.b(0, 5 / 16f, 0);
+				location = location.add(0, 5 / 16f, 0);
 			return rotateHorizontally(state, location);
 		}
 
 		if (!isFirst())
-			location = location.b(0, 0, 5 / 16f);
+			location = location.add(0, 0, 5 / 16f);
 		location = VecHelper.rotateCentered(location, facing == Direction.DOWN ? 180 : 0, Axis.X);
 		return location;
 	}
 
 	@Override
-	protected void rotate(PistonHandler state, BufferVertexConsumer ms) {
-		Direction facing = state.c(RedstoneLinkBlock.SHAPE);
+	protected void rotate(BlockState state, MatrixStack ms) {
+		Direction facing = state.get(RedstoneLinkBlock.FACING);
 		float yRot = facing.getAxis()
 			.isVertical() ? 0 : AngleHelper.horizontalAngle(facing) + 180;
 		float xRot = facing == Direction.UP ? 90 : facing == Direction.DOWN ? 270 : 0;

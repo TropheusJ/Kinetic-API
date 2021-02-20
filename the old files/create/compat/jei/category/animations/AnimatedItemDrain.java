@@ -1,13 +1,13 @@
-package com.simibubi.kinetic_api.compat.jei.category.animations;
+package com.simibubi.create.compat.jei.category.animations;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.fluid.FluidRenderer;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BackgroundRenderer.FogType;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.FixedColorVertexConsumer;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.fluid.FluidRenderer;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.VertexConsumerProvider.Immediate;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -21,26 +21,26 @@ public class AnimatedItemDrain extends AnimatedKinetics {
 	}
 
 	@Override
-	public void draw(BufferVertexConsumer matrixStack, int xOffset, int yOffset) {
-		matrixStack.a();
-		matrixStack.a(xOffset, yOffset, 100);
-		matrixStack.a(Vector3f.POSITIVE_X.getDegreesQuaternion(-15.5f));
-		matrixStack.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(22.5f));
+	public void draw(MatrixStack matrixStack, int xOffset, int yOffset) {
+		matrixStack.push();
+		matrixStack.translate(xOffset, yOffset, 100);
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-15.5f));
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(22.5f));
 		int scale = 20;
 
 		GuiGameElement.of(AllBlocks.ITEM_DRAIN.getDefaultState())
 			.scale(scale)
 			.render(matrixStack);
 
-		FogType buffer = BackgroundRenderer.a(FixedColorVertexConsumer.a()
-			.c());
-		BufferVertexConsumer ms = new BufferVertexConsumer();
-		ms.a(scale, -scale, scale);
+		Immediate buffer = VertexConsumerProvider.immediate(Tessellator.getInstance()
+			.getBuffer());
+		MatrixStack ms = new MatrixStack();
+		ms.scale(scale, -scale, scale);
 		float from = 2/16f;
 		float to = 1f - from;
 		FluidRenderer.renderTiledFluidBB(fluid, from, from, from, to, 3/4f, to, buffer, ms, 0xf000f0, false);
-		buffer.method_23792();
+		buffer.draw();
 
-		matrixStack.b();
+		matrixStack.pop();
 	}
 }

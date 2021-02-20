@@ -1,26 +1,26 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.recipe.Ingredient;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.advancement.ITriggerable;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.simple.DeferralBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.recipe.RecipeFinder;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.recipe.Recipe;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.advancement.ITriggerable;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.simple.DeferralBehaviour;
+import com.simibubi.create.foundation.utility.recipe.RecipeFinder;
 
 public abstract class BasinOperatingTileEntity extends KineticTileEntity {
 
 	public DeferralBehaviour basinChecker;
 	public boolean basinRemoved;
-	protected Ingredient<?> currentRecipe;
+	protected Recipe<?> currentRecipe;
 
-	public BasinOperatingTileEntity(BellBlockEntity<?> typeIn) {
+	public BasinOperatingTileEntity(BlockEntityType<?> typeIn) {
 		super(typeIn);
 	}
 
@@ -41,7 +41,7 @@ public abstract class BasinOperatingTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	public void aj_() {
+	public void tick() {
 		if (basinRemoved) {
 			basinRemoved = false;
 			onBasinRemoved();
@@ -49,7 +49,7 @@ public abstract class BasinOperatingTileEntity extends KineticTileEntity {
 			return;
 		}
 
-		super.aj_();
+		super.tick();
 	}
 
 	protected boolean updateBasin() {
@@ -59,10 +59,10 @@ public abstract class BasinOperatingTileEntity extends KineticTileEntity {
 			return true;
 		if (isRunning())
 			return false;
-		if (d == null || d.v)
+		if (world == null || world.isClient)
 			return true;
 
-		List<Ingredient<?>> recipes = getMatchingRecipes();
+		List<Recipe<?>> recipes = getMatchingRecipes();
 		if (recipes.isEmpty())
 			return true;
 		currentRecipe = recipes.get(0);
@@ -79,7 +79,7 @@ public abstract class BasinOperatingTileEntity extends KineticTileEntity {
 		return true;
 	}
 
-	protected <C extends BossBar> boolean matchBasinRecipe(Ingredient<C> recipe) {
+	protected <C extends Inventory> boolean matchBasinRecipe(Recipe<C> recipe) {
 		if (recipe == null)
 			return false;
 		Optional<BasinTileEntity> basin = getBasin();
@@ -99,8 +99,8 @@ public abstract class BasinOperatingTileEntity extends KineticTileEntity {
 		if (!BasinRecipe.apply(basin, currentRecipe))
 			return;
 		Optional<ITriggerable> processedRecipeTrigger = getProcessedRecipeTrigger();
-		if (d != null && !d.v && processedRecipeTrigger.isPresent()) 
-			AllTriggers.triggerForNearbyPlayers(processedRecipeTrigger.get(), d, e, 4);
+		if (world != null && !world.isClient && processedRecipeTrigger.isPresent()) 
+			AllTriggers.triggerForNearbyPlayers(processedRecipeTrigger.get(), world, pos, 4);
 		basin.inputTank.sendDataImmediately();
 	
 		// Continue mixing
@@ -112,13 +112,13 @@ public abstract class BasinOperatingTileEntity extends KineticTileEntity {
 		basin.notifyChangeOfContents();
 	}
 
-	protected List<Ingredient<?>> getMatchingRecipes() {
-		List<Ingredient<?>> list = RecipeFinder.get(getRecipeCacheKey(), d, this::matchStaticFilters);
+	protected List<Recipe<?>> getMatchingRecipes() {
+		List<Recipe<?>> list = RecipeFinder.get(getRecipeCacheKey(), world, this::matchStaticFilters);
 		return list.stream()
 			.filter(this::matchBasinRecipe)
-			.sorted((r1, r2) -> r2.a()
+			.sorted((r1, r2) -> r2.getPreviewInputs()
 				.size()
-				- r1.a()
+				- r1.getPreviewInputs()
 					.size())
 			.collect(Collectors.toList());
 	}
@@ -126,9 +126,9 @@ public abstract class BasinOperatingTileEntity extends KineticTileEntity {
 	protected abstract void onBasinRemoved();
 
 	protected Optional<BasinTileEntity> getBasin() {
-		if (d == null)
+		if (world == null)
 			return Optional.empty();
-		BeehiveBlockEntity basinTE = d.c(e.down(2));
+		BlockEntity basinTE = world.getBlockEntity(pos.down(2));
 		if (!(basinTE instanceof BasinTileEntity))
 			return Optional.empty();
 		return Optional.of((BasinTileEntity) basinTE);
@@ -138,8 +138,12 @@ public abstract class BasinOperatingTileEntity extends KineticTileEntity {
 		return Optional.empty();
 	}
 
-	protected abstract <C extends BossBar> boolean matchStaticFilters(Ingredient<C> recipe);
+	protected abstract <C extends Inventory> boolean matchStaticFilters(Recipe<C> recipe);
 
 	protected abstract Object getRecipeCacheKey();
 
+	@Override
+	public boolean shouldRenderAsTE() {
+		return true;
+	}
 }

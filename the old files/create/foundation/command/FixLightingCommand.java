@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.foundation.command;
+package com.simibubi.create.foundation.command;
 
 import com.mojang.brigadier.builder.ArgumentBuilder;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.networking.AllPackets;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -15,7 +15,7 @@ public class FixLightingCommand {
 			.requires(cs -> cs.hasPermissionLevel(0))
 			.executes(ctx -> {
 				AllPackets.channel.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) ctx.getSource()
-					.f()),
+					.getEntity()),
 					new ConfigureConfigPacket(ConfigureConfigPacket.Actions.fixLighting.name(), String.valueOf(true)));
 
 				ctx.getSource()

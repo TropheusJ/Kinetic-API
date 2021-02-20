@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.content.contraptions.particle;
+package com.simibubi.create.content.contraptions.particle;
 
 import com.mojang.serialization.Codec;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.particle.ItemPickupParticle;
-import net.minecraft.client.particle.LargeFireSmokeParticle;
+import net.minecraft.client.particle.ParticleFactory;
+import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleEffect.Factory;
 import net.minecraft.particle.ParticleType;
@@ -28,11 +28,11 @@ public interface ICustomParticleData<T extends ParticleEffect> {
 	}
 	
 	@Environment(EnvType.CLIENT)
-	public LargeFireSmokeParticle<T> getFactory();
+	public ParticleFactory<T> getFactory();
 	
 	@Environment(EnvType.CLIENT)
-	public default void register(ParticleType<T> type, ItemPickupParticle particles) {
-		particles.a(type, getFactory());
+	public default void register(ParticleType<T> type, ParticleManager particles) {
+		particles.registerFactory(type, getFactory());
 	}
 	
 }

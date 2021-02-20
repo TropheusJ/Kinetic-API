@@ -1,28 +1,28 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeFactory;
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import com.simibubi.kinetic_api.foundation.fluid.FluidIngredient;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeFactory;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+import com.simibubi.create.foundation.fluid.FluidIngredient;
 
 import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.recipe.FireworkRocketRecipe;
-import net.minecraft.recipe.MapExtendingRecipe;
-import net.minecraft.text.OrderedText;
+import net.minecraft.recipe.Ingredient;
+import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.registries.ForgeRegistryEntry;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class ProcessingRecipeSerializer<T extends ProcessingRecipe<?>> extends ForgeRegistryEntry<MapExtendingRecipe<?>>
-	implements MapExtendingRecipe<T> {
+public class ProcessingRecipeSerializer<T extends ProcessingRecipe<?>> extends ForgeRegistryEntry<RecipeSerializer<?>>
+	implements RecipeSerializer<T> {
 
 	private final ProcessingRecipeFactory<T> factory;
 
@@ -34,8 +34,8 @@ public class ProcessingRecipeSerializer<T extends ProcessingRecipe<?>> extends F
 		JsonArray jsonIngredients = new JsonArray();
 		JsonArray jsonOutputs = new JsonArray();
 
-		recipe.a()
-			.forEach(i -> jsonIngredients.add(i.c()));
+		recipe.getPreviewInputs()
+			.forEach(i -> jsonIngredients.add(i.toJson()));
 		recipe.getFluidIngredients()
 			.forEach(i -> jsonIngredients.add(i.serialize()));
 
@@ -60,21 +60,21 @@ public class ProcessingRecipeSerializer<T extends ProcessingRecipe<?>> extends F
 
 	protected T readFromJson(Identifier recipeId, JsonObject json) {
 		ProcessingRecipeBuilder<T> builder = new ProcessingRecipeBuilder<>(factory, recipeId);
-		DefaultedList<FireworkRocketRecipe> ingredients = DefaultedList.of();
+		DefaultedList<Ingredient> ingredients = DefaultedList.of();
 		DefaultedList<FluidIngredient> fluidIngredients = DefaultedList.of();
 		DefaultedList<ProcessingOutput> results = DefaultedList.of();
 		DefaultedList<FluidStack> fluidResults = DefaultedList.of();
 
-		for (JsonElement je : OrderedText.u(json, "ingredients")) {
+		for (JsonElement je : JsonHelper.getArray(json, "ingredients")) {
 			if (FluidIngredient.isFluidIngredient(je))
 				fluidIngredients.add(FluidIngredient.deserialize(je));
 			else
-				ingredients.add(FireworkRocketRecipe.a(je));
+				ingredients.add(Ingredient.fromJson(je));
 		}
 
-		for (JsonElement je : OrderedText.u(json, "results")) {
+		for (JsonElement je : JsonHelper.getArray(json, "results")) {
 			JsonObject jsonObject = je.getAsJsonObject();
-			if (OrderedText.g(jsonObject, "fluid"))
+			if (JsonHelper.hasElement(jsonObject, "fluid"))
 				fluidResults.add(FluidHelper.deserializeFluidStack(jsonObject));
 			else
 				results.add(ProcessingOutput.deserialize(je));
@@ -85,22 +85,22 @@ public class ProcessingRecipeSerializer<T extends ProcessingRecipe<?>> extends F
 			.withFluidIngredients(fluidIngredients)
 			.withFluidOutputs(fluidResults);
 
-		if (OrderedText.g(json, "processingTime"))
-			builder.duration(OrderedText.n(json, "processingTime"));
-		if (OrderedText.g(json, "heatRequirement"))
-			builder.requiresHeat(HeatCondition.deserialize(OrderedText.h(json, "heatRequirement")));
+		if (JsonHelper.hasElement(json, "processingTime"))
+			builder.duration(JsonHelper.getInt(json, "processingTime"));
+		if (JsonHelper.hasElement(json, "heatRequirement"))
+			builder.requiresHeat(HeatCondition.deserialize(JsonHelper.getString(json, "heatRequirement")));
 
 		return builder.build();
 	}
 
 	protected void writeToBuffer(PacketByteBuf buffer, T recipe) {
-		DefaultedList<FireworkRocketRecipe> ingredients = recipe.a();
+		DefaultedList<Ingredient> ingredients = recipe.getPreviewInputs();
 		DefaultedList<FluidIngredient> fluidIngredients = recipe.getFluidIngredients();
 		DefaultedList<ProcessingOutput> outputs = recipe.getRollableResults();
 		DefaultedList<FluidStack> fluidOutputs = recipe.getFluidResults();
 
 		buffer.writeVarInt(ingredients.size());
-		ingredients.forEach(i -> i.a(buffer));
+		ingredients.forEach(i -> i.write(buffer));
 		buffer.writeVarInt(fluidIngredients.size());
 		fluidIngredients.forEach(i -> i.write(buffer));
 
@@ -115,14 +115,14 @@ public class ProcessingRecipeSerializer<T extends ProcessingRecipe<?>> extends F
 	}
 
 	protected T readFromBuffer(Identifier recipeId, PacketByteBuf buffer) {
-		DefaultedList<FireworkRocketRecipe> ingredients = DefaultedList.of();
+		DefaultedList<Ingredient> ingredients = DefaultedList.of();
 		DefaultedList<FluidIngredient> fluidIngredients = DefaultedList.of();
 		DefaultedList<ProcessingOutput> results = DefaultedList.of();
 		DefaultedList<FluidStack> fluidResults = DefaultedList.of();
 
 		int size = buffer.readVarInt();
 		for (int i = 0; i < size; i++)
-			ingredients.add(FireworkRocketRecipe.b(buffer));
+			ingredients.add(Ingredient.fromPacket(buffer));
 		
 		size = buffer.readVarInt();
 		for (int i = 0; i < size; i++)
@@ -150,7 +150,7 @@ public class ProcessingRecipeSerializer<T extends ProcessingRecipe<?>> extends F
 	}
 
 	@Override
-	public final T a(Identifier id, JsonObject json) {
+	public final T read(Identifier id, JsonObject json) {
 		return readFromJson(id, json);
 	}
 
@@ -160,7 +160,7 @@ public class ProcessingRecipeSerializer<T extends ProcessingRecipe<?>> extends F
 	}
 
 	@Override
-	public final T a(Identifier id, PacketByteBuf buffer) {
+	public final T read(Identifier id, PacketByteBuf buffer) {
 		return readFromBuffer(id, buffer);
 	}
 

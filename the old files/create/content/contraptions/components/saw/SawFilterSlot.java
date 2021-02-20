@@ -1,27 +1,28 @@
-package com.simibubi.kinetic_api.content.contraptions.components.saw;
+package com.simibubi.create.content.contraptions.components.saw;
 
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 public class SawFilterSlot extends ValueBoxTransform {
 
 	@Override
-	protected EntityHitResult getLocalOffset(PistonHandler state) {
-		if (state.c(SawBlock.FACING) != Direction.UP)
+	protected Vec3d getLocalOffset(BlockState state) {
+		if (state.get(SawBlock.FACING) != Direction.UP)
 			return null;
-		EntityHitResult x = VecHelper.voxelSpace(8f, 12.5f, 12.25f);
-		EntityHitResult z = VecHelper.voxelSpace(12.25f, 12.5f, 8f);
-		return state.c(SawBlock.AXIS_ALONG_FIRST_COORDINATE) ? z : x;
+		Vec3d x = VecHelper.voxelSpace(8f, 12.5f, 12.25f);
+		Vec3d z = VecHelper.voxelSpace(12.25f, 12.5f, 8f);
+		return state.get(SawBlock.AXIS_ALONG_FIRST_COORDINATE) ? z : x;
 	}
 
 	@Override
-	protected void rotate(PistonHandler state, BufferVertexConsumer ms) {
-		int yRot = state.c(SawBlock.AXIS_ALONG_FIRST_COORDINATE) ? 270 : 180;
+	protected void rotate(BlockState state, MatrixStack ms) {
+		int yRot = state.get(SawBlock.AXIS_ALONG_FIRST_COORDINATE) ? 270 : 180;
 		MatrixStacker.of(ms)
 			.rotateY(yRot)
 			.rotateX(90);

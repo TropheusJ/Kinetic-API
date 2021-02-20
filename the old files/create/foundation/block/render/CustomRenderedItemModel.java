@@ -1,15 +1,15 @@
-package com.simibubi.kinetic_api.foundation.block.render;
+package com.simibubi.create.foundation.block.render;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.simibubi.kinetic_api.Create;
-import elg;
-import net.minecraft.client.input.Input;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.model.json.ModelElementTexture.b;
-import net.minecraft.client.resource.metadata.LanguageResourceMetadata;
+import com.simibubi.create.Create;
+import net.minecraft.client.render.item.BuiltinModelItemRenderer;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.ModelRotation;
+import net.minecraft.client.render.model.json.ModelTransformation.Mode;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.client.event.ModelBakeEvent;
 
@@ -17,11 +17,11 @@ import net.minecraftforge.client.event.ModelBakeEvent;
 public abstract class CustomRenderedItemModel extends WrappedBakedModel {
 
 	protected String basePath;
-	protected Map<String, elg> partials = new HashMap<>();
-	protected b currentPerspective;
-	protected Input renderer;
+	protected Map<String, BakedModel> partials = new HashMap<>();
+	protected Mode currentPerspective;
+	protected BuiltinModelItemRenderer renderer;
 
-	public CustomRenderedItemModel(elg template, String basePath) {
+	public CustomRenderedItemModel(BakedModel template, String basePath) {
 		super(template);
 		this.basePath = basePath;
 		this.renderer = createRenderer();
@@ -31,19 +31,19 @@ public abstract class CustomRenderedItemModel extends WrappedBakedModel {
 		return partials.keySet().stream().map(this::getPartialModelLocation).collect(Collectors.toList());
 	}
 	
-	public Input getRenderer() {
+	public BuiltinModelItemRenderer getRenderer() {
 		return renderer;
 	}
 
-	public abstract Input createRenderer();
+	public abstract BuiltinModelItemRenderer createRenderer();
 
 	@Override
-	public boolean d() {
+	public boolean isBuiltin() {
 		return true;
 	}
 
 	@Override
-	public elg handlePerspective(b cameraTransformType, BufferVertexConsumer mat) {
+	public BakedModel handlePerspective(Mode cameraTransformType, MatrixStack mat) {
 		currentPerspective = cameraTransformType;
 		return super.handlePerspective(cameraTransformType, mat);
 	}
@@ -60,19 +60,19 @@ public abstract class CustomRenderedItemModel extends WrappedBakedModel {
 		return this;
 	}
 
-	private elg loadModel(ModelBakeEvent event, String name) {
-		return event.getModelLoader().a(getPartialModelLocation(name), LanguageResourceMetadata.READER);
+	private BakedModel loadModel(ModelBakeEvent event, String name) {
+		return event.getModelLoader().bake(getPartialModelLocation(name), ModelRotation.X0_Y0);
 	}
 
 	private Identifier getPartialModelLocation(String name) {
 		return new Identifier(Create.ID, "item/" + basePath + "/" + name);
 	}
 
-	public b getCurrentPerspective() {
+	public Mode getCurrentPerspective() {
 		return currentPerspective;
 	}
 	
-	public elg getPartial(String name) {
+	public BakedModel getPartial(String name) {
 		return partials.get(name);
 	}
 

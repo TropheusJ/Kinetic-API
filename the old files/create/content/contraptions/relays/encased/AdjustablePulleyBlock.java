@@ -1,59 +1,69 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.potion.PotionUtil;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.foundation.block.ITE;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 public class AdjustablePulleyBlock extends EncasedBeltBlock implements ITE<AdjustablePulleyTileEntity> {
 
-	public static BedPart POWERED = BambooLeaves.w;
+	public static BooleanProperty POWERED = Properties.POWERED;
 
-	public AdjustablePulleyBlock(c properties) {
+	public AdjustablePulleyBlock(Settings properties) {
 		super(properties);
-		j(n().a(POWERED, false));
+		setDefaultState(getDefaultState().with(POWERED, false));
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		super.a(builder.a(POWERED));
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		super.appendProperties(builder.add(POWERED));
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.ADJUSTABLE_PULLEY.create();
 	}
 
 	@Override
-	public void b(PistonHandler state, GameMode worldIn, BlockPos pos, PistonHandler oldState, boolean isMoving) {
-		if (oldState.b() == state.b())
+	public void onBlockAdded(BlockState state, World worldIn, BlockPos pos, BlockState oldState, boolean isMoving) {
+		super.onBlockAdded(state, worldIn, pos, oldState, isMoving);
+		if (oldState.getBlock() == state.getBlock())
 			return;
 		withTileEntityDo(worldIn, pos, AdjustablePulleyTileEntity::neighborChanged);
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		return super.a(context).a(POWERED, context.p().r(context.a()));
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return super.getPlacementState(context).with(POWERED, context.getWorld()
+			.isReceivingRedstonePower(context.getBlockPos()));
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, BeetrootsBlock blockIn, BlockPos fromPos,
-			boolean isMoving) {
-		if (worldIn.v)
+	protected boolean areStatesKineticallyEquivalent(BlockState oldState, BlockState newState) {
+		return super.areStatesKineticallyEquivalent(oldState, newState)
+			&& oldState.get(POWERED) == newState.get(POWERED);
+	}
+
+	@Override
+	public void neighborUpdate(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos,
+		boolean isMoving) {
+		if (worldIn.isClient)
 			return;
 
 		withTileEntityDo(worldIn, pos, AdjustablePulleyTileEntity::neighborChanged);
 
-		boolean previouslyPowered = state.c(POWERED);
-		if (previouslyPowered != worldIn.r(pos))
-			worldIn.a(pos, state.a(POWERED), 18);
+		boolean previouslyPowered = state.get(POWERED);
+		if (previouslyPowered != worldIn.isReceivingRedstonePower(pos))
+			worldIn.setBlockState(pos, state.cycle(POWERED), 18);
 	}
 
 	@Override

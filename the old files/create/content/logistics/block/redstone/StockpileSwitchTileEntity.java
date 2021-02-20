@@ -1,17 +1,19 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
 import java.util.List;
-import afj;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour.InterfaceProvider;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour.InterfaceProvider;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.items.IItemHandler;
 
 public class StockpileSwitchTileEntity extends SmartTileEntity {
@@ -25,7 +27,7 @@ public class StockpileSwitchTileEntity extends SmartTileEntity {
 	private FilteringBehaviour filtering;
 	private InvManipulationBehaviour observedInventory;
 
-	public StockpileSwitchTileEntity(BellBlockEntity<?> typeIn) {
+	public StockpileSwitchTileEntity(BlockEntityType<?> typeIn) {
 		super(typeIn);
 		onWhenAbove = .75f;
 		offWhenBelow = .25f;
@@ -36,7 +38,7 @@ public class StockpileSwitchTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler blockState, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState blockState, CompoundTag compound, boolean clientPacket) {
 		onWhenAbove = compound.getFloat("OnAbove");
 		offWhenBelow = compound.getFloat("OffBelow");
 		currentLevel = compound.getFloat("Current");
@@ -64,10 +66,10 @@ public class StockpileSwitchTileEntity extends SmartTileEntity {
 		if (!observedInventory.hasInventory()) {
 			if (currentLevel == -1)
 				return;
-			d.a(e, p().a(StockpileSwitchBlock.INDICATOR, 0), 3);
+			world.setBlockState(pos, getCachedState().with(StockpileSwitchBlock.INDICATOR, 0), 3);
 			currentLevel = -1;
 			state = false;
-			d.a(e, p().b());
+			world.updateNeighbors(pos, getCachedState().getBlock());
 			sendData();
 			return;
 		}
@@ -77,9 +79,9 @@ public class StockpileSwitchTileEntity extends SmartTileEntity {
 		IItemHandler inv = observedInventory.getInventory();
 
 		for (int slot = 0; slot < inv.getSlots(); slot++) {
-			ItemCooldownManager stackInSlot = inv.getStackInSlot(slot);
-			int space = Math.min(stackInSlot.c(), inv.getSlotLimit(slot));
-			int count = stackInSlot.E();
+			ItemStack stackInSlot = inv.getStackInSlot(slot);
+			int space = Math.min(stackInSlot.getMaxCount(), inv.getSlotLimit(slot));
+			int count = stackInSlot.getCount();
 
 			if (space == 0)
 				continue;
@@ -94,7 +96,7 @@ public class StockpileSwitchTileEntity extends SmartTileEntity {
 		if (currentLevel != level)
 			changed = true;
 		currentLevel = level;
-		currentLevel = afj.a(currentLevel, 0, 1);
+		currentLevel = MathHelper.clamp(currentLevel, 0, 1);
 
 		boolean previouslyPowered = state;
 		if (state && currentLevel <= offWhenBelow)
@@ -106,9 +108,9 @@ public class StockpileSwitchTileEntity extends SmartTileEntity {
 		int displayLevel = 0;
 		if (currentLevel > 0)
 			displayLevel = (int) (currentLevel * 6);
-		d.a(e, p().a(StockpileSwitchBlock.INDICATOR, displayLevel), update ? 3 : 2);
+		world.setBlockState(pos, getCachedState().with(StockpileSwitchBlock.INDICATOR, displayLevel), update ? 3 : 2);
 		if (update)
-			d.a(e, p().b());
+			world.updateNeighbors(pos, getCachedState().getBlock());
 		if (changed || update)
 			sendData();
 	}
@@ -116,14 +118,14 @@ public class StockpileSwitchTileEntity extends SmartTileEntity {
 	@Override
 	public void lazyTick() {
 		super.lazyTick();
-		if (d.v)
+		if (world.isClient)
 			return;
 		updateCurrentLevel();
 	}
 
 	@Override
 	public void addBehaviours(List<TileEntityBehaviour> behaviours) {
-		filtering = new FilteringBehaviour(this, new FilteredDetectorFilterSlot()).moveText(new EntityHitResult(0, 5, 0))
+		filtering = new FilteringBehaviour(this, new FilteredDetectorFilterSlot()).moveText(new Vec3d(0, 5, 0))
 			.withCallback($ -> updateCurrentLevel());
 		behaviours.add(filtering);
 
@@ -151,6 +153,6 @@ public class StockpileSwitchTileEntity extends SmartTileEntity {
 		if (inverted == this.inverted)
 			return;
 		this.inverted = inverted;
-		d.a(e, p().b());
+		world.updateNeighbors(pos, getCachedState().getBlock());
 	}
 }

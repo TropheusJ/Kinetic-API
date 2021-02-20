@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
 import java.util.List;
 import java.util.Map;
@@ -13,60 +13,60 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.simibubi.kinetic_api.AllRecipeTypes;
+import com.simibubi.create.AllRecipeTypes;
 import net.minecraft.data.server.recipe.RecipeJsonProvider;
-import net.minecraft.item.HoeItem;
-import net.minecraft.recipe.FireworkRocketRecipe;
-import net.minecraft.recipe.MapExtendingRecipe;
-import net.minecraft.tag.ItemTags;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.recipe.Ingredient;
+import net.minecraft.recipe.RecipeSerializer;
+import net.minecraft.tag.SetTag;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.GameRules;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public class MechanicalCraftingRecipeBuilder {
 
-	private final HoeItem result;
+	private final Item result;
 	private final int count;
 	private final List<String> pattern = Lists.newArrayList();
-	private final Map<Character, FireworkRocketRecipe> key = Maps.newLinkedHashMap();
+	private final Map<Character, Ingredient> key = Maps.newLinkedHashMap();
 
-	public MechanicalCraftingRecipeBuilder(GameRules p_i48261_1_, int p_i48261_2_) {
-		result = p_i48261_1_.h();
+	public MechanicalCraftingRecipeBuilder(ItemConvertible p_i48261_1_, int p_i48261_2_) {
+		result = p_i48261_1_.asItem();
 		count = p_i48261_2_;
 	}
 
 	/**
 	 * Creates a new builder for a shaped recipe.
 	 */
-	public static MechanicalCraftingRecipeBuilder shapedRecipe(GameRules p_200470_0_) {
+	public static MechanicalCraftingRecipeBuilder shapedRecipe(ItemConvertible p_200470_0_) {
 		return shapedRecipe(p_200470_0_, 1);
 	}
 
 	/**
 	 * Creates a new builder for a shaped recipe.
 	 */
-	public static MechanicalCraftingRecipeBuilder shapedRecipe(GameRules p_200468_0_, int p_200468_1_) {
+	public static MechanicalCraftingRecipeBuilder shapedRecipe(ItemConvertible p_200468_0_, int p_200468_1_) {
 		return new MechanicalCraftingRecipeBuilder(p_200468_0_, p_200468_1_);
 	}
 
 	/**
 	 * Adds a key to the recipe pattern.
 	 */
-	public MechanicalCraftingRecipeBuilder key(Character p_200469_1_, ItemTags<HoeItem> p_200469_2_) {
-		return this.key(p_200469_1_, FireworkRocketRecipe.a(p_200469_2_));
+	public MechanicalCraftingRecipeBuilder key(Character p_200469_1_, SetTag<Item> p_200469_2_) {
+		return this.key(p_200469_1_, Ingredient.fromTag(p_200469_2_));
 	}
 
 	/**
 	 * Adds a key to the recipe pattern.
 	 */
-	public MechanicalCraftingRecipeBuilder key(Character p_200462_1_, GameRules p_200462_2_) {
-		return this.key(p_200462_1_, FireworkRocketRecipe.a(p_200462_2_));
+	public MechanicalCraftingRecipeBuilder key(Character p_200462_1_, ItemConvertible p_200462_2_) {
+		return this.key(p_200462_1_, Ingredient.ofItems(p_200462_2_));
 	}
 
 	/**
 	 * Adds a key to the recipe pattern.
 	 */
-	public MechanicalCraftingRecipeBuilder key(Character p_200471_1_, FireworkRocketRecipe p_200471_2_) {
+	public MechanicalCraftingRecipeBuilder key(Character p_200471_1_, Ingredient p_200471_2_) {
 		if (this.key.containsKey(p_200471_1_)) {
 			throw new IllegalArgumentException("Symbol '" + p_200471_1_ + "' is already defined!");
 		} else if (p_200471_1_ == ' ') {
@@ -146,13 +146,13 @@ public class MechanicalCraftingRecipeBuilder {
 
 	public class Result implements RecipeJsonProvider {
 		private final Identifier id;
-		private final HoeItem result;
+		private final Item result;
 		private final int count;
 		private final List<String> pattern;
-		private final Map<Character, FireworkRocketRecipe> key;
+		private final Map<Character, Ingredient> key;
 
-		public Result(Identifier p_i48271_2_, HoeItem p_i48271_3_, int p_i48271_4_, List<String> p_i48271_6_,
-			Map<Character, FireworkRocketRecipe> p_i48271_7_) {
+		public Result(Identifier p_i48271_2_, Item p_i48271_3_, int p_i48271_4_, List<String> p_i48271_6_,
+			Map<Character, Ingredient> p_i48271_7_) {
 			this.id = p_i48271_2_;
 			this.result = p_i48271_3_;
 			this.count = p_i48271_4_;
@@ -167,9 +167,9 @@ public class MechanicalCraftingRecipeBuilder {
 
 			p_218610_1_.add("pattern", jsonarray);
 			JsonObject jsonobject = new JsonObject();
-			for (Entry<Character, FireworkRocketRecipe> entry : this.key.entrySet())
+			for (Entry<Character, Ingredient> entry : this.key.entrySet())
 				jsonobject.add(String.valueOf(entry.getKey()), entry.getValue()
-					.c());
+					.toJson());
 
 			p_218610_1_.add("key", jsonobject);
 			JsonObject jsonobject1 = new JsonObject();
@@ -181,7 +181,7 @@ public class MechanicalCraftingRecipeBuilder {
 			p_218610_1_.add("result", jsonobject1);
 		}
 
-		public MapExtendingRecipe<?> c() {
+		public RecipeSerializer<?> getSerializer() {
 			return AllRecipeTypes.MECHANICAL_CRAFTING.serializer;
 		}
 

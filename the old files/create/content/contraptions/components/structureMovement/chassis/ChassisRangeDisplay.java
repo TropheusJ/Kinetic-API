@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.chassis;
+package com.simibubi.create.content.contraptions.components.structureMovement.chassis;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,17 +10,17 @@ import java.util.Map;
 import java.util.Set;
 
 import com.mojang.datafixers.util.Pair;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllKeys;
-import com.simibubi.kinetic_api.AllSpecialTextures;
-import com.simibubi.kinetic_api.CreateClient;
-import dcg;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.entity.player.PlayerAbilities;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllKeys;
+import com.simibubi.create.AllSpecialTextures;
+import com.simibubi.create.CreateClient;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 public class ChassisRangeDisplay {
 
@@ -42,7 +42,7 @@ public class ChassisRangeDisplay {
 		}
 
 		protected Object getOutlineKey() {
-			return Pair.of(te.o(), 1);
+			return Pair.of(te.getPos(), 1);
 		}
 
 		protected Set<BlockPos> createSelection(ChassisTileEntity chassis) {
@@ -86,9 +86,9 @@ public class ChassisRangeDisplay {
 	static List<GroupEntry> groupEntries = new ArrayList<>();
 
 	public static void tick() {
-		PlayerAbilities player = KeyBinding.B().s;
-		GameMode world = KeyBinding.B().r;
-		boolean hasWrench = AllItems.WRENCH.isIn(player.dC());
+		PlayerEntity player = MinecraftClient.getInstance().player;
+		World world = MinecraftClient.getInstance().world;
+		boolean hasWrench = AllItems.WRENCH.isIn(player.getMainHandStack());
 
 		for (Iterator<BlockPos> iterator = entries.keySet()
 			.iterator(); iterator.hasNext();) {
@@ -112,13 +112,13 @@ public class ChassisRangeDisplay {
 		if (!hasWrench)
 			return;
 
-		Box over = KeyBinding.B().v;
-		if (!(over instanceof dcg))
+		HitResult over = MinecraftClient.getInstance().crosshairTarget;
+		if (!(over instanceof BlockHitResult))
 			return;
-		dcg ray = (dcg) over;
-		BlockPos pos = ray.a();
-		BeehiveBlockEntity tileEntity = world.c(pos);
-		if (tileEntity == null || tileEntity.q())
+		BlockHitResult ray = (BlockHitResult) over;
+		BlockPos pos = ray.getBlockPos();
+		BlockEntity tileEntity = world.getBlockEntity(pos);
+		if (tileEntity == null || tileEntity.isRemoved())
 			return;
 		if (!(tileEntity instanceof ChassisTileEntity))
 			return;
@@ -130,7 +130,7 @@ public class ChassisRangeDisplay {
 			GroupEntry existingGroupForPos = getExistingGroupForPos(pos);
 			if (existingGroupForPos != null) {
 				for (ChassisTileEntity included : existingGroupForPos.includedTEs)
-					entries.remove(included.o());
+					entries.remove(included.getPos());
 				existingGroupForPos.timer = DISPLAY_TIME;
 				return;
 			}
@@ -146,11 +146,11 @@ public class ChassisRangeDisplay {
 
 	private static boolean tickEntry(Entry entry, boolean hasWrench) {
 		ChassisTileEntity chassisTileEntity = entry.te;
-		GameMode teWorld = chassisTileEntity.v();
-		GameMode world = KeyBinding.B().r;
+		World teWorld = chassisTileEntity.getWorld();
+		World world = MinecraftClient.getInstance().world;
 
-		if (chassisTileEntity.q() || teWorld == null || teWorld != world
-			|| !world.p(chassisTileEntity.o())) {
+		if (chassisTileEntity.isRemoved() || teWorld == null || teWorld != world
+			|| !world.canSetBlock(chassisTileEntity.getPos())) {
 			return true;
 		}
 
@@ -172,7 +172,7 @@ public class ChassisRangeDisplay {
 			GroupEntry hoveredGroup = new GroupEntry(chassis);
 
 			for (ChassisTileEntity included : hoveredGroup.includedTEs)
-				CreateClient.outliner.remove(included.o());
+				CreateClient.outliner.remove(included.getPos());
 
 			groupEntries.forEach(entry -> CreateClient.outliner.remove(entry.getOutlineKey()));
 			groupEntries.clear();
@@ -182,7 +182,7 @@ public class ChassisRangeDisplay {
 		}
 
 		// Display an individual chassis and kill any group selections that contained it
-		BlockPos pos = chassis.o();
+		BlockPos pos = chassis.getPos();
 		GroupEntry entry = getExistingGroupForPos(pos);
 		if (entry != null)
 			CreateClient.outliner.remove(entry.getOutlineKey());
@@ -196,7 +196,7 @@ public class ChassisRangeDisplay {
 	private static GroupEntry getExistingGroupForPos(BlockPos pos) {
 		for (GroupEntry groupEntry : groupEntries)
 			for (ChassisTileEntity chassis : groupEntry.includedTEs)
-				if (pos.equals(chassis.o()))
+				if (pos.equals(chassis.getPos()))
 					return groupEntry;
 		return null;
 	}

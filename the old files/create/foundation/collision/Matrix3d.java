@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.foundation.collision;
+package com.simibubi.create.foundation.collision;
 
-import afj;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -25,8 +25,8 @@ public class Matrix3d {
 		if (radians == 0)
 			return this;
 		
-		double s = afj.a(radians);
-		double c = afj.b(radians);
+		double s = MathHelper.sin(radians);
+		double c = MathHelper.cos(radians);
 		m22 = m11 = c;
 		m21 = s;
 		m12 = -s;
@@ -38,8 +38,8 @@ public class Matrix3d {
 		if (radians == 0)
 			return this;
 		
-		double s = afj.a(radians);
-		double c = afj.b(radians);
+		double s = MathHelper.sin(radians);
+		double c = MathHelper.cos(radians);
 		m00 = m22 = c;
 		m20 = s;
 		m02 = -s;
@@ -51,8 +51,8 @@ public class Matrix3d {
 		if (radians == 0)
 			return this;
 		
-		double s = afj.a(radians);
-		double c = afj.b(radians);
+		double s = MathHelper.sin(radians);
+		double c = MathHelper.cos(radians);
 		m00 = m11 = c;
 		m01 = -s;
 		m10 = s;
@@ -114,11 +114,11 @@ public class Matrix3d {
 		return this;
 	}
 
-	public EntityHitResult transform(EntityHitResult vec) {
-		double x = vec.entity * m00 + vec.c * m01 + vec.d * m02;
-		double y = vec.entity * m10 + vec.c * m11 + vec.d * m12;
-		double z = vec.entity * m20 + vec.c * m21 + vec.d * m22;
-		return new EntityHitResult(x, y, z);
+	public Vec3d transform(Vec3d vec) {
+		double x = vec.x * m00 + vec.y * m01 + vec.z * m02;
+		double y = vec.x * m10 + vec.y * m11 + vec.z * m12;
+		double z = vec.x * m20 + vec.y * m21 + vec.z * m22;
+		return new Vec3d(x, y, z);
 	}
 
 	public Matrix3d copy() {

@@ -1,25 +1,26 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement;
+package com.simibubi.create.content.contraptions.components.structureMovement;
 
 import java.util.function.UnaryOperator;
 
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.structure.processor.StructureProcessor.c;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.structure.Structure.StructureBlockInfo;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants.NBT;
 
 public class MovementContext {
 
-	public EntityHitResult position;
-	public EntityHitResult motion;
-	public EntityHitResult relativeMotion;
-	public UnaryOperator<EntityHitResult> rotation;
+	public Vec3d position;
+	public Vec3d motion;
+	public Vec3d relativeMotion;
+	public UnaryOperator<Vec3d> rotation;
 
-	public GameMode world;
-	public PistonHandler state;
+	public World world;
+	public BlockState state;
 	public BlockPos localPos;
 	public CompoundTag tileData;
 
@@ -29,16 +30,16 @@ public class MovementContext {
 	public Contraption contraption;
 	public Object temporaryData;
 
-	public MovementContext(GameMode world, c info, Contraption contraption) {
+	public MovementContext(World world, StructureBlockInfo info, Contraption contraption) {
 		this.world = world;
-		this.state = info.b;
-		this.tileData = info.c;
+		this.state = info.state;
+		this.tileData = info.tag;
 		this.contraption = contraption;
-		localPos = info.a;
+		localPos = info.pos;
 
 		firstMovement = true;
-		motion = EntityHitResult.a;
-		relativeMotion = EntityHitResult.a;
+		motion = Vec3d.ZERO;
+		relativeMotion = Vec3d.ZERO;
 		rotation = v -> v;
 		position = null;
 		data = new CompoundTag();
@@ -47,15 +48,15 @@ public class MovementContext {
 
 	public float getAnimationSpeed() {
 		int modifier = 1000;
-		double length = -motion.f();
-		if (world.v && contraption.stalled)
+		double length = -motion.length();
+		if (world.isClient && contraption.stalled)
 			return 700;
 		if (Math.abs(length) < 1 / 512f)
 			return 0;
 		return (((int) (length * modifier + 100 * Math.signum(length))) / 100) * 100;
 	}
 
-	public static MovementContext readNBT(GameMode world, c info, CompoundTag nbt, Contraption contraption) {
+	public static MovementContext readNBT(World world, StructureBlockInfo info, CompoundTag nbt, Contraption contraption) {
 		MovementContext context = new MovementContext(world, info, contraption);
 		context.motion = VecHelper.readNBT(nbt.getList("Motion", NBT.TAG_DOUBLE));
 		context.relativeMotion = VecHelper.readNBT(nbt.getList("RelativeMotion", NBT.TAG_DOUBLE));

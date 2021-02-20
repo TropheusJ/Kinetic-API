@@ -1,12 +1,13 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.capability;
+package com.simibubi.create.content.contraptions.components.structureMovement.train.capability;
 
 import java.util.function.Supplier;
-import apx;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
+
+import com.simibubi.create.foundation.networking.SimplePacketBase;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
@@ -21,7 +22,7 @@ public class MinecartControllerUpdatePacket extends SimplePacketBase {
 
 	public MinecartControllerUpdatePacket(MinecartController controller) {
 		entityID = controller.cart()
-			.X();
+			.getEntityId();
 		nbt = controller.serializeNBT();
 	}
 
@@ -39,17 +40,17 @@ public class MinecartControllerUpdatePacket extends SimplePacketBase {
 	@Override
 	public void handle(Supplier<Context> context) {
 		context.get()
-			.enqueueWork(() -> DistExecutor.runWhenOn(Dist.CLIENT, () -> this::handleCL));
+			.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> this::handleCL));
 		context.get()
 			.setPacketHandled(true);
 	}
 
 	@Environment(EnvType.CLIENT)
 	private void handleCL() {
-		DragonHeadEntityModel world = KeyBinding.B().r;
+		ClientWorld world = MinecraftClient.getInstance().world;
 		if (world == null)
 			return;
-		apx entityByID = world.a(entityID);
+		Entity entityByID = world.getEntityById(entityID);
 		if (entityByID == null)
 			return;
 		entityByID.getCapability(CapabilityMinecartController.MINECART_CONTROLLER_CAPABILITY)

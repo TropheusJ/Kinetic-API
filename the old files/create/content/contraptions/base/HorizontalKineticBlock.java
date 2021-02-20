@@ -1,44 +1,46 @@
-package com.simibubi.kinetic_api.content.contraptions.base;
+package com.simibubi.create.content.contraptions.base;
 
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.LoomBlock;
-import net.minecraft.block.RespawnAnchorBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.state.property.IntProperty;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.Properties;
+import net.minecraft.state.property.Property;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.Direction;
 
 public abstract class HorizontalKineticBlock extends KineticBlock {
 
-	public static final IntProperty<Direction> HORIZONTAL_FACING = BambooLeaves.O;
+	public static final Property<Direction> HORIZONTAL_FACING = Properties.HORIZONTAL_FACING;
 
-	public HorizontalKineticBlock(c properties) {
+	public HorizontalKineticBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(HORIZONTAL_FACING);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(HORIZONTAL_FACING);
+		super.appendProperties(builder);
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		return this.n()
-			.a(HORIZONTAL_FACING, context.f()
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		return this.getDefaultState()
+			.with(HORIZONTAL_FACING, context.getPlayerFacing()
 				.getOpposite());
 	}
 
-	public Direction getPreferredHorizontalFacing(PotionUtil context) {
+	public Direction getPreferredHorizontalFacing(ItemPlacementContext context) {
 		Direction prefferedSide = null;
 		for (Direction side : Iterate.horizontalDirections) {
-			PistonHandler blockState = context.p()
-				.d_(context.a()
+			BlockState blockState = context.getWorld()
+				.getBlockState(context.getBlockPos()
 					.offset(side));
-			if (blockState.b() instanceof IRotate) {
-				if (((IRotate) blockState.b()).hasShaftTowards(context.p(), context.a()
+			if (blockState.getBlock() instanceof IRotate) {
+				if (((IRotate) blockState.getBlock()).hasShaftTowards(context.getWorld(), context.getBlockPos()
 					.offset(side), blockState, side.getOpposite()))
 					if (prefferedSide != null && prefferedSide.getAxis() != side.getAxis()) {
 						prefferedSide = null;
@@ -52,13 +54,13 @@ public abstract class HorizontalKineticBlock extends KineticBlock {
 	}
 
 	@Override
-	public PistonHandler a(PistonHandler state, RespawnAnchorBlock rot) {
-		return state.a(HORIZONTAL_FACING, rot.a(state.c(HORIZONTAL_FACING)));
+	public BlockState rotate(BlockState state, BlockRotation rot) {
+		return state.with(HORIZONTAL_FACING, rot.rotate(state.get(HORIZONTAL_FACING)));
 	}
 
 	@Override
-	public PistonHandler a(PistonHandler state, LoomBlock mirrorIn) {
-		return state.a(mirrorIn.a(state.c(HORIZONTAL_FACING)));
+	public BlockState mirror(BlockState state, BlockMirror mirrorIn) {
+		return state.rotate(mirrorIn.getRotation(state.get(HORIZONTAL_FACING)));
 	}
 
 }

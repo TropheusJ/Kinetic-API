@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api;
+package com.simibubi.create;
 
 import org.lwjgl.glfw.GLFW;
-import net.minecraft.client.gui.screen.PresetsScreen;
-import net.minecraft.client.options.GraphicsMode;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.options.KeyBinding;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 
@@ -13,7 +13,7 @@ public enum AllKeys {
 
 	;
 
-	private GraphicsMode keybind;
+	private KeyBinding keybind;
 	private String description;
 	private int key;
 	private boolean modifiable;
@@ -26,7 +26,7 @@ public enum AllKeys {
 
 	public static void register() {
 		for (AllKeys key : values()) {
-			key.keybind = new GraphicsMode(key.description, key.key, Create.NAME);
+			key.keybind = new KeyBinding(key.description, key.key, Create.NAME);
 			if (!key.modifiable)
 				continue;
 
@@ -34,38 +34,38 @@ public enum AllKeys {
 		}
 	}
 
-	public GraphicsMode getKeybind() {
+	public KeyBinding getKeybind() {
 		return keybind;
 	}
 
 	public boolean isPressed() {
 		if (!modifiable)
 			return isKeyDown(key);
-		return keybind.d();
+		return keybind.isPressed();
 	}
 
 	public String getBoundKey() {
-		return keybind.j().getString().toUpperCase();
+		return keybind.getBoundKeyLocalizedText().getString().toUpperCase();
 	}
 
 	public int getBoundCode() {
-		return keybind.getKey().b();
+		return keybind.getKey().getCode();
 	}
 
 	public static boolean isKeyDown(int key) {
-		return GLFW.glfwGetKey(KeyBinding.B().aB().i(), key) != 0;
+		return GLFW.glfwGetKey(MinecraftClient.getInstance().getWindow().getHandle(), key) != 0;
 	}
 
 	public static boolean ctrlDown() {
-		return PresetsScreen.x();
+		return Screen.hasControlDown();
 	}
 
 	public static boolean shiftDown() {
-		return PresetsScreen.y();
+		return Screen.hasShiftDown();
 	}
 
 	public static boolean altDown() {
-		return PresetsScreen.z();
+		return Screen.hasAltDown();
 	}
 
 }

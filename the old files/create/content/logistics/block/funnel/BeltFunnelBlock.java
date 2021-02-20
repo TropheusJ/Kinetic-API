@@ -1,62 +1,50 @@
-package com.simibubi.kinetic_api.content.logistics.block.funnel;
+package com.simibubi.create.content.logistics.block.funnel;
 
-import bnx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltBlock;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltSlope;
-import com.simibubi.kinetic_api.content.contraptions.wrench.IWrenchable;
-import com.simibubi.kinetic_api.content.schematics.ISpecialBlockItemRequirement;
-import com.simibubi.kinetic_api.content.schematics.ItemRequirement;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.VoxelShaper;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.content.contraptions.relays.belt.BeltBlock;
+import com.simibubi.create.content.contraptions.relays.belt.BeltSlope;
+import com.simibubi.create.content.schematics.ISpecialBlockItemRequirement;
+import com.simibubi.create.content.schematics.ItemRequirement;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.VoxelShaper;
 import com.tterrag.registrate.util.entry.BlockEntry;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.HayBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.client.particle.ItemPickupParticle;
-import net.minecraft.client.util.SmoothUtil;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-public abstract class BeltFunnelBlock extends HayBlock implements IWrenchable, ISpecialBlockItemRequirement {
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
+import net.minecraft.world.WorldView;
+
+public class BeltFunnelBlock extends AbstractFunnelBlock implements ISpecialBlockItemRequirement {
 
 	private BlockEntry<? extends FunnelBlock> parent;
 
-	public static final BedPart POWERED = BambooLeaves.w;
-	public static final DirectionProperty<Shape> SHAPE = DirectionProperty.a("shape", Shape.class);
+	public static final EnumProperty<Shape> SHAPE = EnumProperty.of("shape", Shape.class);
 
-	public enum Shape implements SmoothUtil {
+	public enum Shape implements StringIdentifiable {
 		RETRACTED(AllShapes.BELT_FUNNEL_RETRACTED),
 		EXTENDED(AllShapes.BELT_FUNNEL_EXTENDED),
 		PUSHING(AllShapes.BELT_FUNNEL_PERPENDICULAR),
 		PULLING(AllShapes.BELT_FUNNEL_PERPENDICULAR);
-//		CONNECTED(AllShapes.BELT_FUNNEL_CONNECTED); 
 
 		VoxelShaper shaper;
 
@@ -65,104 +53,82 @@ public abstract class BeltFunnelBlock extends HayBlock implements IWrenchable, I
 		}
 
 		@Override
-		public String a() {
+		public String asString() {
 			return Lang.asId(name());
 		}
 	}
 
-	public BeltFunnelBlock(BlockEntry<? extends FunnelBlock> parent, c p_i48377_1_) {
+	public BeltFunnelBlock(BlockEntry<? extends FunnelBlock> parent, Settings p_i48377_1_) {
 		super(p_i48377_1_);
 		this.parent = parent;
-		PistonHandler defaultState = n().a(SHAPE, Shape.RETRACTED);
-		if (hasPoweredProperty())
-			defaultState = defaultState.a(POWERED, false);
-		j(defaultState);
-	}
-
-	public abstract boolean hasPoweredProperty();
-
-	@Override
-	public boolean hasTileEntity(PistonHandler state) {
-		return true;
+		setDefaultState(getDefaultState().with(SHAPE, Shape.RETRACTED));
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
-		return AllTileEntities.FUNNEL.create();
+	protected void appendProperties(Builder<Block, BlockState> p_206840_1_) {
+		super.appendProperties(p_206840_1_.add(SHAPE));
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> p_206840_1_) {
-		if (hasPoweredProperty())
-			p_206840_1_.a(POWERED);
-		super.a(p_206840_1_.a(aq, SHAPE));
+	public VoxelShape getOutlineShape(BlockState state, BlockView p_220053_2_, BlockPos p_220053_3_,
+		ShapeContext p_220053_4_) {
+		return state.get(SHAPE).shaper.get(state.get(FACING));
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic p_220053_2_, BlockPos p_220053_3_,
-		ArrayVoxelShape p_220053_4_) {
-		return state.c(SHAPE).shaper.get(state.c(aq));
+	public VoxelShape getCollisionShape(BlockState p_220071_1_, BlockView p_220071_2_, BlockPos p_220071_3_,
+		ShapeContext p_220071_4_) {
+		if (p_220071_4_.getEntity() instanceof ItemEntity
+			&& (p_220071_1_.get(SHAPE) == Shape.PULLING || p_220071_1_.get(SHAPE) == Shape.PUSHING))
+			return AllShapes.FUNNEL_COLLISION.get(getFacing(p_220071_1_));
+		return getOutlineShape(p_220071_1_, p_220071_2_, p_220071_3_, p_220071_4_);
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil ctx) {
-		PistonHandler stateForPlacement = super.a(ctx);
-		BlockPos pos = ctx.a();
-		GameMode world = ctx.p();
-		Direction facing = ctx.n() == null || ctx.n()
-			.bt() ? ctx.j()
-				: ctx.d()
-					.getOpposite();
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		BlockState stateForPlacement = super.getPlacementState(ctx);
+		BlockPos pos = ctx.getBlockPos();
+		World world = ctx.getWorld();
+		Direction facing = ctx.getSide()
+			.getAxis()
+			.isHorizontal() ? ctx.getSide() : ctx.getPlayerFacing();
 
-		if (hasPoweredProperty())
-			stateForPlacement = stateForPlacement.a(POWERED, world.r(pos));
-
-		PistonHandler state = stateForPlacement.a(aq, facing);
-		return state.a(SHAPE, getShapeForPosition(world, pos, facing));
+		BlockState state = stateForPlacement.with(FACING, facing);
+		boolean sneaking = ctx.getPlayer() != null && ctx.getPlayer()
+			.isSneaking();
+		return state.with(SHAPE, getShapeForPosition(world, pos, facing, !sneaking));
 	}
 
-	public static Shape getShapeForPosition(MobSpawnerLogic world, BlockPos pos, Direction facing) {
+	public static Shape getShapeForPosition(BlockView world, BlockPos pos, Direction facing, boolean extracting) {
 		BlockPos posBelow = pos.down();
-		PistonHandler stateBelow = world.d_(posBelow);
+		BlockState stateBelow = world.getBlockState(posBelow);
+		Shape perpendicularState = extracting ? Shape.PUSHING : Shape.PULLING;
 		if (!AllBlocks.BELT.has(stateBelow))
-			return Shape.PUSHING;
-		Direction movementFacing = stateBelow.c(BeltBlock.HORIZONTAL_FACING);
-		return movementFacing.getAxis() != facing.getAxis() ? Shape.PUSHING : Shape.RETRACTED;
+			return perpendicularState;
+		Direction movementFacing = stateBelow.get(BeltBlock.HORIZONTAL_FACING);
+		return movementFacing.getAxis() != facing.getAxis() ? perpendicularState : Shape.RETRACTED;
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode world, BlockPos pos, PistonHandler newState, boolean isMoving) {
-		if (state.hasTileEntity() && (state.b() != newState.b() && !FunnelBlock.isFunnel(newState)
-			|| !newState.hasTileEntity())) {
-			TileEntityBehaviour.destroy(world, pos, FilteringBehaviour.TYPE);
-			world.o(pos);
-		}
-	}
-
-	@Override
-	@Environment(EnvType.CLIENT)
-	public boolean addDestroyEffects(PistonHandler state, GameMode world, BlockPos pos, ItemPickupParticle manager) {
-		BlockHelper.addReducedDestroyEffects(state, world, pos, manager);
-		return true;
-	}
-
-	@Override
-	public ItemCooldownManager getPickBlock(PistonHandler state, Box target, MobSpawnerLogic world, BlockPos pos,
-		PlayerAbilities player) {
+	public ItemStack getPickBlock(BlockState state, HitResult target, BlockView world, BlockPos pos,
+		PlayerEntity player) {
 		return parent.asStack();
 	}
 
 	@Override
-	public PistonHandler a(PistonHandler state, Direction direction, PistonHandler neighbour, GrassColors world,
+	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighbour, WorldAccess world,
 		BlockPos pos, BlockPos p_196271_6_) {
 		if (!isOnValidBelt(state, world, pos)) {
-			PistonHandler parentState = parent.getDefaultState();
-			if (state.d(POWERED).orElse(false))
-				parentState = parentState.a(POWERED, true);
-			return parentState.a(FunnelBlock.SHAPE, state.c(aq));
+			BlockState parentState = parent.getDefaultState();
+			if (state.method_28500(POWERED).orElse(false))
+				parentState = parentState.with(POWERED, true);
+			if (state.get(SHAPE) == Shape.PUSHING)
+				parentState = parentState.with(FunnelBlock.EXTRACTING, true);
+			return parentState.with(FunnelBlock.FACING, state.get(FACING));
 		}
-		Shape updatedShape = getShapeForPosition(world, pos, state.c(aq));
-		Shape currentShape = state.c(SHAPE);
+		Shape updatedShape =
+			getShapeForPosition(world, pos, state.get(FACING), state.get(SHAPE) == Shape.PUSHING);
+		Shape currentShape = state.get(SHAPE);
 		if (updatedShape == currentShape)
 			return state;
 
@@ -172,40 +138,27 @@ public abstract class BeltFunnelBlock extends HayBlock implements IWrenchable, I
 		if (updatedShape == Shape.RETRACTED && currentShape == Shape.EXTENDED)
 			return state;
 
-		return state.a(SHAPE, updatedShape);
+		return state.with(SHAPE, updatedShape);
 	}
 
-	public static boolean isOnValidBelt(PistonHandler state, ItemConvertible world, BlockPos pos) {
-		PistonHandler stateBelow = world.d_(pos.down());
-		if ((stateBelow.b() instanceof BeltBlock))
+	public static boolean isOnValidBelt(BlockState state, WorldView world, BlockPos pos) {
+		BlockState stateBelow = world.getBlockState(pos.down());
+		if ((stateBelow.getBlock() instanceof BeltBlock))
 			return BeltBlock.canTransportObjects(stateBelow);
 		DirectBeltInputBehaviour directBeltInputBehaviour =
 			TileEntityBehaviour.get(world, pos.down(), DirectBeltInputBehaviour.TYPE);
 		if (directBeltInputBehaviour == null)
 			return false;
 		return directBeltInputBehaviour.canSupportBeltFunnels();
-
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, BeetrootsBlock blockIn, BlockPos fromPos,
-		boolean isMoving) {
-		if (!hasPoweredProperty())
-			return;
-		if (worldIn.v)
-			return;
-		boolean previouslyPowered = state.c(POWERED);
-		if (previouslyPowered != worldIn.r(pos))
-			worldIn.a(pos, state.a(POWERED), 2);
-	}
+	public ActionResult onWrenched(BlockState state, ItemUsageContext context) {
+		World world = context.getWorld();
+		if (world.isClient)
+			return ActionResult.SUCCESS;
 
-	@Override
-	public Difficulty onWrenched(PistonHandler state, bnx context) {
-		GameMode world = context.p();
-		if (world.v)
-			return Difficulty.SUCCESS;
-
-		Shape shape = state.c(SHAPE);
+		Shape shape = state.get(SHAPE);
 		Shape newShape = shape;
 		if (shape == Shape.PULLING)
 			newShape = Shape.PUSHING;
@@ -214,32 +167,32 @@ public abstract class BeltFunnelBlock extends HayBlock implements IWrenchable, I
 		else if (shape == Shape.EXTENDED)
 			newShape = Shape.RETRACTED;
 		else if (shape == Shape.RETRACTED) {
-			PistonHandler belt = world.d_(context.a()
+			BlockState belt = world.getBlockState(context.getBlockPos()
 				.down());
-			if (belt.b() instanceof BeltBlock && belt.c(BeltBlock.SLOPE) != BeltSlope.HORIZONTAL)
+			if (belt.getBlock() instanceof BeltBlock && belt.get(BeltBlock.SLOPE) != BeltSlope.HORIZONTAL)
 				newShape = Shape.RETRACTED;
 			else
 				newShape = Shape.EXTENDED;
 		}
 
 		if (newShape == shape)
-			return Difficulty.SUCCESS;
+			return ActionResult.SUCCESS;
 
-		world.a(context.a(), state.a(SHAPE, newShape));
+		world.setBlockState(context.getBlockPos(), state.with(SHAPE, newShape));
 
 		if (newShape == Shape.EXTENDED) {
-			Direction facing = state.c(aq);
-			PistonHandler opposite = world.d_(context.a()
+			Direction facing = state.get(FACING);
+			BlockState opposite = world.getBlockState(context.getBlockPos()
 				.offset(facing));
-			if (opposite.b() instanceof BeltFunnelBlock && opposite.c(SHAPE) == Shape.EXTENDED
-				&& opposite.c(aq) == facing.getOpposite())
-				AllTriggers.triggerFor(AllTriggers.BELT_FUNNEL_KISS, context.n());
+			if (opposite.getBlock() instanceof BeltFunnelBlock && opposite.get(SHAPE) == Shape.EXTENDED
+				&& opposite.get(FACING) == facing.getOpposite())
+				AllTriggers.triggerFor(AllTriggers.BELT_FUNNEL_KISS, context.getPlayer());
 		}
-		return Difficulty.SUCCESS;
+		return ActionResult.SUCCESS;
 	}
-	
+
 	@Override
-	public ItemRequirement getRequiredItems(PistonHandler state) {
+	public ItemRequirement getRequiredItems(BlockState state) {
 		return ItemRequirement.of(parent.getDefaultState());
 	}
 

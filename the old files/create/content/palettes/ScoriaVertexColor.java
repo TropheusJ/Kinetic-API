@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.content.palettes;
+package com.simibubi.create.content.palettes;
 
-import com.simibubi.kinetic_api.foundation.block.IBlockVertexColor;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
+import com.simibubi.create.foundation.block.IBlockVertexColor;
+import com.simibubi.create.foundation.utility.ColorHelper;
 
 public class ScoriaVertexColor implements IBlockVertexColor {
 

@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.fluid;
+package com.simibubi.create.foundation.fluid;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,14 +14,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import cus;
-import cut;
+import net.minecraft.fluid.FlowableFluid;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.tag.BlockTags;
-import net.minecraft.tag.RequiredTagList;
-import net.minecraft.text.OrderedText;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraftforge.fluids.FluidStack;
 
 public abstract class FluidIngredient implements Predicate<FluidStack> {
@@ -30,14 +30,14 @@ public abstract class FluidIngredient implements Predicate<FluidStack> {
 
 	public List<FluidStack> matchingFluidStacks;
 
-	public static FluidIngredient fromTag(RequiredTagList.e<cut> tag, int amount) {
+	public static FluidIngredient fromTag(Tag.Identified<Fluid> tag, int amount) {
 		FluidTagIngredient ingredient = new FluidTagIngredient();
 		ingredient.tag = tag;
 		ingredient.amountRequired = amount;
 		return ingredient;
 	}
 
-	public static FluidIngredient fromFluid(cut fluid, int amount) {
+	public static FluidIngredient fromFluid(Fluid fluid, int amount) {
 		FluidStackIngredient ingredient = new FluidStackIngredient();
 		ingredient.fluid = fluid;
 		ingredient.amountRequired = amount;
@@ -130,13 +130,13 @@ public abstract class FluidIngredient implements Predicate<FluidStack> {
 
 		if (!json.has("amount"))
 			throw new JsonSyntaxException("Fluid ingredient has to define an amount");
-		ingredient.amountRequired = OrderedText.n(json, "amount");
+		ingredient.amountRequired = JsonHelper.getInt(json, "amount");
 		return ingredient;
 	}
 
 	public static class FluidStackIngredient extends FluidIngredient {
 
-		protected cut fluid;
+		protected Fluid fluid;
 		protected CompoundTag tagToMatch;
 
 		public FluidStackIngredient() {
@@ -144,14 +144,14 @@ public abstract class FluidIngredient implements Predicate<FluidStack> {
 		}
 		
 		void fixFlowing() {
-			if (fluid instanceof cus)
-				fluid = ((cus) fluid).e();
+			if (fluid instanceof FlowableFluid)
+				fluid = ((FlowableFluid) fluid).getStill();
 		}
 
 		@Override
 		protected boolean testInternal(FluidStack t) {
 			if (!t.getFluid()
-				.a(fluid))
+				.matchesType(fluid))
 				return false;
 			if (tagToMatch.isEmpty())
 				return true;
@@ -197,17 +197,17 @@ public abstract class FluidIngredient implements Predicate<FluidStack> {
 
 	public static class FluidTagIngredient extends FluidIngredient {
 
-		protected RequiredTagList.e<cut> tag;
+		protected Tag.Identified<Fluid> tag;
 
 		@Override
 		protected boolean testInternal(FluidStack t) {
 			if (tag == null)
 				for (FluidStack accepted : getMatchingFluidStacks())
 					if (accepted.getFluid()
-						.a(t.getFluid()))
+						.matchesType(t.getFluid()))
 						return true;
 			return t.getFluid()
-				.a(tag);
+				.isIn(tag);
 		}
 
 		@Override
@@ -229,10 +229,10 @@ public abstract class FluidIngredient implements Predicate<FluidStack> {
 
 		@Override
 		protected void readInternal(JsonObject json) {
-			Identifier id = new Identifier(OrderedText.h(json, "fluidTag"));
-			Optional<? extends RequiredTagList.e<cut>> optionalINamedTag = BlockTags.getRequiredTags()
+			Identifier id = new Identifier(JsonHelper.getString(json, "fluidTag"));
+			Optional<? extends Tag.Identified<Fluid>> optionalINamedTag = FluidTags.getRequiredTags()
 				.stream()
-				.filter(fluidINamedTag -> fluidINamedTag.a()
+				.filter(fluidINamedTag -> fluidINamedTag.getId()
 					.equals(id))
 				.findFirst(); // fixme
 			if (!optionalINamedTag.isPresent())
@@ -242,17 +242,17 @@ public abstract class FluidIngredient implements Predicate<FluidStack> {
 
 		@Override
 		protected void writeInternal(JsonObject json) {
-			json.addProperty("fluidTag", tag.a()
+			json.addProperty("fluidTag", tag.getId()
 				.toString());
 		}
 
 		@Override
 		protected List<FluidStack> determineMatchingFluidStacks() {
-			return tag.b()
+			return tag.values()
 				.stream()
 				.map(f -> {
-					if (f instanceof cus)
-						return ((cus) f).e();
+					if (f instanceof FlowableFluid)
+						return ((FlowableFluid) f).getStill();
 					return f;
 				})
 				.distinct()

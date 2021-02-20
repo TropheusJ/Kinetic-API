@@ -1,33 +1,34 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.chassis;
+package com.simibubi.create.content.contraptions.components.structureMovement.chassis;
 
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 
 public class RadialChassisBlock extends AbstractChassisBlock {
 
-	public static final BedPart STICKY_NORTH = BedPart.a("sticky_north");
-	public static final BedPart STICKY_SOUTH = BedPart.a("sticky_south");
-	public static final BedPart STICKY_EAST = BedPart.a("sticky_east");
-	public static final BedPart STICKY_WEST = BedPart.a("sticky_west");
+	public static final BooleanProperty STICKY_NORTH = BooleanProperty.of("sticky_north");
+	public static final BooleanProperty STICKY_SOUTH = BooleanProperty.of("sticky_south");
+	public static final BooleanProperty STICKY_EAST = BooleanProperty.of("sticky_east");
+	public static final BooleanProperty STICKY_WEST = BooleanProperty.of("sticky_west");
 
-	public RadialChassisBlock(c properties) {
+	public RadialChassisBlock(Settings properties) {
 		super(properties);
-		j(n().a(STICKY_EAST, false).a(STICKY_SOUTH, false).a(STICKY_NORTH, false)
-				.a(STICKY_WEST, false));
+		setDefaultState(getDefaultState().with(STICKY_EAST, false).with(STICKY_SOUTH, false).with(STICKY_NORTH, false)
+				.with(STICKY_WEST, false));
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(STICKY_NORTH, STICKY_EAST, STICKY_SOUTH, STICKY_WEST);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(STICKY_NORTH, STICKY_EAST, STICKY_SOUTH, STICKY_WEST);
+		super.appendProperties(builder);
 	}
 
 	@Override
-	public BedPart getGlueableSide(PistonHandler state, Direction face) {
-		Axis axis = state.c(e);
+	public BooleanProperty getGlueableSide(BlockState state, Direction face) {
+		Axis axis = state.get(AXIS);
 
 		if (axis == Axis.X) {
 			if (face == Direction.NORTH)

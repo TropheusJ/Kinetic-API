@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.foundation.gui.widgets;
+package com.simibubi.create.foundation.gui.widgets;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.AllIcons;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 
 public class IconButton extends AbstractSimiWidget {
@@ -17,30 +17,30 @@ public class IconButton extends AbstractSimiWidget {
 	}
 
 	@Override
-	public void b(BufferVertexConsumer matrixStack, int mouseX, int mouseY, float partialTicks) {
-		if (this.p) {
-			this.n =
-				mouseX >= this.l && mouseY >= this.m && mouseX < this.l + this.j && mouseY < this.m + this.k;
+	public void renderButton(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+		if (this.visible) {
+			this.hovered =
+				mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
 
-			AllGuiTextures button = (pressed || !o) ? button = AllGuiTextures.BUTTON_DOWN
-				: (n) ? AllGuiTextures.BUTTON_HOVER : AllGuiTextures.BUTTON;
+			AllGuiTextures button = (pressed || !active) ? button = AllGuiTextures.BUTTON_DOWN
+				: (hovered) ? AllGuiTextures.BUTTON_HOVER : AllGuiTextures.BUTTON;
 
 			RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			AllGuiTextures.BUTTON.bind();
-			b(matrixStack, l, m, button.startX, button.startY, button.width, button.height);
-			icon.draw(matrixStack, this, l + 1, m + 1);
+			drawTexture(matrixStack, x, y, button.startX, button.startY, button.width, button.height);
+			icon.draw(matrixStack, this, x + 1, y + 1);
 		}
 	}
 
 	@Override
-	public void a(double p_onClick_1_, double p_onClick_3_) {
-		super.a(p_onClick_1_, p_onClick_3_);
+	public void onClick(double p_onClick_1_, double p_onClick_3_) {
+		super.onClick(p_onClick_1_, p_onClick_3_);
 		this.pressed = true;
 	}
 
 	@Override
-	public void a_(double p_onRelease_1_, double p_onRelease_3_) {
-		super.a_(p_onRelease_1_, p_onRelease_3_);
+	public void onRelease(double p_onRelease_1_, double p_onRelease_3_) {
+		super.onRelease(p_onRelease_1_, p_onRelease_3_);
 		this.pressed = false;
 	}
 

@@ -1,50 +1,51 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.gearbox;
+package com.simibubi.create.content.contraptions.relays.gearbox;
 
 import java.util.Map;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.HoeItem;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.base.IRotate;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
-public class VerticalGearboxItem extends BannerItem {
+public class VerticalGearboxItem extends BlockItem {
 
-	public VerticalGearboxItem(a builder) {
+	public VerticalGearboxItem(Settings builder) {
 		super(AllBlocks.GEARBOX.get(), builder);
 	}
 
 	@Override
-	public void a(ChorusFruitItem p_150895_1_, DefaultedList<ItemCooldownManager> p_150895_2_) {
+	public void appendStacks(ItemGroup p_150895_1_, DefaultedList<ItemStack> p_150895_2_) {
 	}
 	
 	@Override
-	public String a() {
-		return "item.kinetic_api.vertical_gearbox";
+	public String getTranslationKey() {
+		return "item.create.vertical_gearbox";
 	}
 
 	@Override
-	public void a(Map<BeetrootsBlock, HoeItem> p_195946_1_, HoeItem p_195946_2_) {
+	public void appendBlocks(Map<Block, Item> p_195946_1_, Item p_195946_2_) {
 	}
 
 	@Override
-	protected boolean a(BlockPos pos, GameMode world, PlayerAbilities player, ItemCooldownManager stack, PistonHandler state) {
+	protected boolean postPlacement(BlockPos pos, World world, PlayerEntity player, ItemStack stack, BlockState state) {
 		Axis prefferedAxis = null;
 		for (Direction side : Iterate.horizontalDirections) {
-			PistonHandler blockState = world.d_(pos.offset(side));
-			if (blockState.b() instanceof IRotate) {
-				if (((IRotate) blockState.b()).hasShaftTowards(world, pos.offset(side), blockState,
+			BlockState blockState = world.getBlockState(pos.offset(side));
+			if (blockState.getBlock() instanceof IRotate) {
+				if (((IRotate) blockState.getBlock()).hasShaftTowards(world, pos.offset(side), blockState,
 						side.getOpposite()))
 					if (prefferedAxis != null && prefferedAxis != side.getAxis()) {
 						prefferedAxis = null;
@@ -55,11 +56,11 @@ public class VerticalGearboxItem extends BannerItem {
 			}
 		}
 
-		Axis axis = prefferedAxis == null ? player.bY()
+		Axis axis = prefferedAxis == null ? player.getHorizontalFacing()
 				.rotateYClockwise()
 				.getAxis() : prefferedAxis == Axis.X ? Axis.Z : Axis.X;
-		world.a(pos, state.a(BambooLeaves.F, axis));
-		return super.a(pos, world, player, stack, state);
+		world.setBlockState(pos, state.with(Properties.AXIS, axis));
+		return super.postPlacement(pos, world, player, stack, state);
 	}
 
 }

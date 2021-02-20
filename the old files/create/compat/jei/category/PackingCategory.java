@@ -1,20 +1,20 @@
-package com.simibubi.kinetic_api.compat.jei.category;
+package com.simibubi.create.compat.jei.category;
 
 import java.util.Arrays;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.compat.jei.category.PackingCategory.PackingType;
-import com.simibubi.kinetic_api.compat.jei.category.animations.AnimatedPress;
-import com.simibubi.kinetic_api.content.contraptions.processing.BasinRecipe;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.compat.jei.category.PackingCategory.PackingType;
+import com.simibubi.create.compat.jei.category.animations.AnimatedPress;
+import com.simibubi.create.content.contraptions.processing.BasinRecipe;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
 
 import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.gui.ingredient.IGuiItemStackGroup;
 import mezz.jei.api.ingredients.IIngredients;
-import net.minecraft.block.BellBlock;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.recipe.FireworkRocketRecipe;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.world.GameRules;
 
 public class PackingCategory extends BasinCategory {
 
@@ -30,10 +30,10 @@ public class PackingCategory extends BasinCategory {
 	}
 
 	public static PackingCategory autoSquare() {
-		return new PackingCategory(PackingType.AUTO_SQUARE, BellBlock.bV, 85);
+		return new PackingCategory(PackingType.AUTO_SQUARE, Blocks.CRAFTING_TABLE, 85);
 	}
 
-	protected PackingCategory(PackingType type, GameRules icon, int height) {
+	protected PackingCategory(PackingType type, ItemConvertible icon, int height) {
 		super(type != PackingType.AUTO_SQUARE, doubleItemIcon(AllBlocks.MECHANICAL_PRESS.get(), icon),
 			emptyBackground(177, height));
 		this.type = type;
@@ -49,27 +49,27 @@ public class PackingCategory extends BasinCategory {
 		IGuiItemStackGroup itemStacks = recipeLayout.getItemStacks();
 		int i = 0;
 
-		DefaultedList<FireworkRocketRecipe> ingredients2 = recipe.a();
+		DefaultedList<Ingredient> ingredients2 = recipe.getPreviewInputs();
 		int size = ingredients2.size();
 		int rows = size == 4 ? 2 : 3;
 		while (i < size) {
-			FireworkRocketRecipe ingredient = ingredients2.get(i);
+			Ingredient ingredient = ingredients2.get(i);
 			itemStacks.init(i, true, (rows == 2 ? 26 : 17) + (i % rows) * 19, 50 - (i / rows) * 19);
-			itemStacks.set(i, Arrays.asList(ingredient.a()));
+			itemStacks.set(i, Arrays.asList(ingredient.getMatchingStacksClient()));
 			i++;
 		}
 
 		itemStacks.init(i, false, 141, 50);
-		itemStacks.set(i, recipe.c());
+		itemStacks.set(i, recipe.getOutput());
 	}
 
 	@Override
-	public void draw(BasinRecipe recipe, BufferVertexConsumer matrixStack, double mouseX, double mouseY) {
+	public void draw(BasinRecipe recipe, MatrixStack matrixStack, double mouseX, double mouseY) {
 		if (type == PackingType.COMPACTING) {
 			super.draw(recipe, matrixStack, mouseX, mouseY);
 
 		} else {
-			DefaultedList<FireworkRocketRecipe> ingredients2 = recipe.a();
+			DefaultedList<Ingredient> ingredients2 = recipe.getPreviewInputs();
 			int size = ingredients2.size();
 			int rows = size == 4 ? 2 : 3;
 			for (int i = 0; i < size; i++)

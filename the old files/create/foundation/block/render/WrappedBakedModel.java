@@ -1,79 +1,79 @@
-package com.simibubi.kinetic_api.foundation.block.render;
+package com.simibubi.create.foundation.block.render;
 
-import elg;
 import java.util.List;
 import java.util.Random;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.SpriteTexturedVertexConsumer;
-import net.minecraft.client.render.model.json.ModelElementFace;
-import net.minecraft.client.render.model.json.ModelElementTexture.b;
-import net.minecraft.client.texture.MipmapHelper;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.render.model.json.ModelOverrideList;
+import net.minecraft.client.render.model.json.ModelTransformation.Mode;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 import net.minecraftforge.client.model.data.EmptyModelData;
 import net.minecraftforge.client.model.data.IModelData;
 
-public class WrappedBakedModel implements elg {
+public class WrappedBakedModel implements BakedModel {
 
-	protected elg template;
+	protected BakedModel template;
 
-	public WrappedBakedModel(elg template) {
+	public WrappedBakedModel(BakedModel template) {
 		this.template = template;
 	}
 	
 	@Override
-	public elg getBakedModel() {
+	public BakedModel getBakedModel() {
 		return template;
 	}
 
 	@Override
-	public boolean a() {
-		return template.a();
+	public boolean useAmbientOcclusion() {
+		return template.useAmbientOcclusion();
 	}
 
 	@Override
-	public boolean b() {
-		return template.b();
+	public boolean hasDepth() {
+		return template.hasDepth();
 	}
 
 	@Override
-	public boolean d() {
-		return template.d();
+	public boolean isBuiltin() {
+		return template.isBuiltin();
 	}
 
 	@Override
-	public MipmapHelper getParticleTexture(IModelData data) {
+	public Sprite getParticleTexture(IModelData data) {
 		return template.getParticleTexture(data);
 	}
 
 	@Override
-	public ModelElementFace g() {
-		return template.g();
+	public ModelOverrideList getOverrides() {
+		return template.getOverrides();
 	}
 
 	@Override
-	public elg handlePerspective(b cameraTransformType, BufferVertexConsumer mat) {
+	public BakedModel handlePerspective(Mode cameraTransformType, MatrixStack mat) {
 		template.handlePerspective(cameraTransformType, mat);
 		return this;
 	}
 
 	@Override
-	public List<SpriteTexturedVertexConsumer> a(PistonHandler state, Direction side, Random rand) {
+	public List<BakedQuad> getQuads(BlockState state, Direction side, Random rand) {
 		return getQuads(state, side, rand, EmptyModelData.INSTANCE);
 	}
 
 	@Override
-	public List<SpriteTexturedVertexConsumer> getQuads(PistonHandler state, Direction side, Random rand, IModelData data) {
+	public List<BakedQuad> getQuads(BlockState state, Direction side, Random rand, IModelData data) {
 		return template.getQuads(state, side, rand, data);
 	}
 
 	@Override
-	public MipmapHelper e() {
+	public Sprite getSprite() {
 		return getParticleTexture(EmptyModelData.INSTANCE);
 	}
 
 	@Override
-	public boolean c() {
-		return template.c();
+	public boolean isSideLit() {
+		return template.isSideLit();
 	}
 }

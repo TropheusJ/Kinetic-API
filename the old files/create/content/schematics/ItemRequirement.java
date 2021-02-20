@@ -1,29 +1,31 @@
-package com.simibubi.kinetic_api.content.schematics;
+package com.simibubi.create.content.schematics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.GlassBlock;
-import net.minecraft.block.SandBlock;
-import net.minecraft.block.SlimeBlock;
-import net.minecraft.block.TrappedChestBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.HoeItem;
-import net.minecraft.state.property.Property;
-import apx;
-import bck;
-import bcm;
-import bhk;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
+
+import com.simibubi.create.foundation.utility.BlockHelper;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.FarmlandBlock;
+import net.minecraft.block.GrassPathBlock;
+import net.minecraft.block.SeaPickleBlock;
+import net.minecraft.block.SnowBlock;
+import net.minecraft.block.TurtleEggBlock;
+import net.minecraft.block.enums.SlabType;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.decoration.ItemFrameEntity;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+import net.minecraft.entity.vehicle.BoatEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.state.property.Properties;
 
 public class ItemRequirement {
 
@@ -32,7 +34,7 @@ public class ItemRequirement {
 	}
 
 	ItemUseType usage;
-	List<ItemCooldownManager> requiredItems;
+	List<ItemStack> requiredItems;
 
 	public static ItemRequirement INVALID = new ItemRequirement();
 	public static ItemRequirement NONE = new ItemRequirement();
@@ -40,79 +42,79 @@ public class ItemRequirement {
 	private ItemRequirement() {
 	}
 
-	public ItemRequirement(ItemUseType usage, HoeItem item) {
-		this(usage, Arrays.asList(new ItemCooldownManager(item)));
+	public ItemRequirement(ItemUseType usage, Item item) {
+		this(usage, Arrays.asList(new ItemStack(item)));
 	}
 
-	public ItemRequirement(ItemUseType usage, List<ItemCooldownManager> requiredItems) {
+	public ItemRequirement(ItemUseType usage, List<ItemStack> requiredItems) {
 		this.usage = usage;
 		this.requiredItems = requiredItems;
 	}
 
-	public static ItemRequirement of(PistonHandler state) {
-		BeetrootsBlock block = state.b();
-		if (block == BellBlock.FACING)
+	public static ItemRequirement of(BlockState state) {
+		Block block = state.getBlock();
+		if (block == Blocks.AIR)
 			return NONE;
 		if (block instanceof ISpecialBlockItemRequirement)
 			return ((ISpecialBlockItemRequirement) block).getRequiredItems(state);
 
-		HoeItem item = BannerItem.e.getOrDefault(state.b(), AliasedBlockItem.a);
+		Item item = BlockItem.BLOCK_ITEMS.getOrDefault(state.getBlock(), Items.AIR);
 
 		// double slab needs two items
-		if (BlockHelper.hasBlockStateProperty(state, BambooLeaves.aK) && state.c(BambooLeaves.aK) == Property.hashCodeCache)
-			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemCooldownManager(item, 2)));
-		if (block instanceof TrappedChestBlock)
-			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemCooldownManager(item, state.c(TrappedChestBlock.b).intValue())));
-		if (block instanceof SandBlock)
-			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemCooldownManager(item, state.c(SandBlock.color).intValue())));
-		if (block instanceof SlimeBlock)
-			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemCooldownManager(item, state.c(SlimeBlock.a).intValue())));
-		if (block instanceof GlassBlock)
-			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemCooldownManager(AliasedBlockItem.i)));
-		if (block instanceof BlockEntityProvider)
-			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemCooldownManager(AliasedBlockItem.j)));
+		if (BlockHelper.hasBlockStateProperty(state, Properties.SLAB_TYPE) && state.get(Properties.SLAB_TYPE) == SlabType.DOUBLE)
+			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemStack(item, 2)));
+		if (block instanceof TurtleEggBlock)
+			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemStack(item, state.get(TurtleEggBlock.EGGS).intValue())));
+		if (block instanceof SeaPickleBlock)
+			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemStack(item, state.get(SeaPickleBlock.PICKLES).intValue())));
+		if (block instanceof SnowBlock)
+			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemStack(item, state.get(SnowBlock.LAYERS).intValue())));
+		if (block instanceof GrassPathBlock)
+			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemStack(Items.GRASS_BLOCK)));
+		if (block instanceof FarmlandBlock)
+			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(new ItemStack(Items.DIRT)));
 
-		return item == AliasedBlockItem.a ? INVALID : new ItemRequirement(ItemUseType.CONSUME, item);
+		return item == Items.AIR ? INVALID : new ItemRequirement(ItemUseType.CONSUME, item);
 	}
 
-	public static ItemRequirement of(apx entity) {
-		EntityDimensions<?> type = entity.W();
+	public static ItemRequirement of(Entity entity) {
+		EntityType<?> type = entity.getType();
 
 		if (entity instanceof ISpecialEntityItemRequirement)
 			return ((ISpecialEntityItemRequirement) entity).getRequiredItems();
 
-		if (type == EntityDimensions.M) {
-			bcm ife = (bcm) entity;
-			ItemCooldownManager frame = new ItemCooldownManager(AliasedBlockItem.oW);
-			ItemCooldownManager displayedItem = ife.o();
-			if (displayedItem.a())
-				return new ItemRequirement(ItemUseType.CONSUME, AliasedBlockItem.oW);
+		if (type == EntityType.ITEM_FRAME) {
+			ItemFrameEntity ife = (ItemFrameEntity) entity;
+			ItemStack frame = new ItemStack(Items.ITEM_FRAME);
+			ItemStack displayedItem = ife.getHeldItemStack();
+			if (displayedItem.isEmpty())
+				return new ItemRequirement(ItemUseType.CONSUME, Items.ITEM_FRAME);
 			return new ItemRequirement(ItemUseType.CONSUME, Arrays.asList(frame, displayedItem));
 		}
 
-		if (type == EntityDimensions.ad)
-			return new ItemRequirement(ItemUseType.CONSUME, AliasedBlockItem.lz);
+		if (type == EntityType.PAINTING)
+			return new ItemRequirement(ItemUseType.CONSUME, Items.PAINTING);
 
-		if (type == EntityDimensions.height) {
-			List<ItemCooldownManager> requirements = new ArrayList<>();
-			bck armorStandEntity = (bck) entity;
-			armorStandEntity.bo().forEach(requirements::add);
-			requirements.add(new ItemCooldownManager(AliasedBlockItem.pC));
+		if (type == EntityType.ARMOR_STAND) {
+			List<ItemStack> requirements = new ArrayList<>();
+			ArmorStandEntity armorStandEntity = (ArmorStandEntity) entity;
+			armorStandEntity.getItemsEquipped().forEach(requirements::add);
+			requirements.add(new ItemStack(Items.ARMOR_STAND));
 			return new ItemRequirement(ItemUseType.CONSUME, requirements);
 		}
 
-		if (entity instanceof ScheduleBuilder) {
-			ScheduleBuilder minecartEntity = (ScheduleBuilder) entity;
-			return new ItemRequirement(ItemUseType.CONSUME, minecartEntity.getCartItem().b());
+		if (entity instanceof AbstractMinecartEntity) {
+			AbstractMinecartEntity minecartEntity = (AbstractMinecartEntity) entity;
+			return new ItemRequirement(ItemUseType.CONSUME, minecartEntity.getCartItem().getItem());
 		}
 
-		if (entity instanceof bhk) {
-			bhk boatEntity = (bhk) entity;
-			return new ItemRequirement(ItemUseType.CONSUME, boatEntity.g().getItem());
+		if (entity instanceof BoatEntity) {
+			BoatEntity boatEntity = (BoatEntity) entity;
+			return new ItemRequirement(ItemUseType.CONSUME, boatEntity.asItem().getItem());
 		}
 
-		if (type == EntityDimensions.s)
-			return new ItemRequirement(ItemUseType.CONSUME, AliasedBlockItem.qc);
+		if (type == EntityType.END_CRYSTAL)
+			return new ItemRequirement(ItemUseType.CONSUME, Items.END_CRYSTAL);
 
 		return INVALID;
 	}
@@ -125,7 +127,7 @@ public class ItemRequirement {
 		return INVALID == this;
 	}
 
-	public List<ItemCooldownManager> getRequiredItems() {
+	public List<ItemStack> getRequiredItems() {
 		return requiredItems;
 	}
 
@@ -133,8 +135,8 @@ public class ItemRequirement {
 		return usage;
 	}
 
-	public static boolean validate(ItemCooldownManager required, ItemCooldownManager present) {
-		return required.a() || required.b() == present.b();
+	public static boolean validate(ItemStack required, ItemStack present) {
+		return required.isEmpty() || required.getItem() == present.getItem();
 	}
 
 }

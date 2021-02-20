@@ -1,11 +1,10 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import net.minecraft.nbt.CompoundTag;
@@ -14,22 +13,15 @@ import com.google.gson.JsonParser;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import com.simibubi.kinetic_api.Create;
+import com.simibubi.create.Create;
 
 public class FilesHelper {
 
 	public static void createFolderIfMissing(String name) {
-		Path path = Paths.get(name);
-		if (path.getParent() != null)
-			createFolderIfMissing(path.getParent()
-				.toString());
-
-		if (!Files.isDirectory(path)) {
-			try {
-				Files.createDirectory(path);
-			} catch (IOException e) {
-				Create.logger.warn("Could not kinetic_api Folder: " + name);
-			}
+		try {
+			Files.createDirectories(Paths.get(name));
+		} catch (IOException e) {
+			Create.logger.warn("Could not create Folder: {}", name);
 		}
 	}
 

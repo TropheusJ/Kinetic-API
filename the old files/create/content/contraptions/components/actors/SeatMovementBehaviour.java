@@ -1,19 +1,21 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import apx;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AbstractContraptionEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.AbstractSignBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.state.property.Property;
-import net.minecraft.util.hit.EntityHitResult;
+
+import com.simibubi.create.content.contraptions.components.structureMovement.AbstractContraptionEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementBehaviour;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.SlabBlock;
+import net.minecraft.block.enums.SlabType;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 public class SeatMovementBehaviour extends MovementBehaviour {
 
@@ -37,30 +39,30 @@ public class SeatMovementBehaviour extends MovementBehaviour {
 			return;
 
 		Map<UUID, Integer> seatMapping = context.contraption.getSeatMapping();
-		PistonHandler blockState = context.world.d_(pos);
-		boolean slab = blockState.b() instanceof AbstractSignBlock && blockState.c(AbstractSignBlock.WATERLOGGED) == Property.name;
-		boolean solid = blockState.l() || slab;
+		BlockState blockState = context.world.getBlockState(pos);
+		boolean slab = blockState.getBlock() instanceof SlabBlock && blockState.get(SlabBlock.TYPE) == SlabType.BOTTOM;
+		boolean solid = blockState.isOpaque() || slab;
 
 		// Occupied
 		if (seatMapping.containsValue(index)) {
 			if (!solid)
 				return;
-			apx toDismount = null;
+			Entity toDismount = null;
 			for (Map.Entry<UUID, Integer> entry : seatMapping.entrySet()) {
 				if (entry.getValue() != index)
 					continue;
-				for (apx entity : contraptionEntity.cm()) {
+				for (Entity entity : contraptionEntity.getPassengerList()) {
 					if (!entry.getKey()
-						.equals(entity.bR()))
+						.equals(entity.getUuid()))
 						continue;
 					toDismount = entity;
 				}
 			}
 			if (toDismount != null) {
-				toDismount.l();
-				EntityHitResult position = VecHelper.getCenterOf(pos)
-					.b(0, slab ? .5f : 1f, 0);
-				toDismount.a(position.entity, position.c, position.d);
+				toDismount.stopRiding();
+				Vec3d position = VecHelper.getCenterOf(pos)
+					.add(0, slab ? .5f : 1f, 0);
+				toDismount.requestTeleport(position.x, position.y, position.z);
 				toDismount.getPersistentData()
 					.remove("ContraptionDismountLocation");
 			}
@@ -70,8 +72,8 @@ public class SeatMovementBehaviour extends MovementBehaviour {
 		if (solid)
 			return;
 
-		List<apx> nearbyEntities = context.world.a(apx.class,
-			new Timer(pos).h(1 / 16f), SeatBlock::canBePickedUp);
+		List<Entity> nearbyEntities = context.world.getEntitiesByClass(Entity.class,
+			new Box(pos).contract(1 / 16f), SeatBlock::canBePickedUp);
 		if (!nearbyEntities.isEmpty())
 			contraptionEntity.addSittingPassenger(nearbyEntities.get(0), index);
 	}

@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.content.curiosities;
+package com.simibubi.create.content.curiosities;
 
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.HoeItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 
-public class CombustibleItem extends HoeItem {
+public class CombustibleItem extends Item {
 	private int burnTime = -1;
 
-	public CombustibleItem(a properties) {
+	public CombustibleItem(Settings properties) {
 		super(properties);
 	}
 
@@ -15,7 +15,7 @@ public class CombustibleItem extends HoeItem {
 	}
 
 	@Override
-	public int getBurnTime(ItemCooldownManager itemStack) {
+	public int getBurnTime(ItemStack itemStack) {
 		return this.burnTime;
 	}
 }

@@ -1,10 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.components.crusher;
+package com.simibubi.create.content.contraptions.components.crusher;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
-import net.minecraft.world.GameMode;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
+
+import net.minecraft.world.World;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
 
 @ParametersAreNonnullByDefault
@@ -15,11 +16,11 @@ public class CrushingRecipe extends AbstractCrushingRecipe {
 	}
 
 	@Override
-	public boolean matches(RecipeWrapper inv, GameMode worldIn) {
-		if (inv.c())
+	public boolean matches(RecipeWrapper inv, World worldIn) {
+		if (inv.isEmpty())
 			return false;
 		return ingredients.get(0)
-			.a(inv.a(0));
+			.test(inv.getStack(0));
 	}
 	
 	@Override

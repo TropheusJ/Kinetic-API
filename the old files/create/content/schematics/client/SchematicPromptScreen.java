@@ -1,17 +1,17 @@
-package com.simibubi.kinetic_api.content.schematics.client;
+package com.simibubi.create.content.schematics.client;
 
 import org.lwjgl.glfw.GLFW;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.foundation.gui.AbstractSimiScreen;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import com.simibubi.kinetic_api.foundation.gui.widgets.IconButton;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.util.ChatMessages;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.CreateClient;
+import com.simibubi.create.foundation.gui.AbstractSimiScreen;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import com.simibubi.create.foundation.gui.widgets.IconButton;
+import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 
@@ -22,23 +22,23 @@ public class SchematicPromptScreen extends AbstractSimiScreen {
 	private final Text abortLabel = Lang.translate("action.discard");
 	private final Text confirmLabel = Lang.translate("action.saveToFile");
 
-	private ChatMessages nameField;
+	private TextFieldWidget nameField;
 	private IconButton confirm;
 	private IconButton abort;
 	private IconButton convert;
 
 	@Override
-	public void b() {
-		super.b();
+	public void init() {
+		super.init();
 		AllGuiTextures background = AllGuiTextures.SCHEMATIC_PROMPT;
 		setWindowSize(background.width, background.height + 30);
 
-		nameField = new ChatMessages(o, guiLeft + 49, guiTop + 26, 131, 10, LiteralText.EMPTY);
-		nameField.l(-1);
-		nameField.m(-1);
-		nameField.f(false);
-		nameField.k(35);
-		nameField.c_(true);
+		nameField = new TextFieldWidget(textRenderer, guiLeft + 49, guiTop + 26, 131, 10, LiteralText.EMPTY);
+		nameField.setEditableColor(-1);
+		nameField.setUneditableColor(-1);
+		nameField.setHasBorder(false);
+		nameField.setMaxLength(35);
+		nameField.changeFocus(true);
 
 		abort = new IconButton(guiLeft + 7, guiTop + 53, AllIcons.I_TRASH);
 		abort.setToolTip(abortLabel);
@@ -59,50 +59,50 @@ public class SchematicPromptScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	protected void renderWindow(BufferVertexConsumer ms, int mouseX, int mouseY, float partialTicks) {
+	protected void renderWindow(MatrixStack ms, int mouseX, int mouseY, float partialTicks) {
 		AllGuiTextures.SCHEMATIC_PROMPT.draw(ms, this, guiLeft, guiTop);
-		o.a(ms, d, guiLeft + (sWidth / 2) - (o.a(d) / 2), guiTop + 3,
+		textRenderer.drawWithShadow(ms, title, guiLeft + (sWidth / 2) - (textRenderer.getWidth(title) / 2), guiTop + 3,
 			0xffffff);
-		ms.a();
-		ms.a(guiLeft + 22, guiTop + 39, 0);
+		ms.push();
+		ms.translate(guiLeft + 22, guiTop + 39, 0);
 		GuiGameElement.of(AllItems.SCHEMATIC.asStack()).render(ms);
-		ms.b();
+		ms.pop();
 	}
 
 	@Override
-	public boolean a(int keyCode, int p_keyPressed_2_, int p_keyPressed_3_) {
+	public boolean keyPressed(int keyCode, int p_keyPressed_2_, int p_keyPressed_3_) {
 		if (keyCode == GLFW.GLFW_KEY_ENTER) {
 			confirm(false);
 			return true;
 		}
-		if (keyCode == 256 && this.at_()) {
-			this.au_();
+		if (keyCode == 256 && this.shouldCloseOnEsc()) {
+			this.onClose();
 			return true;
 		}
-		return nameField.a(keyCode, p_keyPressed_2_, p_keyPressed_3_);
+		return nameField.keyPressed(keyCode, p_keyPressed_2_, p_keyPressed_3_);
 	}
 
 	@Override
-	public boolean a(double x, double y, int button) {
-		if (confirm.g()) {
+	public boolean mouseClicked(double x, double y, int button) {
+		if (confirm.isHovered()) {
 			confirm(false);
 			return true;
 		}
-		if (abort.g()) {
+		if (abort.isHovered()) {
 			CreateClient.schematicAndQuillHandler.discard();
-			KeyBinding.B().s.m();
+			MinecraftClient.getInstance().player.updateSubmergedInWaterState();
 			return true;
 		}
-		if (convert.g()) {
+		if (convert.isHovered()) {
 			confirm(true);
 			return true;
 		}
-		return super.a(x, y, button);
+		return super.mouseClicked(x, y, button);
 	}
 
 	private void confirm(boolean convertImmediately) {
-		CreateClient.schematicAndQuillHandler.saveSchematic(nameField.b(), convertImmediately);
-		KeyBinding.B().s.m();
+		CreateClient.schematicAndQuillHandler.saveSchematic(nameField.getText(), convertImmediately);
+		MinecraftClient.getInstance().player.updateSubmergedInWaterState();
 	}
 
 }

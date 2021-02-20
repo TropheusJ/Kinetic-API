@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.foundation.block.render;
+package com.simibubi.create.foundation.block.render;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.minecraft.util.Identifier;
-import com.simibubi.kinetic_api.Create;
+import com.simibubi.create.Create;
 
 public class SpriteShifter {
 

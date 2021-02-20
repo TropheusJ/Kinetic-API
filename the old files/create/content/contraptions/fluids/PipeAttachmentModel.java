@@ -1,23 +1,25 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import bqx;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidTransportBehaviour.AttachmentTypes;
-import com.simibubi.kinetic_api.content.contraptions.fluids.pipes.FluidPipeBlock;
-import com.simibubi.kinetic_api.content.contraptions.relays.elementary.BracketedTileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.block.connected.BakedModelWrapperWithData;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import elg;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.SpriteTexturedVertexConsumer;
+
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.fluids.FluidTransportBehaviour.AttachmentTypes;
+import com.simibubi.create.content.contraptions.fluids.pipes.FluidPipeBlock;
+import com.simibubi.create.content.contraptions.relays.elementary.BracketedTileEntityBehaviour;
+import com.simibubi.create.foundation.block.connected.BakedModelWrapperWithData;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.client.model.data.ModelDataMap;
 import net.minecraftforge.client.model.data.ModelDataMap.Builder;
@@ -27,12 +29,12 @@ public class PipeAttachmentModel extends BakedModelWrapperWithData {
 
 	private static ModelProperty<PipeModelData> PIPE_PROPERTY = new ModelProperty<>();
 
-	public PipeAttachmentModel(elg template) {
+	public PipeAttachmentModel(BakedModel template) {
 		super(template);
 	}
 
 	@Override
-	protected Builder gatherModelData(Builder builder, bqx world, BlockPos pos, PistonHandler state) {
+	protected Builder gatherModelData(Builder builder, BlockRenderView world, BlockPos pos, BlockState state) {
 		PipeModelData data = new PipeModelData();
 		FluidTransportBehaviour transport = TileEntityBehaviour.get(world, pos, FluidTransportBehaviour.TYPE);
 		BracketedTileEntityBehaviour bracket = TileEntityBehaviour.get(world, pos, BracketedTileEntityBehaviour.TYPE);
@@ -48,8 +50,8 @@ public class PipeAttachmentModel extends BakedModelWrapperWithData {
 	}
 
 	@Override
-	public List<SpriteTexturedVertexConsumer> getQuads(PistonHandler state, Direction side, Random rand, IModelData data) {
-		List<SpriteTexturedVertexConsumer> quads = super.getQuads(state, side, rand, data);
+	public List<BakedQuad> getQuads(BlockState state, Direction side, Random rand, IModelData data) {
+		List<BakedQuad> quads = super.getQuads(state, side, rand, data);
 		if (data instanceof ModelDataMap) {
 			ModelDataMap modelDataMap = (ModelDataMap) data;
 			if (modelDataMap.hasProperty(PIPE_PROPERTY)) {
@@ -60,7 +62,7 @@ public class PipeAttachmentModel extends BakedModelWrapperWithData {
 		return quads;
 	}
 
-	private void addQuads(List<SpriteTexturedVertexConsumer> quads, PistonHandler state, Direction side, Random rand, IModelData data,
+	private void addQuads(List<BakedQuad> quads, BlockState state, Direction side, Random rand, IModelData data,
 		PipeModelData pipeData) {
 		for (Direction d : Iterate.directions)
 			if (pipeData.hasRim(d))
@@ -71,7 +73,7 @@ public class PipeAttachmentModel extends BakedModelWrapperWithData {
 		if (pipeData.isEncased())
 			quads.addAll(AllBlockPartials.FLUID_PIPE_CASING.get()
 				.getQuads(state, side, rand, data));
-		elg bracket = pipeData.getBracket();
+		BakedModel bracket = pipeData.getBracket();
 		if (bracket != null)
 			quads.addAll(bracket.getQuads(state, side, rand, data));
 	}
@@ -79,20 +81,20 @@ public class PipeAttachmentModel extends BakedModelWrapperWithData {
 	private class PipeModelData {
 		AttachmentTypes[] rims;
 		boolean encased;
-		elg bracket;
+		BakedModel bracket;
 
 		public PipeModelData() {
 			rims = new AttachmentTypes[6];
 			Arrays.fill(rims, AttachmentTypes.NONE);
 		}
 
-		public void putBracket(PistonHandler state) {
-			this.bracket = KeyBinding.B()
-				.aa()
-				.a(state);
+		public void putBracket(BlockState state) {
+			this.bracket = MinecraftClient.getInstance()
+				.getBlockRenderManager()
+				.getModel(state);
 		}
 
-		public elg getBracket() {
+		public BakedModel getBracket() {
 			return bracket;
 		}
 

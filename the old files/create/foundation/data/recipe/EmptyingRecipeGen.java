@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
-import com.simibubi.kinetic_api.AllFluids;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllRecipeTypes;
+import com.simibubi.create.AllFluids;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllRecipeTypes;
 
 import net.minecraft.data.DataGenerator;
-import net.minecraft.item.AliasedBlockItem;
+import net.minecraft.item.Items;
 
 public class EmptyingRecipeGen extends ProcessingRecipeGen {
 
@@ -16,19 +16,19 @@ public class EmptyingRecipeGen extends ProcessingRecipeGen {
 	GeneratedRecipe
 
 	HONEY_BOTTLE = create("honey_bottle", b -> b
-		.require(AliasedBlockItem.rt)
+		.require(Items.HONEY_BOTTLE)
 		.output(AllFluids.HONEY.get(), 250)
-		.output(AliasedBlockItem.nw)),
+		.output(Items.GLASS_BOTTLE)),
 	
 	BUILDERS_TEA = create("builders_tea", b -> b
 		.require(AllItems.BUILDERS_TEA.get())
 		.output(AllFluids.TEA.get(), 250)
-		.output(AliasedBlockItem.nw)),
+		.output(Items.GLASS_BOTTLE)),
 	
 	MILK_BUCKET = create("milk_bucket", b -> b
-		.require(AliasedBlockItem.lT)
+		.require(Items.MILK_BUCKET)
 		.output(AllFluids.MILK.get(), 1000)
-		.output(AliasedBlockItem.lK))
+		.output(Items.BUCKET))
 
 	;
 

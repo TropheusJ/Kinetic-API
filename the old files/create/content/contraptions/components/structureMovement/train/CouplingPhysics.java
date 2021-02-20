@@ -1,76 +1,77 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train;
+package com.simibubi.create.content.contraptions.components.structureMovement.train;
 
-import afj;
-import apx;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.capability.MinecartController;
-import com.simibubi.kinetic_api.foundation.utility.Couple;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.BlockWithEntity;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.SpawnGroup;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.stat.StatHandler;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.content.contraptions.components.structureMovement.train.capability.MinecartController;
+import com.simibubi.create.foundation.utility.Couple;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.AbstractRailBlock;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.RailShape;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.MovementType;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 public class CouplingPhysics {
 
-	public static void tick(GameMode world) {
+	public static void tick(World world) {
 		CouplingHandler.forEachLoadedCoupling(world, c -> tickCoupling(world, c));
 	}
 
-	public static void tickCoupling(GameMode world, Couple<MinecartController> c) {
-		Couple<ScheduleBuilder> carts = c.map(MinecartController::cart);
+	public static void tickCoupling(World world, Couple<MinecartController> c) {
+		Couple<AbstractMinecartEntity> carts = c.map(MinecartController::cart);
 		float couplingLength = c.getFirst()
 			.getCouplingLength(true);
 		softCollisionStep(world, carts, couplingLength);
-		if (world.v)
+		if (world.isClient)
 			return;
 		hardCollisionStep(world, carts, couplingLength);
 	}
 
-	public static void hardCollisionStep(GameMode world, Couple<ScheduleBuilder> carts, double couplingLength) {
+	public static void hardCollisionStep(World world, Couple<AbstractMinecartEntity> carts, double couplingLength) {
 		if (!MinecartSim2020.canAddMotion(carts.get(false)) && MinecartSim2020.canAddMotion(carts.get(true)))
 			carts = carts.swap();
 
-		Couple<EntityHitResult> corrections = Couple.create(null, null);
-		Couple<Float> maxSpeed = carts.map(ScheduleBuilder::getMaxCartSpeedOnRail);
+		Couple<Vec3d> corrections = Couple.create(null, null);
+		Couple<Float> maxSpeed = carts.map(AbstractMinecartEntity::getMaxCartSpeedOnRail);
 		boolean firstLoop = true;
 		for (boolean current : new boolean[] { true, false, true }) {
-			ScheduleBuilder cart = carts.get(current);
-			ScheduleBuilder otherCart = carts.get(!current);
+			AbstractMinecartEntity cart = carts.get(current);
+			AbstractMinecartEntity otherCart = carts.get(!current);
 
-			float stress = (float) (couplingLength - cart.cz()
-				.f(otherCart.cz()));
+			float stress = (float) (couplingLength - cart.getPos()
+				.distanceTo(otherCart.getPos()));
 
 			if (Math.abs(stress) < 1 / 8f)
 				continue;
 
-			Instrument shape = null;
+			RailShape shape = null;
 			BlockPos railPosition = cart.getCurrentRailPosition();
-			PistonHandler railState = world.d_(railPosition.up());
+			BlockState railState = world.getBlockState(railPosition.up());
 
-			if (railState.b() instanceof BlockWithEntity) {
-				BlockWithEntity block = (BlockWithEntity) railState.b();
+			if (railState.getBlock() instanceof AbstractRailBlock) {
+				AbstractRailBlock block = (AbstractRailBlock) railState.getBlock();
 				shape = block.getRailDirection(railState, world, railPosition, cart);
 			}
 
-			EntityHitResult correction = EntityHitResult.a;
-			EntityHitResult pos = cart.cz();
-			EntityHitResult link = otherCart.cz()
-				.d(pos);
+			Vec3d correction = Vec3d.ZERO;
+			Vec3d pos = cart.getPos();
+			Vec3d link = otherCart.getPos()
+				.subtract(pos);
 			float correctionMagnitude = firstLoop ? -stress / 2f : -stress;
 			
 			if (!MinecartSim2020.canAddMotion(cart))
 				correctionMagnitude /= 2;
 			
 			correction = shape != null
-				? followLinkOnRail(link, pos, correctionMagnitude, MinecartSim2020.getRailVec(shape)).d(pos)
-				: link.d()
-					.a(correctionMagnitude);
+				? followLinkOnRail(link, pos, correctionMagnitude, MinecartSim2020.getRailVec(shape)).subtract(pos)
+				: link.normalize()
+					.multiply(correctionMagnitude);
 
 			float maxResolveSpeed = 1.75f;
 			correction = VecHelper.clamp(correction, Math.min(maxResolveSpeed, maxSpeed.get(current)));
@@ -81,46 +82,46 @@ public class CouplingPhysics {
 			if (shape != null)
 				MinecartSim2020.moveCartAlongTrack(cart, correction, railPosition, railState);
 			else {
-				cart.a(SpawnGroup.SELF, correction);
-				cart.f(cart.cB()
-					.a(0.95f));
+				cart.move(MovementType.SELF, correction);
+				cart.setVelocity(cart.getVelocity()
+					.multiply(0.95f));
 			}
 			firstLoop = false;
 		}
 	}
 
-	public static void softCollisionStep(GameMode world, Couple<ScheduleBuilder> carts, double couplingLength) {
-		Couple<Float> maxSpeed = carts.map(ScheduleBuilder::getMaxCartSpeedOnRail);
+	public static void softCollisionStep(World world, Couple<AbstractMinecartEntity> carts, double couplingLength) {
+		Couple<Float> maxSpeed = carts.map(AbstractMinecartEntity::getMaxCartSpeedOnRail);
 		Couple<Boolean> canAddmotion = carts.map(MinecartSim2020::canAddMotion);
-		Couple<EntityHitResult> motions = carts.map(apx::cB);
-		Couple<EntityHitResult> nextPositions = carts.map(MinecartSim2020::predictNextPositionOf);
+		Couple<Vec3d> motions = carts.map(Entity::getVelocity);
+		Couple<Vec3d> nextPositions = carts.map(MinecartSim2020::predictNextPositionOf);
 
-		Couple<Instrument> shapes = carts.mapWithContext((cart, current) -> {
-			ScheduleBuilder minecart = cart.getMinecart();
-			EntityHitResult vec = nextPositions.get(current);
-			int x = afj.c(vec.getX());
-	        int y = afj.c(vec.getY());
-	        int z = afj.c(vec.getZ());
+		Couple<RailShape> shapes = carts.mapWithContext((cart, current) -> {
+			AbstractMinecartEntity minecart = cart.getMinecart();
+			Vec3d vec = nextPositions.get(current);
+			int x = MathHelper.floor(vec.getX());
+	        int y = MathHelper.floor(vec.getY());
+	        int z = MathHelper.floor(vec.getZ());
 	        BlockPos pos = new BlockPos(x, y - 1, z);
-	        if (minecart.l.d_(pos).a(StatHandler.H)) pos = pos.down();
+	        if (minecart.world.getBlockState(pos).isIn(BlockTags.RAILS)) pos = pos.down();
 			BlockPos railPosition = pos;
-			PistonHandler railState = world.d_(railPosition.up());
-			if (!(railState.b() instanceof BlockWithEntity))
+			BlockState railState = world.getBlockState(railPosition.up());
+			if (!(railState.getBlock() instanceof AbstractRailBlock))
 				return null;
-			BlockWithEntity block = (BlockWithEntity) railState.b();
+			AbstractRailBlock block = (AbstractRailBlock) railState.getBlock();
 			return block.getRailDirection(railState, world, railPosition, cart);
 		});
 
 		float futureStress = (float) (couplingLength - nextPositions.getFirst()
-			.f(nextPositions.getSecond()));
-		if (afj.b(futureStress, 0D))
+			.distanceTo(nextPositions.getSecond()));
+		if (MathHelper.approximatelyEquals(futureStress, 0D))
 			return;
 
 		for (boolean current : Iterate.trueAndFalse) {
-			EntityHitResult correction = EntityHitResult.a;
-			EntityHitResult pos = nextPositions.get(current);
-			EntityHitResult link = nextPositions.get(!current)
-				.d(pos);
+			Vec3d correction = Vec3d.ZERO;
+			Vec3d pos = nextPositions.get(current);
+			Vec3d link = nextPositions.get(!current)
+				.subtract(pos);
 			float correctionMagnitude = -futureStress / 2f;
 
 			if (canAddmotion.get(current) != canAddmotion.get(!current))
@@ -128,37 +129,37 @@ public class CouplingPhysics {
 			if (!canAddmotion.get(current))
 				continue;
 
-			Instrument shape = shapes.get(current);
+			RailShape shape = shapes.get(current);
 			if (shape != null) {
-				EntityHitResult railVec = MinecartSim2020.getRailVec(shape);
-				correction = followLinkOnRail(link, pos, correctionMagnitude, railVec).d(pos);
+				Vec3d railVec = MinecartSim2020.getRailVec(shape);
+				correction = followLinkOnRail(link, pos, correctionMagnitude, railVec).subtract(pos);
 			} else
-				correction = link.d()
-					.a(correctionMagnitude);
+				correction = link.normalize()
+					.multiply(correctionMagnitude);
 
 			correction = VecHelper.clamp(correction, maxSpeed.get(current));
 			
 			motions.set(current, motions.get(current)
-				.e(correction));
+				.add(correction));
 		}
 
 		motions.replaceWithParams(VecHelper::clamp, maxSpeed);
-		carts.forEachWithParams(apx::f, motions);
+		carts.forEachWithParams(Entity::setVelocity, motions);
 	}
 
-	public static EntityHitResult followLinkOnRail(EntityHitResult link, EntityHitResult cart, float diffToReduce, EntityHitResult railAxis) {
-		double dotProduct = railAxis.b(link);
+	public static Vec3d followLinkOnRail(Vec3d link, Vec3d cart, float diffToReduce, Vec3d railAxis) {
+		double dotProduct = railAxis.dotProduct(link);
 		if (Double.isNaN(dotProduct) || dotProduct == 0 || diffToReduce == 0)
 			return cart;
 
-		EntityHitResult axis = railAxis.a(-Math.signum(dotProduct));
-		EntityHitResult center = cart.e(link);
-		double radius = link.f() - diffToReduce;
-		EntityHitResult intersectSphere = VecHelper.intersectSphere(cart, axis, center, radius);
+		Vec3d axis = railAxis.multiply(-Math.signum(dotProduct));
+		Vec3d center = cart.add(link);
+		double radius = link.length() - diffToReduce;
+		Vec3d intersectSphere = VecHelper.intersectSphere(cart, axis, center, radius);
 
 		// Cannot satisfy on current rail vector
 		if (intersectSphere == null)
-			return cart.e(VecHelper.project(link, axis));
+			return cart.add(VecHelper.project(link, axis));
 
 		return intersectSphere;
 	}

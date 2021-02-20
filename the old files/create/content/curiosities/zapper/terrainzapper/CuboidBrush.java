@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.terrainzapper;
+package com.simibubi.create.content.curiosities.zapper.terrainzapper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.util.math.Vec3d;
 
 public class CuboidBrush extends Brush {
 
@@ -43,7 +43,7 @@ public class CuboidBrush extends Brush {
 	}
 
 	@Override
-	public BlockPos getOffset(EntityHitResult ray, Direction face, PlacementOptions option) {
+	public BlockPos getOffset(Vec3d ray, Direction face, PlacementOptions option) {
 		if (option == PlacementOptions.Merged)
 			return BlockPos.ORIGIN;
 

@@ -1,108 +1,125 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.advanced;
+package com.simibubi.create.content.contraptions.relays.advanced;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.HorizontalAxisKineticBlock;
-import com.simibubi.kinetic_api.content.contraptions.relays.elementary.CogWheelBlock;
-import com.simibubi.kinetic_api.content.contraptions.relays.elementary.CogwheelBlockItem;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import com.simibubi.kinetic_api.foundation.utility.placement.IPlacementHelper;
-import com.simibubi.kinetic_api.foundation.utility.placement.PlacementHelpers;
-import com.simibubi.kinetic_api.foundation.utility.placement.PlacementOffset;
-import dcg;
-import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
 import java.util.function.Predicate;
 
-public class SpeedControllerBlock extends HorizontalAxisKineticBlock {
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.HorizontalAxisKineticBlock;
+import com.simibubi.create.content.contraptions.relays.elementary.CogWheelBlock;
+import com.simibubi.create.content.contraptions.relays.elementary.CogwheelBlockItem;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.utility.placement.IPlacementHelper;
+import com.simibubi.create.foundation.utility.placement.PlacementHelpers;
+import com.simibubi.create.foundation.utility.placement.PlacementOffset;
+
+import mcp.MethodsReturnNonnullByDefault;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+
+public class SpeedControllerBlock extends HorizontalAxisKineticBlock implements ITE<SpeedControllerTileEntity> {
 
 	private static final int placementHelperId = PlacementHelpers.register(new PlacementHelper());
 
-	public SpeedControllerBlock(c properties) {
+	public SpeedControllerBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.ROTATION_SPEED_CONTROLLER.create();
 	}
-	
+
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		PistonHandler above = context.p().d_(context.a().up());
-		if (CogWheelBlock.isLargeCog(above) && above.c(CogWheelBlock.AXIS).isHorizontal())
-			return n().a(HORIZONTAL_AXIS, above.c(CogWheelBlock.AXIS) == Axis.X ? Axis.Z : Axis.X);
-		return super.a(context);
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		BlockState above = context.getWorld()
+			.getBlockState(context.getBlockPos()
+				.up());
+		if (CogWheelBlock.isLargeCog(above) && above.get(CogWheelBlock.AXIS)
+			.isHorizontal())
+			return getDefaultState().with(HORIZONTAL_AXIS, above.get(CogWheelBlock.AXIS) == Axis.X ? Axis.Z : Axis.X);
+		return super.getPlacementState(context);
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode world, BlockPos pos, PlayerAbilities player, ItemScatterer hand, dcg ray) {
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block p_220069_4_, BlockPos neighbourPos,
+		boolean p_220069_6_) {
+		if (neighbourPos.equals(pos.up()))
+			withTileEntityDo(world, pos, SpeedControllerTileEntity::updateBracket);
+	}
 
+	@Override
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
+		BlockHitResult ray) {
+
+		ItemStack heldItem = player.getStackInHand(hand);
 		IPlacementHelper helper = PlacementHelpers.get(placementHelperId);
-		ItemCooldownManager heldItem = player.b(hand);
-		if (helper.matchesItem(heldItem)) {
-			PlacementOffset offset = helper.getOffset(world, state, pos, ray);
+		if (helper.matchesItem(heldItem))
+			return helper.getOffset(world, state, pos, ray).placeInWorld(world, (BlockItem) heldItem.getItem(), player, hand, ray);
 
-			if (!offset.isReplaceable(world))
-				return Difficulty.PASS;
-
-			offset.placeInWorld(world, AllBlocks.LARGE_COGWHEEL.getDefaultState(), player, heldItem);
-
-			return Difficulty.SUCCESS;
-
-		}
-
-		return Difficulty.PASS;
+		return ActionResult.PASS;
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
-		return AllShapes.SPEED_CONTROLLER.get(state.c(HORIZONTAL_AXIS));
+	public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
+		return AllShapes.SPEED_CONTROLLER;
 	}
 
 	@MethodsReturnNonnullByDefault
 	private static class PlacementHelper implements IPlacementHelper {
 		@Override
-		public Predicate<ItemCooldownManager> getItemPredicate() {
+		public Predicate<ItemStack> getItemPredicate() {
 			return AllBlocks.LARGE_COGWHEEL::isIn;
 		}
 
 		@Override
-		public Predicate<PistonHandler> getStatePredicate() {
+		public Predicate<BlockState> getStatePredicate() {
 			return AllBlocks.ROTATION_SPEED_CONTROLLER::has;
 		}
 
 		@Override
-		public PlacementOffset getOffset(GameMode world, PistonHandler state, BlockPos pos, dcg ray) {
+		public PlacementOffset getOffset(World world, BlockState state, BlockPos pos, BlockHitResult ray) {
 			BlockPos newPos = pos.up();
-			if (!world.d_(newPos).c().e())
+			if (!world.getBlockState(newPos)
+				.getMaterial()
+				.isReplaceable())
 				return PlacementOffset.fail();
 
-			Axis newAxis = state.c(HORIZONTAL_AXIS) == Axis.X ? Axis.Z : Axis.X;
+			Axis newAxis = state.get(HORIZONTAL_AXIS) == Axis.X ? Axis.Z : Axis.X;
 
-			if (CogwheelBlockItem.DiagonalCogHelper.hasLargeCogwheelNeighbor(world, newPos, newAxis) || CogwheelBlockItem.DiagonalCogHelper.hasSmallCogwheelNeighbor(world, newPos, newAxis))
+			if (CogwheelBlockItem.DiagonalCogHelper.hasLargeCogwheelNeighbor(world, newPos, newAxis)
+				|| CogwheelBlockItem.DiagonalCogHelper.hasSmallCogwheelNeighbor(world, newPos, newAxis))
 				return PlacementOffset.fail();
 
-			return PlacementOffset.success(newPos, s -> s.a(CogWheelBlock.AXIS, newAxis));
+			return PlacementOffset.success(newPos, s -> s.with(CogWheelBlock.AXIS, newAxis));
 		}
 
 		@Override
-		public void renderAt(BlockPos pos, PistonHandler state, dcg ray, PlacementOffset offset) {
-			IPlacementHelper.renderArrow(VecHelper.getCenterOf(pos), VecHelper.getCenterOf(offset.getPos()), Direction.get(Direction.AxisDirection.POSITIVE, state.c(HORIZONTAL_AXIS) == Axis.X ? Axis.Z : Axis.X));
+		public void renderAt(BlockPos pos, BlockState state, BlockHitResult ray, PlacementOffset offset) {
+			//IPlacementHelper.renderArrow(VecHelper.getCenterOf(pos), VecHelper.getCenterOf(offset.getPos()),
+			//	Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE,
+			//		state.get(HORIZONTAL_AXIS) == Axis.X ? Axis.Z : Axis.X));
+
+			displayGhost(offset);
 		}
+	}
+
+	@Override
+	public Class<SpeedControllerTileEntity> getTileEntityClass() {
+		return SpeedControllerTileEntity.class;
 	}
 }

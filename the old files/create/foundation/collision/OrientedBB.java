@@ -1,24 +1,24 @@
-package com.simibubi.kinetic_api.foundation.collision;
+package com.simibubi.create.foundation.collision;
 
-import com.simibubi.kinetic_api.foundation.collision.ContinuousOBBCollider.ContinuousSeparationManifold;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.world.timer.Timer;
+import com.simibubi.create.foundation.collision.ContinuousOBBCollider.ContinuousSeparationManifold;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 public class OrientedBB {
 
-	EntityHitResult center;
-	EntityHitResult extents;
+	Vec3d center;
+	Vec3d extents;
 	Matrix3d rotation;
 
-	public OrientedBB(Timer bb) {
-		this(bb.f(), extentsFromBB(bb), new Matrix3d().asIdentity());
+	public OrientedBB(Box bb) {
+		this(bb.getCenter(), extentsFromBB(bb), new Matrix3d().asIdentity());
 	}
 
 	public OrientedBB() {
-		this(EntityHitResult.a, EntityHitResult.a, new Matrix3d().asIdentity());
+		this(Vec3d.ZERO, Vec3d.ZERO, new Matrix3d().asIdentity());
 	}
 
-	public OrientedBB(EntityHitResult center, EntityHitResult extents, Matrix3d rotation) {
+	public OrientedBB(Vec3d center, Vec3d extents, Matrix3d rotation) {
 		this.setCenter(center);
 		this.extents = extents;
 		this.setRotation(rotation);
@@ -28,19 +28,19 @@ public class OrientedBB {
 		return new OrientedBB(center, extents, rotation);
 	}
 
-	public EntityHitResult intersect(Timer bb) {
-		EntityHitResult extentsA = extentsFromBB(bb);
-		EntityHitResult intersects = OBBCollider.separateBBs(bb.f(), center, extentsA, extents, rotation);
+	public Vec3d intersect(Box bb) {
+		Vec3d extentsA = extentsFromBB(bb);
+		Vec3d intersects = OBBCollider.separateBBs(bb.getCenter(), center, extentsA, extents, rotation);
 		return intersects;
 	}
 
-	public ContinuousSeparationManifold intersect(Timer bb, EntityHitResult motion) {
-		EntityHitResult extentsA = extentsFromBB(bb);
-		return ContinuousOBBCollider.separateBBs(bb.f(), center, extentsA, extents, rotation, motion);
+	public ContinuousSeparationManifold intersect(Box bb, Vec3d motion) {
+		Vec3d extentsA = extentsFromBB(bb);
+		return ContinuousOBBCollider.separateBBs(bb.getCenter(), center, extentsA, extents, rotation, motion);
 	}
 
-	private static EntityHitResult extentsFromBB(Timer bb) {
-		return new EntityHitResult(bb.b() / 2, bb.c() / 2, bb.d() / 2);
+	private static Vec3d extentsFromBB(Box bb) {
+		return new Vec3d(bb.getXLength() / 2, bb.getYLength() / 2, bb.getZLength() / 2);
 	}
 
 	public Matrix3d getRotation() {
@@ -51,21 +51,21 @@ public class OrientedBB {
 		this.rotation = rotation;
 	}
 
-	public EntityHitResult getCenter() {
+	public Vec3d getCenter() {
 		return center;
 	}
 
-	public void setCenter(EntityHitResult center) {
+	public void setCenter(Vec3d center) {
 		this.center = center;
 	}
 
-	public void move(EntityHitResult offset) {
-		setCenter(getCenter().e(offset));
+	public void move(Vec3d offset) {
+		setCenter(getCenter().add(offset));
 	}
 
-	public Timer getAsAxisAlignedBB() {
-		return new Timer(0, 0, 0, 0, 0, 0).c(center)
-			.c(extents.entity, extents.c, extents.d);
+	public Box getAsAxisAlignedBB() {
+		return new Box(0, 0, 0, 0, 0, 0).offset(center)
+			.expand(extents.x, extents.y, extents.z);
 	}
 
 	/*

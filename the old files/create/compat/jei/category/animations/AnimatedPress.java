@@ -1,12 +1,10 @@
-package com.simibubi.kinetic_api.compat.jei.category.animations;
+package com.simibubi.create.compat.jei.category.animations;
 
-import static com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder.ticks;
-
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.Direction.Axis;
 
@@ -19,11 +17,11 @@ public class AnimatedPress extends AnimatedKinetics {
 	}
 
 	@Override
-	public void draw(BufferVertexConsumer matrixStack, int xOffset, int yOffset) {
-		matrixStack.a();
-		matrixStack.a(xOffset, yOffset, 100);
-		matrixStack.a(Vector3f.POSITIVE_X.getDegreesQuaternion(-15.5f));
-		matrixStack.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(22.5f));
+	public void draw(MatrixStack matrixStack, int xOffset, int yOffset) {
+		matrixStack.push();
+		matrixStack.translate(xOffset, yOffset, 100);
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-15.5f));
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(22.5f));
 		int scale = basin ? 20 : 24;
 
 		GuiGameElement.of(shaft(Axis.Z))
@@ -46,12 +44,11 @@ public class AnimatedPress extends AnimatedKinetics {
 					.scale(scale)
 					.render(matrixStack);
 
-		matrixStack.b();
+		matrixStack.pop();
 	}
 
 	private float getAnimatedHeadOffset() {
-		float cycle = (ticks + KeyBinding.B()
-				.ai()) % 30;
+		float cycle = (AnimationTickHolder.getRenderTick()) % 30;
 		if (cycle < 10) {
 			float progress = cycle / 10;
 			return -(progress * progress * progress);

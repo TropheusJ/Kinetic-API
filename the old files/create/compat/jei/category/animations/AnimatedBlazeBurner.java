@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.compat.jei.category.animations;
+package com.simibubi.create.compat.jei.category.animations;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
+import com.simibubi.create.foundation.gui.GuiGameElement;
 
 import mezz.jei.api.gui.drawable.IDrawable;
-import net.minecraft.client.render.BufferVertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 
 public class AnimatedBlazeBurner implements IDrawable {
@@ -18,11 +18,11 @@ public class AnimatedBlazeBurner implements IDrawable {
 		return this;
 	}
 
-	public void draw(BufferVertexConsumer matrixStack, int xOffset, int yOffset) {
-		matrixStack.a();
-		matrixStack.a(xOffset, yOffset, 200);
-		matrixStack.a(Vector3f.POSITIVE_X.getDegreesQuaternion(-15.5f));
-		matrixStack.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(22.5f));
+	public void draw(MatrixStack matrixStack, int xOffset, int yOffset) {
+		matrixStack.push();
+		matrixStack.translate(xOffset, yOffset, 200);
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-15.5f));
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(22.5f));
 		int scale = 23;
 
 		GuiGameElement.of(AllBlocks.BLAZE_BURNER.getDefaultState())
@@ -37,7 +37,7 @@ public class AnimatedBlazeBurner implements IDrawable {
 			.scale(scale)
 			.render(matrixStack);
 
-		matrixStack.b();
+		matrixStack.pop();
 	}
 
 	@Override

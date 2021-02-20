@@ -1,22 +1,22 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.pulley.AbstractPulleyRenderer;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.pulley.AbstractPulleyRenderer;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.util.math.Direction.Axis;
 
 public class HosePulleyRenderer extends AbstractPulleyRenderer {
 
-	public HosePulleyRenderer(ebv dispatcher) {
+	public HosePulleyRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher, AllBlockPartials.HOSE_HALF, AllBlockPartials.HOSE_HALF_MAGNET);
 	}
 
 	@Override
 	protected Axis getShaftAxis(KineticTileEntity te) {
-		return te.p()
-			.c(HosePulleyBlock.HORIZONTAL_FACING)
+		return te.getCachedState()
+			.get(HosePulleyBlock.HORIZONTAL_FACING)
 			.rotateYClockwise()
 			.getAxis();
 	}
@@ -28,12 +28,12 @@ public class HosePulleyRenderer extends AbstractPulleyRenderer {
 
 	@Override
 	protected SuperByteBuffer renderRope(KineticTileEntity te) {
-		return AllBlockPartials.HOSE.renderOn(te.p());
+		return AllBlockPartials.HOSE.renderOn(te.getCachedState());
 	}
 
 	@Override
 	protected SuperByteBuffer renderMagnet(KineticTileEntity te) {
-		return AllBlockPartials.HOSE_MAGNET.renderOn(te.p());
+		return AllBlockPartials.HOSE_MAGNET.renderOn(te.getCachedState());
 	}
 
 	@Override

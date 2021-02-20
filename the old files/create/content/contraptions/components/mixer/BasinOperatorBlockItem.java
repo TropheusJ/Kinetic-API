@@ -1,39 +1,40 @@
-package com.simibubi.kinetic_api.content.contraptions.components.mixer;
+package com.simibubi.create.content.contraptions.components.mixer;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.item.BannerItem;
-import net.minecraft.potion.PotionUtil;
+import com.simibubi.create.AllBlocks;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Difficulty;
 
-public class BasinOperatorBlockItem extends BannerItem {
+public class BasinOperatorBlockItem extends BlockItem {
 
-	public BasinOperatorBlockItem(BeetrootsBlock block, a builder) {
+	public BasinOperatorBlockItem(Block block, Settings builder) {
 		super(block, builder);
 	}
 
 	@Override
-	public Difficulty a(PotionUtil context) {
-		BlockPos placedOnPos = context.a()
-			.offset(context.j()
+	public ActionResult place(ItemPlacementContext context) {
+		BlockPos placedOnPos = context.getBlockPos()
+			.offset(context.getSide()
 				.getOpposite());
-		PistonHandler placedOnState = context.p()
-			.d_(placedOnPos);
+		BlockState placedOnState = context.getWorld()
+			.getBlockState(placedOnPos);
 		if (AllBlocks.BASIN.has(placedOnState) || AllBlocks.BELT.has(placedOnState)
 			|| AllBlocks.DEPOT.has(placedOnState)) {
-			if (context.p()
-				.d_(placedOnPos.up(2))
-				.c()
-				.e())
-				context = PotionUtil.a(context, placedOnPos.up(2), Direction.UP);
+			if (context.getWorld()
+				.getBlockState(placedOnPos.up(2))
+				.getMaterial()
+				.isReplaceable())
+				context = ItemPlacementContext.offset(context, placedOnPos.up(2), Direction.UP);
 			else
-				return Difficulty.FAIL;
+				return ActionResult.FAIL;
 		}
 
-		return super.a(context);
+		return super.place(context);
 	}
 
 }

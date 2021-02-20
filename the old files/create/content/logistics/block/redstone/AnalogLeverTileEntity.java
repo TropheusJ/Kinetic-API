@@ -1,16 +1,18 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
 import java.util.List;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+
+import com.simibubi.create.content.contraptions.goggles.IHaveGoggleInformation;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedChasingValue;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.Text;
-import afj;
-import com.simibubi.kinetic_api.content.contraptions.goggles.IHaveGoggleInformation;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedChasingValue;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import net.minecraft.util.math.MathHelper;
 
 public class AnalogLeverTileEntity extends SmartTileEntity implements IHaveGoggleInformation {
 
@@ -18,7 +20,7 @@ public class AnalogLeverTileEntity extends SmartTileEntity implements IHaveGoggl
 	int lastChange;
 	InterpolatedChasingValue clientState = new InterpolatedChasingValue().withSpeed(.2f);
 
-	public AnalogLeverTileEntity(BellBlockEntity<? extends AnalogLeverTileEntity> type) {
+	public AnalogLeverTileEntity(BlockEntityType<? extends AnalogLeverTileEntity> type) {
 		super(type);
 	}
 
@@ -30,7 +32,7 @@ public class AnalogLeverTileEntity extends SmartTileEntity implements IHaveGoggl
 	}
 
 	@Override
-	protected void fromTag(PistonHandler blockState, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState blockState, CompoundTag compound, boolean clientPacket) {
 		state = compound.getInt("State");
 		lastChange = compound.getInt("ChangeTimer");
 		clientState.target(state);
@@ -38,19 +40,19 @@ public class AnalogLeverTileEntity extends SmartTileEntity implements IHaveGoggl
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		if (lastChange > 0) {
 			lastChange--;
 			if (lastChange == 0)
 				updateOutput();
 		}
-		if (d.v)
+		if (world.isClient)
 			clientState.tick();
 	}
 
 	private void updateOutput() {
-		AnalogLeverBlock.updateNeighbors(p(), d, e);
+		AnalogLeverBlock.updateNeighbors(getCachedState(), world, pos);
 	}
 
 	@Override
@@ -60,7 +62,7 @@ public class AnalogLeverTileEntity extends SmartTileEntity implements IHaveGoggl
 	public void changeState(boolean back) {
 		int prevState = state;
 		state += back ? -1 : 1;
-		state = afj.a(state, 0, 15);
+		state = MathHelper.clamp(state, 0, 15);
 		if (prevState != state)
 			lastChange = 15;
 		sendData();

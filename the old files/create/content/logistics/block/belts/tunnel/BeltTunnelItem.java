@@ -1,42 +1,43 @@
-package com.simibubi.kinetic_api.content.logistics.block.belts.tunnel;
+package com.simibubi.create.content.logistics.block.belts.tunnel;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltHelper;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltTileEntity.CasingType;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.BannerItem;
-import net.minecraft.potion.PotionUtil;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.relays.belt.BeltHelper;
+import com.simibubi.create.content.contraptions.relays.belt.BeltTileEntity;
+import com.simibubi.create.content.contraptions.relays.belt.BeltTileEntity.CasingType;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
-public class BeltTunnelItem extends BannerItem {
+public class BeltTunnelItem extends BlockItem {
 
-	public BeltTunnelItem(BeetrootsBlock p_i48527_1_, a p_i48527_2_) {
+	public BeltTunnelItem(Block p_i48527_1_, Settings p_i48527_2_) {
 		super(p_i48527_1_, p_i48527_2_);
 	}
 
 	@Override
-	protected boolean b(PotionUtil ctx, PistonHandler state) {
-		PlayerAbilities playerentity = ctx.n();
-		ArrayVoxelShape iselectioncontext =
-			playerentity == null ? ArrayVoxelShape.a() : ArrayVoxelShape.a(playerentity);
-		GameMode world = ctx.p();
-		BlockPos pos = ctx.a();
-		return (!this.d() || AllBlocks.ANDESITE_TUNNEL.get()
-			.isValidPositionForPlacement(state, world, pos)) && world.a(state, pos, iselectioncontext);
+	protected boolean canPlace(ItemPlacementContext ctx, BlockState state) {
+		PlayerEntity playerentity = ctx.getPlayer();
+		ShapeContext iselectioncontext =
+			playerentity == null ? ShapeContext.absent() : ShapeContext.of(playerentity);
+		World world = ctx.getWorld();
+		BlockPos pos = ctx.getBlockPos();
+		return (!this.checkStatePlacement() || AllBlocks.ANDESITE_TUNNEL.get()
+			.isValidPositionForPlacement(state, world, pos)) && world.canPlace(state, pos, iselectioncontext);
 	}
 
 	@Override
-	protected boolean a(BlockPos pos, GameMode world, PlayerAbilities p_195943_3_, ItemCooldownManager p_195943_4_,
-		PistonHandler state) {
-		boolean flag = super.a(pos, world, p_195943_3_, p_195943_4_, state);
-		if (!world.v) {
+	protected boolean postPlacement(BlockPos pos, World world, PlayerEntity p_195943_3_, ItemStack p_195943_4_,
+		BlockState state) {
+		boolean flag = super.postPlacement(pos, world, p_195943_3_, p_195943_4_, state);
+		if (!world.isClient) {
 			BeltTileEntity belt = BeltHelper.getSegmentTE(world, pos.down());
 			if (belt != null) {
 				AllTriggers.triggerFor(AllTriggers.PLACE_TUNNEL, p_195943_3_);

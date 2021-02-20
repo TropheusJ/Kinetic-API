@@ -1,44 +1,44 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors.dispenser;
+package com.simibubi.create.content.contraptions.components.actors.dispenser;
 
 import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
 import net.minecraft.block.dispenser.ProjectileDispenserBehavior;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.FlyingItemEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Position;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 public abstract class MovedProjectileDispenserBehaviour extends MovedDefaultDispenseItemBehaviour {
 
 	@Override
-	protected ItemCooldownManager dispenseStack(ItemCooldownManager itemStack, MovementContext context, BlockPos pos, EntityHitResult facing) {
-		double x = pos.getX() + facing.entity * .7 + .5;
-		double y = pos.getY() + facing.c * .7 + .5;
-		double z = pos.getZ() + facing.d * .7 + .5;
-		FlyingItemEntity ProjectileEntity = this.getProjectileEntity(context.world, x, y, z, itemStack.i());
+	protected ItemStack dispenseStack(ItemStack itemStack, MovementContext context, BlockPos pos, Vec3d facing) {
+		double x = pos.getX() + facing.x * .7 + .5;
+		double y = pos.getY() + facing.y * .7 + .5;
+		double z = pos.getZ() + facing.z * .7 + .5;
+		ProjectileEntity ProjectileEntity = this.getProjectileEntity(context.world, x, y, z, itemStack.copy());
 		if (ProjectileEntity == null)
 			return itemStack;
-		EntityHitResult effectiveMovementVec = facing.a(getProjectileVelocity()).e(context.motion);
-		ProjectileEntity.c(effectiveMovementVec.entity, effectiveMovementVec.c, effectiveMovementVec.d, (float) effectiveMovementVec.f(), this.getProjectileInaccuracy());
-		context.world.c(ProjectileEntity);
-		itemStack.g(1);
+		Vec3d effectiveMovementVec = facing.multiply(getProjectileVelocity()).add(context.motion);
+		ProjectileEntity.setVelocity(effectiveMovementVec.x, effectiveMovementVec.y, effectiveMovementVec.z, (float) effectiveMovementVec.length(), this.getProjectileInaccuracy());
+		context.world.spawnEntity(ProjectileEntity);
+		itemStack.decrement(1);
 		return itemStack;
 	}
 
 	@Override
-	protected void playDispenseSound(GrassColors world, BlockPos pos) {
+	protected void playDispenseSound(WorldAccess world, BlockPos pos) {
 		world.syncWorldEvent(1002, pos, 0);
 	}
 
 	@Nullable
-	protected abstract FlyingItemEntity getProjectileEntity(GameMode world, double x, double y, double z, ItemCooldownManager itemStack);
+	protected abstract ProjectileEntity getProjectileEntity(World world, double x, double y, double z, ItemStack itemStack);
 
 	protected float getProjectileInaccuracy() {
 		return 6.0F;
@@ -51,9 +51,9 @@ public abstract class MovedProjectileDispenserBehaviour extends MovedDefaultDisp
 	public static MovedProjectileDispenserBehaviour of(ProjectileDispenserBehavior vanillaBehaviour) {
 		return new MovedProjectileDispenserBehaviour() {
 			@Override
-			protected FlyingItemEntity getProjectileEntity(GameMode world, double x, double y, double z, ItemCooldownManager itemStack) {
+			protected ProjectileEntity getProjectileEntity(World world, double x, double y, double z, ItemStack itemStack) {
 				try {
-					return (FlyingItemEntity) MovedProjectileDispenserBehaviour.getProjectileEntityLookup().invoke(vanillaBehaviour, world, new SimplePos(x, y, z) , itemStack);
+					return (ProjectileEntity) MovedProjectileDispenserBehaviour.getProjectileEntityLookup().invoke(vanillaBehaviour, world, new SimplePos(x, y, z) , itemStack);
 				} catch (Throwable ignored) {
 				}
 				return null;
@@ -80,7 +80,7 @@ public abstract class MovedProjectileDispenserBehaviour extends MovedDefaultDisp
 	}
 
 	private static Method getProjectileEntityLookup() {
-		Method getProjectileEntity = ObfuscationReflectionHelper.findMethod(ProjectileDispenserBehavior.class, "func_82499_a", GameMode.class, Position.class, ItemCooldownManager.class);
+		Method getProjectileEntity = ObfuscationReflectionHelper.findMethod(ProjectileDispenserBehavior.class, "func_82499_a", World.class, Position.class, ItemStack.class);
 		getProjectileEntity.setAccessible(true);
 		return getProjectileEntity;
 	}

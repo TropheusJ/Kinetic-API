@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.foundation.gui.widgets;
+package com.simibubi.create.foundation.gui.widgets;
 
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.AngleHelper;
 
 public class InterpolatedAngle extends InterpolatedValue {
 	

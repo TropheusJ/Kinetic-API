@@ -1,36 +1,40 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
-import static com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult.HOLD;
-import static com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult.PASS;
+import static com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult.HOLD;
+import static com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult.PASS;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidFX;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.NameTagItem;
-import net.minecraft.item.WrittenBookItem;
+import com.simibubi.create.content.contraptions.fluids.FluidFX;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
+import com.simibubi.create.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour;
+import com.simibubi.create.foundation.utility.VecHelper;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.PotionItem;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ParticleEffect;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.potion.PotionUtil;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
@@ -61,14 +65,19 @@ public class SpoutTileEntity extends SmartTileEntity {
 
 	SmartFluidTankBehaviour tank;
 
-	public SpoutTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public SpoutTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		processingTicks = -1;
 	}
 
+	protected Box cachedBoundingBox;
 	@Override
-	public Timer getRenderBoundingBox() {
-		return super.getRenderBoundingBox().b(0, -2, 0);
+	@Environment(EnvType.CLIENT)
+	public Box getRenderBoundingBox() {
+		if (cachedBoundingBox == null) {
+			cachedBoundingBox = super.getRenderBoundingBox().stretch(0, -2, 0);
+		}
+		return cachedBoundingBox;
 	}
 
 	@Override
@@ -84,11 +93,11 @@ public class SpoutTileEntity extends SmartTileEntity {
 
 	protected ProcessingResult onItemReceived(TransportedItemStack transported,
 		TransportedItemStackHandlerBehaviour handler) {
-		if (!FillingBySpout.canItemBeFilled(d, transported.stack))
+		if (!FillingBySpout.canItemBeFilled(world, transported.stack))
 			return PASS;
 		if (tank.isEmpty())
 			return HOLD;
-		if (FillingBySpout.getRequiredAmountForItem(d, transported.stack, getCurrentFluidInTank()) == -1)
+		if (FillingBySpout.getRequiredAmountForItem(world, transported.stack, getCurrentFluidInTank()) == -1)
 			return PASS;
 		return HOLD;
 	}
@@ -98,12 +107,12 @@ public class SpoutTileEntity extends SmartTileEntity {
 		shouldAnimate = true;
 		if (processingTicks != -1 && processingTicks != 5)
 			return HOLD;
-		if (!FillingBySpout.canItemBeFilled(d, transported.stack))
+		if (!FillingBySpout.canItemBeFilled(world, transported.stack))
 			return PASS;
 		if (tank.isEmpty())
 			return HOLD;
 		FluidStack fluid = getCurrentFluidInTank();
-		int requiredAmountForItem = FillingBySpout.getRequiredAmountForItem(d, transported.stack, fluid.copy());
+		int requiredAmountForItem = FillingBySpout.getRequiredAmountForItem(world, transported.stack, fluid.copy());
 		if (requiredAmountForItem == -1)
 			return PASS;
 		if (requiredAmountForItem > fluid.getAmount())
@@ -116,21 +125,21 @@ public class SpoutTileEntity extends SmartTileEntity {
 		}
 
 		// Process finished
-		ItemCooldownManager out = FillingBySpout.fillItem(d, requiredAmountForItem, transported.stack, fluid);
-		if (!out.a()) {
+		ItemStack out = FillingBySpout.fillItem(world, requiredAmountForItem, transported.stack, fluid);
+		if (!out.isEmpty()) {
 			List<TransportedItemStack> outList = new ArrayList<>();
 			TransportedItemStack held = null;
 			TransportedItemStack result = transported.copy();
 			result.stack = out;
-			if (!transported.stack.a())
+			if (!transported.stack.isEmpty())
 				held = transported.copy();
 			outList.add(result);
 			handler.handleProcessingOnItem(transported, TransportedResult.convertToAndLeaveHeld(outList, held));
 		}
 
-		AllTriggers.triggerForNearbyPlayers(AllTriggers.SPOUT, d, e, 5);
-		if (out.b() instanceof NameTagItem && !WrittenBookItem.a(out).isEmpty())
-			AllTriggers.triggerForNearbyPlayers(AllTriggers.SPOUT_POTION, d, e, 5);
+		AllTriggers.triggerForNearbyPlayers(AllTriggers.SPOUT, world, pos, 5);
+		if (out.getItem() instanceof PotionItem && !PotionUtil.getPotionEffects(out).isEmpty())
+			AllTriggers.triggerForNearbyPlayers(AllTriggers.SPOUT_POTION, world, pos, 5);
 		
 		tank.getPrimaryHandler()
 			.setFluid(fluid);
@@ -142,7 +151,7 @@ public class SpoutTileEntity extends SmartTileEntity {
 	private void processTicCastBlock() {
 		if (!IS_TIC_LOADED || CASTING_FLUID_HANDLER_CLASS == null)
 			return;
-		if (d == null)
+		if (world == null)
 			return;
 		IFluidHandler localTank = this.tank.getCapability()
 			.orElse(null);
@@ -151,10 +160,10 @@ public class SpoutTileEntity extends SmartTileEntity {
 		FluidStack fluid = getCurrentFluidInTank();
 		if (fluid.getAmount() == 0)
 			return;
-		BeehiveBlockEntity te = d.c(e.down(2));
+		BlockEntity te = world.getBlockEntity(pos.down(2));
 		if (te == null)
 			return;
-		IFluidHandler handler = getFluidHandler(e.down(2), Direction.UP);
+		IFluidHandler handler = getFluidHandler(pos.down(2), Direction.UP);
 		if (!CASTING_FLUID_HANDLER_CLASS.isInstance(handler))
 			return;
 		if (handler.getTanks() != 1)
@@ -209,7 +218,7 @@ public class SpoutTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		super.fromTag(state, compound, clientPacket);
 		processingTicks = compound.getInt("ProcessingTicks");
 		if (!clientPacket)
@@ -227,42 +236,42 @@ public class SpoutTileEntity extends SmartTileEntity {
 		return super.getCapability(cap, side);
 	}
 
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		processTicCastBlock();
 		if (processingTicks >= 0)
 			processingTicks--;
-		if (processingTicks >= 8 && d.v && shouldAnimate)
+		if (processingTicks >= 8 && world.isClient && shouldAnimate)
 			spawnProcessingParticles(tank.getPrimaryTank()
 				.getRenderedFluid());
 	}
 
 	protected void spawnProcessingParticles(FluidStack fluid) {
-		EntityHitResult vec = VecHelper.getCenterOf(e);
-		vec = vec.a(0, 8 / 16f, 0);
+		Vec3d vec = VecHelper.getCenterOf(pos);
+		vec = vec.subtract(0, 8 / 16f, 0);
 		ParticleEffect particle = FluidFX.getFluidParticle(fluid);
-		d.b(particle, vec.entity, vec.c, vec.d, 0, -.1f, 0);
+		world.addImportantParticle(particle, vec.x, vec.y, vec.z, 0, -.1f, 0);
 	}
 
 	protected static int SPLASH_PARTICLE_COUNT = 20;
 
 	protected void spawnSplash(FluidStack fluid) {
-		EntityHitResult vec = VecHelper.getCenterOf(e);
-		vec = vec.a(0, 2 - 5 / 16f, 0);
+		Vec3d vec = VecHelper.getCenterOf(pos);
+		vec = vec.subtract(0, 2 - 5 / 16f, 0);
 		ParticleEffect particle = FluidFX.getFluidParticle(fluid);
 		for (int i = 0; i < SPLASH_PARTICLE_COUNT; i++) {
-			EntityHitResult m = VecHelper.offsetRandomly(EntityHitResult.a, d.t, 0.125f);
-			m = new EntityHitResult(m.entity, Math.abs(m.c), m.d);
-			d.b(particle, vec.entity, vec.c, vec.d, m.entity, m.c, m.d);
+			Vec3d m = VecHelper.offsetRandomly(Vec3d.ZERO, world.random, 0.125f);
+			m = new Vec3d(m.x, Math.abs(m.y), m.z);
+			world.addImportantParticle(particle, vec.x, vec.y, vec.z, m.x, m.y, m.z);
 		}
 	}
 
 	@Nullable
 	private IFluidHandler getFluidHandler(BlockPos pos, Direction direction) {
-		if (this.d == null) {
+		if (this.world == null) {
 			return null;
 		} else {
-			BeehiveBlockEntity te = this.d.c(pos);
+			BlockEntity te = this.world.getBlockEntity(pos);
 			return te != null ? te.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, direction)
 				.orElse(null) : null;
 		}

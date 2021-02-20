@@ -1,144 +1,144 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.chassis;
+package com.simibubi.create.content.contraptions.components.structureMovement.chassis;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllSoundEvents;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.wrench.IWrenchable;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import dcg;
-import net.minecraft.block.LoomBlock;
-import net.minecraft.block.RepeaterBlock;
-import net.minecraft.block.RespawnAnchorBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllSoundEvents;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.wrench.IWrenchable;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.PillarBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 import net.minecraftforge.common.Tags;
 
-public abstract class AbstractChassisBlock extends RepeaterBlock implements IWrenchable {
+public abstract class AbstractChassisBlock extends PillarBlock implements IWrenchable {
 
-	public AbstractChassisBlock(c properties) {
+	public AbstractChassisBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.CHASSIS.create();
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode worldIn, BlockPos pos, PlayerAbilities player, ItemScatterer handIn,
-		dcg hit) {
-		if (!player.eJ())
-			return Difficulty.PASS;
+	public ActionResult onUse(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn,
+		BlockHitResult hit) {
+		if (!player.canModifyBlocks())
+			return ActionResult.PASS;
 
-		ItemCooldownManager heldItem = player.b(handIn);
-		boolean isSlimeBall = heldItem.b()
-			.a(Tags.Items.SLIMEBALLS) || AllItems.SUPER_GLUE.isIn(heldItem);
+		ItemStack heldItem = player.getStackInHand(handIn);
+		boolean isSlimeBall = heldItem.getItem()
+			.isIn(Tags.Items.SLIMEBALLS) || AllItems.SUPER_GLUE.isIn(heldItem);
 
-		BedPart affectedSide = getGlueableSide(state, hit.b());
+		BooleanProperty affectedSide = getGlueableSide(state, hit.getSide());
 		if (affectedSide == null)
-			return Difficulty.PASS;
+			return ActionResult.PASS;
 
-		if (isSlimeBall && state.c(affectedSide)) {
+		if (isSlimeBall && state.get(affectedSide)) {
 			for (Direction face : Iterate.directions) {
-				BedPart glueableSide = getGlueableSide(state, face);
-				if (glueableSide != null && !state.c(glueableSide)) {
-					if (worldIn.v) {
-						EntityHitResult vec = hit.e();
-						worldIn.addParticle(ParticleTypes.ITEM_SLIME, vec.entity, vec.c, vec.d, 0, 0, 0);
-						return Difficulty.SUCCESS;
+				BooleanProperty glueableSide = getGlueableSide(state, face);
+				if (glueableSide != null && !state.get(glueableSide)) {
+					if (worldIn.isClient) {
+						Vec3d vec = hit.getPos();
+						worldIn.addParticle(ParticleTypes.ITEM_SLIME, vec.x, vec.y, vec.z, 0, 0, 0);
+						return ActionResult.SUCCESS;
 					}
-					worldIn.a(null, pos, AllSoundEvents.SLIME_ADDED.get(), SoundEvent.e, .5f, 1);
-					state = state.a(glueableSide, true);
+					worldIn.playSound(null, pos, AllSoundEvents.SLIME_ADDED.get(), SoundCategory.BLOCKS, .5f, 1);
+					state = state.with(glueableSide, true);
 				}
 			}
-			if (!worldIn.v)
-				worldIn.a(pos, state);
-			return Difficulty.SUCCESS;
+			if (!worldIn.isClient)
+				worldIn.setBlockState(pos, state);
+			return ActionResult.SUCCESS;
 		}
 
-		if ((!heldItem.a() || !player.bt()) && !isSlimeBall)
-			return Difficulty.PASS;
-		if (state.c(affectedSide) == isSlimeBall)
-			return Difficulty.PASS;
-		if (worldIn.v) {
-			EntityHitResult vec = hit.e();
-			worldIn.addParticle(ParticleTypes.ITEM_SLIME, vec.entity, vec.c, vec.d, 0, 0, 0);
-			return Difficulty.SUCCESS;
+		if ((!heldItem.isEmpty() || !player.isSneaking()) && !isSlimeBall)
+			return ActionResult.PASS;
+		if (state.get(affectedSide) == isSlimeBall)
+			return ActionResult.PASS;
+		if (worldIn.isClient) {
+			Vec3d vec = hit.getPos();
+			worldIn.addParticle(ParticleTypes.ITEM_SLIME, vec.x, vec.y, vec.z, 0, 0, 0);
+			return ActionResult.SUCCESS;
 		}
 
-		worldIn.a(null, pos, AllSoundEvents.SLIME_ADDED.get(), SoundEvent.e, .5f, 1);
-		worldIn.a(pos, state.a(affectedSide, isSlimeBall));
-		return Difficulty.SUCCESS;
+		worldIn.playSound(null, pos, AllSoundEvents.SLIME_ADDED.get(), SoundCategory.BLOCKS, .5f, 1);
+		worldIn.setBlockState(pos, state.with(affectedSide, isSlimeBall));
+		return ActionResult.SUCCESS;
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
-	public PistonHandler a(PistonHandler state, RespawnAnchorBlock rotation) {
-		if (rotation == RespawnAnchorBlock.CHARGES)
+	public BlockState rotate(BlockState state, BlockRotation rotation) {
+		if (rotation == BlockRotation.NONE)
 			return state;
 
-		PistonHandler rotated = super.a(state, rotation);
+		BlockState rotated = super.rotate(state, rotation);
 		for (Direction face : Iterate.directions) {
-			BedPart glueableSide = getGlueableSide(rotated, face);
+			BooleanProperty glueableSide = getGlueableSide(rotated, face);
 			if (glueableSide != null)
-				rotated = rotated.a(glueableSide, false);
+				rotated = rotated.with(glueableSide, false);
 		}
 
 		for (Direction face : Iterate.directions) {
-			BedPart glueableSide = getGlueableSide(state, face);
-			if (glueableSide == null || !state.c(glueableSide))
+			BooleanProperty glueableSide = getGlueableSide(state, face);
+			if (glueableSide == null || !state.get(glueableSide))
 				continue;
-			Direction rotatedFacing = rotation.a(face);
-			BedPart rotatedGlueableSide = getGlueableSide(rotated, rotatedFacing);
+			Direction rotatedFacing = rotation.rotate(face);
+			BooleanProperty rotatedGlueableSide = getGlueableSide(rotated, rotatedFacing);
 			if (rotatedGlueableSide != null)
-				rotated = rotated.a(rotatedGlueableSide, true);
+				rotated = rotated.with(rotatedGlueableSide, true);
 		}
 
 		return rotated;
 	}
 
 	@Override
-	public PistonHandler a(PistonHandler state, LoomBlock mirrorIn) {
-		if (mirrorIn == LoomBlock.TITLE)
+	public BlockState mirror(BlockState state, BlockMirror mirrorIn) {
+		if (mirrorIn == BlockMirror.NONE)
 			return state;
 
-		PistonHandler mirrored = state;
+		BlockState mirrored = state;
 		for (Direction face : Iterate.directions) {
-			BedPart glueableSide = getGlueableSide(mirrored, face);
+			BooleanProperty glueableSide = getGlueableSide(mirrored, face);
 			if (glueableSide != null)
-				mirrored = mirrored.a(glueableSide, false);
+				mirrored = mirrored.with(glueableSide, false);
 		}
 
 		for (Direction face : Iterate.directions) {
-			BedPart glueableSide = getGlueableSide(state, face);
-			if (glueableSide == null || !state.c(glueableSide))
+			BooleanProperty glueableSide = getGlueableSide(state, face);
+			if (glueableSide == null || !state.get(glueableSide))
 				continue;
-			Direction mirroredFacing = mirrorIn.b(face);
-			BedPart mirroredGlueableSide = getGlueableSide(mirrored, mirroredFacing);
+			Direction mirroredFacing = mirrorIn.apply(face);
+			BooleanProperty mirroredGlueableSide = getGlueableSide(mirrored, mirroredFacing);
 			if (mirroredGlueableSide != null)
-				mirrored = mirrored.a(mirroredGlueableSide, true);
+				mirrored = mirrored.with(mirroredGlueableSide, true);
 		}
 
 		return mirrored;
 	}
 
-	public abstract BedPart getGlueableSide(PistonHandler state, Direction face);
+	public abstract BooleanProperty getGlueableSide(BlockState state, Direction face);
 
 }

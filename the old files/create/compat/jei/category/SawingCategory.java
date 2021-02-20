@@ -1,26 +1,26 @@
-package com.simibubi.kinetic_api.compat.jei.category;
+package com.simibubi.create.compat.jei.category;
 
 import java.util.Arrays;
 import java.util.List;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.compat.jei.category.animations.AnimatedSaw;
-import com.simibubi.kinetic_api.content.contraptions.components.saw.CuttingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingOutput;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.compat.jei.category.animations.AnimatedSaw;
+import com.simibubi.create.content.contraptions.components.saw.CuttingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingOutput;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.gui.ingredient.IGuiItemStackGroup;
 import mezz.jei.api.ingredients.IIngredients;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.item.AliasedBlockItem;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.Items;
 
 public class SawingCategory extends CreateRecipeCategory<CuttingRecipe> {
 
 	private AnimatedSaw saw = new AnimatedSaw();
 
 	public SawingCategory() {
-		super(doubleItemIcon(AllBlocks.MECHANICAL_SAW.get(), AliasedBlockItem.L), emptyBackground(177, 70));
+		super(doubleItemIcon(AllBlocks.MECHANICAL_SAW.get(), Items.OAK_LOG), emptyBackground(177, 70));
 	}
 
 	@Override
@@ -30,7 +30,7 @@ public class SawingCategory extends CreateRecipeCategory<CuttingRecipe> {
 
 	@Override
 	public void setIngredients(CuttingRecipe recipe, IIngredients ingredients) {
-		ingredients.setInputIngredients(recipe.a());
+		ingredients.setInputIngredients(recipe.getPreviewInputs());
 		ingredients.setOutputs(VanillaTypes.ITEM, recipe.getRollableResultsAsItemStacks());
 	}
 
@@ -38,7 +38,7 @@ public class SawingCategory extends CreateRecipeCategory<CuttingRecipe> {
 	public void setRecipe(IRecipeLayout recipeLayout, CuttingRecipe recipe, IIngredients ingredients) {
 		IGuiItemStackGroup itemStacks = recipeLayout.getItemStacks();
 		itemStacks.init(0, true, 43, 4);
-		itemStacks.set(0, Arrays.asList(recipe.a().get(0).a()));
+		itemStacks.set(0, Arrays.asList(recipe.getPreviewInputs().get(0).getMatchingStacksClient()));
 
 		List<ProcessingOutput> results = recipe.getRollableResults();
 		for (int outputIndex = 0; outputIndex < results.size(); outputIndex++) {
@@ -53,7 +53,7 @@ public class SawingCategory extends CreateRecipeCategory<CuttingRecipe> {
 	}
 
 	@Override
-	public void draw(CuttingRecipe recipe, BufferVertexConsumer matrixStack, double mouseX, double mouseY) {
+	public void draw(CuttingRecipe recipe, MatrixStack matrixStack, double mouseX, double mouseY) {
 		AllGuiTextures.JEI_SLOT.draw(matrixStack, 43, 4);
 		int size = recipe.getRollableResults().size();
 		for (int i = 0; i < size; i++) {

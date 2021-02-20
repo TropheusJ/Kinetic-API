@@ -1,12 +1,13 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
 import java.util.List;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.foundation.fluid.FluidIngredient;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.world.GameMode;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.foundation.fluid.FluidIngredient;
+
+import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
@@ -15,18 +16,18 @@ public class FillingBySpout {
 
 	static RecipeWrapper wrapper = new RecipeWrapper(new ItemStackHandler(1));
 
-	public static boolean canItemBeFilled(GameMode world, ItemCooldownManager stack) {
-		wrapper.a(0, stack);
+	public static boolean canItemBeFilled(World world, ItemStack stack) {
+		wrapper.setStack(0, stack);
 		if (AllRecipeTypes.FILLING.find(wrapper, world)
 			.isPresent())
 			return true;
 		return GenericItemFilling.canItemBeFilled(world, stack);
 	}
 
-	public static int getRequiredAmountForItem(GameMode world, ItemCooldownManager stack, FluidStack availableFluid) {
-		wrapper.a(0, stack);
-		for (Ingredient<RecipeWrapper> recipe : world.o()
-			.b(AllRecipeTypes.FILLING.getType(), wrapper, world)) {
+	public static int getRequiredAmountForItem(World world, ItemStack stack, FluidStack availableFluid) {
+		wrapper.setStack(0, stack);
+		for (Recipe<RecipeWrapper> recipe : world.getRecipeManager()
+			.getAllMatches(AllRecipeTypes.FILLING.getType(), wrapper, world)) {
 			FillingRecipe fillingRecipe = (FillingRecipe) recipe;
 			FluidIngredient requiredFluid = fillingRecipe.getRequiredFluid();
 			if (requiredFluid.test(availableFluid))
@@ -35,20 +36,20 @@ public class FillingBySpout {
 		return GenericItemFilling.getRequiredAmountForItem(world, stack, availableFluid);
 	}
 
-	public static ItemCooldownManager fillItem(GameMode world, int requiredAmount, ItemCooldownManager stack, FluidStack availableFluid) {
+	public static ItemStack fillItem(World world, int requiredAmount, ItemStack stack, FluidStack availableFluid) {
 		FluidStack toFill = availableFluid.copy();
 		toFill.setAmount(requiredAmount);
 
-		wrapper.a(0, stack);
-		for (Ingredient<RecipeWrapper> recipe : world.o()
-			.b(AllRecipeTypes.FILLING.getType(), wrapper, world)) {
+		wrapper.setStack(0, stack);
+		for (Recipe<RecipeWrapper> recipe : world.getRecipeManager()
+			.getAllMatches(AllRecipeTypes.FILLING.getType(), wrapper, world)) {
 			FillingRecipe fillingRecipe = (FillingRecipe) recipe;
 			FluidIngredient requiredFluid = fillingRecipe.getRequiredFluid();
 			if (requiredFluid.test(toFill)) {
-				List<ItemCooldownManager> results = fillingRecipe.rollResults();
+				List<ItemStack> results = fillingRecipe.rollResults();
 				availableFluid.shrink(requiredAmount);
-				stack.g(1);
-				return results.isEmpty() ? ItemCooldownManager.tick : results.get(0);
+				stack.decrement(1);
+				return results.isEmpty() ? ItemStack.EMPTY : results.get(0);
 			}
 		}
 		

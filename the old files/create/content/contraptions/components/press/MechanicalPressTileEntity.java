@@ -1,41 +1,43 @@
-package com.simibubi.kinetic_api.content.contraptions.components.press;
+package com.simibubi.create.content.contraptions.components.press;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import afj;
-import apx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.AllSoundEvents;
-import com.simibubi.kinetic_api.content.contraptions.processing.BasinOperatingTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.processing.BasinTileEntity;
-import com.simibubi.kinetic_api.content.logistics.InWorldProcessing;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.advancement.ITriggerable;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.item.ItemHelper;
-import com.simibubi.kinetic_api.foundation.item.SmartInventory;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.AllSoundEvents;
+import com.simibubi.create.content.contraptions.processing.BasinOperatingTileEntity;
+import com.simibubi.create.content.contraptions.processing.BasinTileEntity;
+import com.simibubi.create.content.logistics.InWorldProcessing;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.advancement.ITriggerable;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.item.ItemHelper;
+import com.simibubi.create.foundation.item.SmartInventory;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
+import com.simibubi.create.foundation.utility.NBTHelper;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.recipe.BlastingRecipe;
-import net.minecraft.recipe.FireworkRocketRecipe;
+import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.Ingredient;
-import net.minecraft.sound.SoundEvent;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
@@ -43,7 +45,7 @@ import net.minecraftforge.items.wrapper.RecipeWrapper;
 public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 
 	private static final Object compressingRecipesKey = new Object();
-	public List<ItemCooldownManager> pressedItems = new ArrayList<>();
+	public List<ItemStack> pressedItems = new ArrayList<>();
 	public BeltProcessingBehaviour processingBehaviour;
 
 	public int prevRunningTicks;
@@ -56,7 +58,7 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 	public Mode mode;
 	public boolean finished;
 
-	public MechanicalPressTileEntity(BellBlockEntity<? extends MechanicalPressTileEntity> type) {
+	public MechanicalPressTileEntity(BlockEntityType<? extends MechanicalPressTileEntity> type) {
 		super(type);
 		mode = Mode.WORLD;
 		entityScanCooldown = ENTITY_SCAN;
@@ -72,7 +74,7 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		running = compound.getBoolean("Running");
 		mode = Mode.values()[compound.getInt("Mode")];
 		finished = compound.getBoolean("Finished");
@@ -81,7 +83,7 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 
 		if (clientPacket) {
 			NBTHelper.iterateCompoundList(compound.getList("ParticleItems", NBT.TAG_COMPOUND),
-				c -> pressedItems.add(ItemCooldownManager.a(c)));
+				c -> pressedItems.add(ItemStack.fromTag(c)));
 			spawnParticles();
 		}
 	}
@@ -95,25 +97,25 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 		super.write(compound, clientPacket);
 
 		if (clientPacket) {
-			compound.put("ParticleItems", NBTHelper.writeCompoundList(pressedItems, ItemCooldownManager::serializeNBT));
+			compound.put("ParticleItems", NBTHelper.writeCompoundList(pressedItems, ItemStack::serializeNBT));
 			pressedItems.clear();
 		}
 	}
 
 	@Override
-	public Timer getRenderBoundingBox() {
-		return new Timer(e).b(0, -1.5, 0)
-			.b(0, 1, 0);
+	public Box makeRenderBoundingBox() {
+		return new Box(pos).stretch(0, -1.5, 0)
+			.stretch(0, 1, 0);
 	}
 
 	public float getRenderedHeadOffset(float partialTicks) {
 		if (!running)
 			return 0;
 		int runningTicks = Math.abs(this.runningTicks);
-		float ticks = afj.g(partialTicks, prevRunningTicks, runningTicks);
+		float ticks = MathHelper.lerp(partialTicks, prevRunningTicks, runningTicks);
 		if (runningTicks < (CYCLE * 2) / 3)
-			return (float) afj.a(Math.pow(ticks / CYCLE * 2, 3), 0, 1) * mode.headOffset;
-		return afj.a((CYCLE - ticks) / CYCLE * 3, 0, 1) * mode.headOffset;
+			return (float) MathHelper.clamp(Math.pow(ticks / CYCLE * 2, 3), 0, 1) * mode.headOffset;
+		return MathHelper.clamp((CYCLE - ticks) / CYCLE * 3, 0, 1) * mode.headOffset;
 	}
 
 	public void start(Mode mode) {
@@ -133,11 +135,11 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 
-		if (!running || d == null) {
-			if (n() && !d.v) {
+		if (!running || world == null) {
+			if (hasWorld() && !world.isClient) {
 
 				if (getSpeed() == 0)
 					return;
@@ -145,14 +147,16 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 					entityScanCooldown--;
 				if (entityScanCooldown <= 0) {
 					entityScanCooldown = ENTITY_SCAN;
-					if (TileEntityBehaviour.get(d, e.down(2), TransportedItemStackHandlerBehaviour.TYPE) != null)
+					if (TileEntityBehaviour.get(world, pos.down(2), TransportedItemStackHandlerBehaviour.TYPE) != null)
 						return;
-					if (AllBlocks.BASIN.has(d.d_(e.down(2))))
+					if (AllBlocks.BASIN.has(world.getBlockState(pos.down(2))))
 						return;
 
-					for (PaintingEntity itemEntity : d.a(PaintingEntity.class,
-						new Timer(e.down()).h(.125f))) {
-						ItemCooldownManager stack = itemEntity.g();
+					for (ItemEntity itemEntity : world.getNonSpectatingEntities(ItemEntity.class,
+						new Box(pos.down()).contract(.125f))) {
+						if (!itemEntity.isAlive() || !itemEntity.isOnGround())
+							continue;
+						ItemStack stack = itemEntity.getStack();
 						Optional<PressingRecipe> recipe = getRecipe(stack);
 						if (!recipe.isPresent())
 							continue;
@@ -165,7 +169,7 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 			return;
 		}
 
-		if (d.v && runningTicks == -CYCLE / 2) {
+		if (world.isClient && runningTicks == -CYCLE / 2) {
 			prevRunningTicks = CYCLE / 2;
 			return;
 		}
@@ -175,15 +179,15 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 				applyPressingInWorld();
 			if (onBasin())
 				applyCompactingOnBasin();
-			if (!d.v) {
-				d.a(null, o(), AllSoundEvents.MECHANICAL_PRESS_ITEM_BREAK.get(), SoundEvent.e,
+			if (!world.isClient) {
+				world.playSound(null, getPos(), AllSoundEvents.MECHANICAL_PRESS_ITEM_BREAK.get(), SoundCategory.BLOCKS,
 					.5f, 1f);
-				d.a(null, o(), AllSoundEvents.MECHANICAL_PRESS_ACTIVATION.get(), SoundEvent.e,
+				world.playSound(null, getPos(), AllSoundEvents.MECHANICAL_PRESS_ACTIVATION.get(), SoundCategory.BLOCKS,
 					.125f, 1f);
 			}
 		}
 
-		if (!d.v && runningTicks > CYCLE) {
+		if (!world.isClient && runningTicks > CYCLE) {
 			finished = true;
 			running = false;
 
@@ -200,13 +204,13 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 		if (prevRunningTicks < CYCLE / 2 && runningTicks >= CYCLE / 2) {
 			runningTicks = CYCLE / 2;
 			// Pause the ticks until a packet is received
-			if (d.v)
+			if (world.isClient)
 				runningTicks = -(CYCLE / 2);
 		}
 	}
 
 	protected void applyCompactingOnBasin() {
-		if (d.v)
+		if (world.isClient)
 			return;
 		pressedItems.clear();
 		applyBasinRecipe();
@@ -215,8 +219,8 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 			.getInputInventory();
 		if (basin.isPresent()) {
 			for (int slot = 0; slot < inputs.getSlots(); slot++) {
-				ItemCooldownManager stackInSlot = inputs.a(slot);
-				if (stackInSlot.a())
+				ItemStack stackInSlot = inputs.getStack(slot);
+				if (stackInSlot.isEmpty())
 					continue;
 				pressedItems.add(stackInSlot);
 			}
@@ -225,30 +229,30 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 	}
 
 	protected void applyPressingInWorld() {
-		Timer bb = new Timer(e.down(1));
+		Box bb = new Box(pos.down(1));
 		pressedItems.clear();
-		if (d.v)
+		if (world.isClient)
 			return;
-		for (apx entity : d.a(null, bb)) {
-			if (!(entity instanceof PaintingEntity))
+		for (Entity entity : world.getOtherEntities(null, bb)) {
+			if (!(entity instanceof ItemEntity))
 				continue;
-			if (!entity.aW())
+			if (!entity.isAlive() || !entity.isOnGround())
 				continue;
-			PaintingEntity itemEntity = (PaintingEntity) entity;
-			pressedItems.add(itemEntity.g());
+			ItemEntity itemEntity = (ItemEntity) entity;
+			pressedItems.add(itemEntity.getStack());
 			sendData();
-			Optional<PressingRecipe> recipe = getRecipe(itemEntity.g());
+			Optional<PressingRecipe> recipe = getRecipe(itemEntity.getStack());
 			if (!recipe.isPresent())
 				continue;
 			InWorldProcessing.applyRecipeOn(itemEntity, recipe.get());
-			AllTriggers.triggerForNearbyPlayers(AllTriggers.BONK, d, e, 4);
+			AllTriggers.triggerForNearbyPlayers(AllTriggers.BONK, world, pos, 4);
 		}
 	}
 
 	public int getRunningTickSpeed() {
 		if (getSpeed() == 0)
 			return 0;
-		return (int) afj.g(afj.a(Math.abs(getSpeed()) / 512f, 0, 1), 1, 60);
+		return (int) MathHelper.lerp(MathHelper.clamp(Math.abs(getSpeed()) / 512f, 0, 1), 1, 60);
 	}
 
 	protected void spawnParticles() {
@@ -256,56 +260,56 @@ public class MechanicalPressTileEntity extends BasinOperatingTileEntity {
 			return;
 
 		if (mode == Mode.BASIN)
-			pressedItems.forEach(stack -> makeCompactingParticleEffect(VecHelper.getCenterOf(e.down(2)), stack));
+			pressedItems.forEach(stack -> makeCompactingParticleEffect(VecHelper.getCenterOf(pos.down(2)), stack));
 		if (mode == Mode.BELT)
-			pressedItems.forEach(stack -> makePressingParticleEffect(VecHelper.getCenterOf(e.down(2))
-				.b(0, 8 / 16f, 0), stack));
+			pressedItems.forEach(stack -> makePressingParticleEffect(VecHelper.getCenterOf(pos.down(2))
+				.add(0, 8 / 16f, 0), stack));
 		if (mode == Mode.WORLD)
-			pressedItems.forEach(stack -> makePressingParticleEffect(VecHelper.getCenterOf(e.down(1))
-				.b(0, -1 / 4f, 0), stack));
+			pressedItems.forEach(stack -> makePressingParticleEffect(VecHelper.getCenterOf(pos.down(1))
+				.add(0, -1 / 4f, 0), stack));
 
 		pressedItems.clear();
 	}
 
-	public void makePressingParticleEffect(EntityHitResult pos, ItemCooldownManager stack) {
-		if (d == null || !d.v)
+	public void makePressingParticleEffect(Vec3d pos, ItemStack stack) {
+		if (world == null || !world.isClient)
 			return;
 		for (int i = 0; i < 20; i++) {
-			EntityHitResult motion = VecHelper.offsetRandomly(EntityHitResult.a, d.t, .125f)
-				.d(1, 0, 1);
-			d.addParticle(new ItemStackParticleEffect(ParticleTypes.ITEM, stack), pos.entity, pos.c - .25f, pos.d, motion.entity,
-				motion.c + .125f, motion.d);
+			Vec3d motion = VecHelper.offsetRandomly(Vec3d.ZERO, world.random, .125f)
+				.multiply(1, 0, 1);
+			world.addParticle(new ItemStackParticleEffect(ParticleTypes.ITEM, stack), pos.x, pos.y - .25f, pos.z, motion.x,
+				motion.y + .125f, motion.z);
 		}
 	}
 
-	public void makeCompactingParticleEffect(EntityHitResult pos, ItemCooldownManager stack) {
-		if (d == null || !d.v)
+	public void makeCompactingParticleEffect(Vec3d pos, ItemStack stack) {
+		if (world == null || !world.isClient)
 			return;
 		for (int i = 0; i < 20; i++) {
-			EntityHitResult motion = VecHelper.offsetRandomly(EntityHitResult.a, d.t, .175f)
-				.d(1, 0, 1);
-			d.addParticle(new ItemStackParticleEffect(ParticleTypes.ITEM, stack), pos.entity, pos.c, pos.d, motion.entity,
-				motion.c + .25f, motion.d);
+			Vec3d motion = VecHelper.offsetRandomly(Vec3d.ZERO, world.random, .175f)
+				.multiply(1, 0, 1);
+			world.addParticle(new ItemStackParticleEffect(ParticleTypes.ITEM, stack), pos.x, pos.y, pos.z, motion.x,
+				motion.y + .25f, motion.z);
 		}
 	}
 
 	private static final RecipeWrapper pressingInv = new RecipeWrapper(new ItemStackHandler(1));
 
-	public Optional<PressingRecipe> getRecipe(ItemCooldownManager item) {
-		pressingInv.a(0, item);
-		return AllRecipeTypes.PRESSING.find(pressingInv, d);
+	public Optional<PressingRecipe> getRecipe(ItemStack item) {
+		pressingInv.setStack(0, item);
+		return AllRecipeTypes.PRESSING.find(pressingInv, world);
 	}
 
-	public static boolean canCompress(DefaultedList<FireworkRocketRecipe> ingredients) {
+	public static boolean canCompress(DefaultedList<Ingredient> ingredients) {
 		return AllConfigs.SERVER.recipes.allowShapedSquareInPress.get()
 			&& (ingredients.size() == 4 || ingredients.size() == 9) && ItemHelper.condenseIngredients(ingredients)
 				.size() == 1;
 	}
 
 	@Override
-	protected <C extends BossBar> boolean matchStaticFilters(Ingredient<C> recipe) {
-		return (recipe instanceof BlastingRecipe && canCompress(recipe.a()))
-			|| recipe.g() == AllRecipeTypes.COMPACTING.type;
+	protected <C extends Inventory> boolean matchStaticFilters(Recipe<C> recipe) {
+		return (recipe instanceof CraftingRecipe && canCompress(recipe.getPreviewInputs()))
+			|| recipe.getType() == AllRecipeTypes.COMPACTING.type;
 	}
 
 	@Override

@@ -1,54 +1,56 @@
-package com.simibubi.kinetic_api.content.contraptions.wrench;
+package com.simibubi.create.content.contraptions.wrench;
 
 import javax.annotation.Nonnull;
-import apx;
-import bnx;
-import com.simibubi.kinetic_api.AllItems;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.entity.damage.DamageRecord;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.HoeItem;
-import net.minecraft.world.Difficulty;
+
+import com.simibubi.create.AllItems;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.util.ActionResult;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 
-public class WrenchItem extends HoeItem {
+public class WrenchItem extends Item {
 
-	public WrenchItem(a properties) {
+	public WrenchItem(Settings properties) {
 		super(properties);
 	}
 
 	@Nonnull
 	@Override
-	public Difficulty a(bnx context) {
-		PlayerAbilities player = context.n();
-		if (player == null || !player.eJ())
-			return super.a(context);
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		PlayerEntity player = context.getPlayer();
+		if (player == null || !player.canModifyBlocks())
+			return super.useOnBlock(context);
 
-		PistonHandler state = context.p()
-			.d_(context.a());
-		if (!(state.b() instanceof IWrenchable))
-			return super.a(context);
-		IWrenchable actor = (IWrenchable) state.b();
+		BlockState state = context.getWorld()
+			.getBlockState(context.getBlockPos());
+		if (!(state.getBlock() instanceof IWrenchable))
+			return super.useOnBlock(context);
+		IWrenchable actor = (IWrenchable) state.getBlock();
 
-		if (player.bt())
+		if (player.isSneaking())
 			return actor.onSneakWrenched(state, context);
 		return actor.onWrenched(state, context);
 	}
 	
 	public static void wrenchInstaKillsMinecarts(AttackEntityEvent event) {
-		apx target = event.getTarget();
-		if (!(target instanceof ScheduleBuilder))
+		Entity target = event.getTarget();
+		if (!(target instanceof AbstractMinecartEntity))
 			return;
-		PlayerAbilities player = event.getPlayer();
-		ItemCooldownManager heldItem = player.dC();
+		PlayerEntity player = event.getPlayer();
+		ItemStack heldItem = player.getMainHandStack();
 		if (!AllItems.WRENCH.isIn(heldItem))
 			return;
-		if (player.b_())
+		if (player.isCreative())
 			return;
-		ScheduleBuilder minecart = (ScheduleBuilder) target;
-		minecart.a(DamageRecord.a(player), 100);
+		AbstractMinecartEntity minecart = (AbstractMinecartEntity) target;
+		minecart.damage(DamageSource.player(player), 100);
 	}
 	
 }

@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.compat.jei.category;
+package com.simibubi.create.compat.jei.category;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,14 +7,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.compat.jei.category.animations.AnimatedSpout;
-import com.simibubi.kinetic_api.content.contraptions.fluids.actors.FillingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.fluids.potion.PotionFluidHandler;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder;
-import com.simibubi.kinetic_api.foundation.fluid.FluidIngredient;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.Create;
+import com.simibubi.create.compat.jei.category.animations.AnimatedSpout;
+import com.simibubi.create.content.contraptions.fluids.actors.FillingRecipe;
+import com.simibubi.create.content.contraptions.fluids.potion.PotionFluidHandler;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder;
+import com.simibubi.create.foundation.fluid.FluidIngredient;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayout;
@@ -22,11 +22,11 @@ import mezz.jei.api.gui.ingredient.IGuiFluidStackGroup;
 import mezz.jei.api.gui.ingredient.IGuiItemStackGroup;
 import mezz.jei.api.ingredients.IIngredients;
 import mezz.jei.api.runtime.IIngredientManager;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.NameTagItem;
-import net.minecraft.recipe.FireworkRocketRecipe;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.item.PotionItem;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
@@ -39,7 +39,7 @@ public class SpoutCategory extends CreateRecipeCategory<FillingRecipe> {
 	AnimatedSpout spout;
 
 	public SpoutCategory() {
-		super(doubleItemIcon(AllBlocks.SPOUT.get(), AliasedBlockItem.lL), emptyBackground(177, 70));
+		super(doubleItemIcon(AllBlocks.SPOUT.get(), Items.WATER_BUCKET), emptyBackground(177, 70));
 		spout = new AnimatedSpout();
 	}
 
@@ -49,9 +49,9 @@ public class SpoutCategory extends CreateRecipeCategory<FillingRecipe> {
 		ingredientManager.getAllIngredients(VanillaTypes.ITEM)
 			.stream()
 			.forEach(stack -> {
-				if (stack.b() instanceof NameTagItem) {
+				if (stack.getItem() instanceof PotionItem) {
 					FluidStack fluidFromPotionItem = PotionFluidHandler.getFluidFromPotionItem(stack);
-					FireworkRocketRecipe bottle = FireworkRocketRecipe.a(AliasedBlockItem.nw);
+					Ingredient bottle = Ingredient.ofItems(Items.GLASS_BOTTLE);
 					recipes.add(new ProcessingRecipeBuilder<>(FillingRecipe::new, Create.asResource("potions"))
 						.withItemIngredients(bottle)
 						.withFluidIngredients(FluidIngredient.fromFluidStack(fluidFromPotionItem))
@@ -68,20 +68,20 @@ public class SpoutCategory extends CreateRecipeCategory<FillingRecipe> {
 				ingredientManager.getAllIngredients(VanillaTypes.FLUID)
 					.stream()
 					.forEach(fluidStack -> {
-						ItemCooldownManager copy = stack.i();
+						ItemStack copy = stack.copy();
 						copy.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY)
 							.ifPresent(fhi -> {
 								FluidStack fluidCopy = fluidStack.copy();
 								fluidCopy.setAmount(1000);
 								fhi.fill(fluidCopy, FluidAction.EXECUTE);
-								ItemCooldownManager container = fhi.getContainer();
-								if (container.a(copy))
+								ItemStack container = fhi.getContainer();
+								if (container.isItemEqualIgnoreDamage(copy))
 									return;
-								if (container.a())
+								if (container.isEmpty())
 									return;
 
-								FireworkRocketRecipe bucket = FireworkRocketRecipe.a(stack);
-								Identifier itemName = stack.b()
+								Ingredient bucket = Ingredient.ofStacks(stack);
+								Identifier itemName = stack.getItem()
 									.getRegistryName();
 								Identifier fluidName = fluidCopy.getFluid()
 									.getRegistryName();
@@ -106,7 +106,7 @@ public class SpoutCategory extends CreateRecipeCategory<FillingRecipe> {
 
 	@Override
 	public void setIngredients(FillingRecipe recipe, IIngredients ingredients) {
-		ingredients.setInputIngredients(recipe.a());
+		ingredients.setInputIngredients(recipe.getPreviewInputs());
 		ingredients.setInputLists(VanillaTypes.FLUID, recipe.getFluidIngredients()
 			.stream()
 			.map(FluidIngredient::getMatchingFluidStacks)
@@ -114,7 +114,7 @@ public class SpoutCategory extends CreateRecipeCategory<FillingRecipe> {
 
 		if (!recipe.getRollableResults()
 			.isEmpty())
-			ingredients.setOutput(VanillaTypes.ITEM, recipe.c());
+			ingredients.setOutput(VanillaTypes.ITEM, recipe.getOutput());
 		if (!recipe.getFluidResults()
 			.isEmpty())
 			ingredients.setOutputs(VanillaTypes.FLUID, recipe.getFluidResults());
@@ -125,22 +125,22 @@ public class SpoutCategory extends CreateRecipeCategory<FillingRecipe> {
 		IGuiItemStackGroup itemStacks = recipeLayout.getItemStacks();
 		IGuiFluidStackGroup fluidStacks = recipeLayout.getFluidStacks();
 		FluidIngredient fluidIngredient = recipe.getRequiredFluid();
-		List<ItemCooldownManager> matchingIngredients = Arrays.asList(recipe.a()
+		List<ItemStack> matchingIngredients = Arrays.asList(recipe.getPreviewInputs()
 			.get(0)
-			.a());
+			.getMatchingStacksClient());
 
 		fluidStacks.init(0, true, 27, 32);
 		fluidStacks.set(0, withImprovedVisibility(fluidIngredient.getMatchingFluidStacks()));
 		itemStacks.init(0, true, 26, 50);
 		itemStacks.set(0, matchingIngredients);
 		itemStacks.init(1, false, 131, 50);
-		itemStacks.set(1, recipe.c());
+		itemStacks.set(1, recipe.getOutput());
 
 		addFluidTooltip(fluidStacks, ImmutableList.of(fluidIngredient), Collections.emptyList());
 	}
 
 	@Override
-	public void draw(FillingRecipe recipe, BufferVertexConsumer matrixStack, double mouseX, double mouseY) {
+	public void draw(FillingRecipe recipe, MatrixStack matrixStack, double mouseX, double mouseY) {
 		AllGuiTextures.JEI_SLOT.draw(matrixStack, 26, 31);
 		AllGuiTextures.JEI_SLOT.draw(matrixStack, 26, 50);
 		getRenderedSlot(recipe, 0).draw(matrixStack, 131, 50);

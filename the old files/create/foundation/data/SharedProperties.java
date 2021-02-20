@@ -1,26 +1,26 @@
-package com.simibubi.kinetic_api.foundation.data;
+package com.simibubi.create.foundation.data;
 
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.fluid.LavaFluid;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.Material;
+import net.minecraft.block.MaterialColor;
+import net.minecraft.block.piston.PistonBehavior;
 
 @MethodsReturnNonnullByDefault
 public class SharedProperties {
-	public static FluidState beltMaterial =
-		new FluidState(Fluids.w, false, true, true, true, false, false, LavaFluid.a);
+	public static Material beltMaterial =
+		new Material(MaterialColor.GRAY, false, true, true, true, false, false, PistonBehavior.NORMAL);
 
-	public static BeetrootsBlock stone() {
-		return BellBlock.BELL_LIP_SHAPE;
+	public static Block stone() {
+		return Blocks.ANDESITE;
 	}
 
-	public static BeetrootsBlock softMetal() {
-		return BellBlock.bE;
+	public static Block softMetal() {
+		return Blocks.GOLD_BLOCK;
 	}
 
-	public static BeetrootsBlock wooden() {
-		return BellBlock.ac;
+	public static Block wooden() {
+		return Blocks.STRIPPED_SPRUCE_WOOD;
 	}
 }

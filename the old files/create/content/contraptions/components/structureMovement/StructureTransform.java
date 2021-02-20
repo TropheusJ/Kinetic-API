@@ -1,48 +1,49 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement;
+package com.simibubi.create.content.contraptions.components.structureMovement;
 
-import static net.minecraft.block.EndRodBlock.u;
-import static net.minecraft.block.enums.BambooLeaves.F;
-import static net.minecraft.block.enums.BambooLeaves.M;
-import static net.minecraft.block.enums.BambooLeaves.O;
+import static net.minecraft.block.HorizontalFaceBlock.FACE;
+import static net.minecraft.state.properties.BlockStateProperties.AXIS;
+import static net.minecraft.state.properties.BlockStateProperties.FACING;
+import static net.minecraft.state.properties.BlockStateProperties.HORIZONTAL_FACING;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalAxisKineticBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.chassis.AbstractChassisBlock;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltBlock;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltSlope;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.DirectionHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.AbstractSignBlock;
-import net.minecraft.block.BedBlock;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.EndRodBlock;
-import net.minecraft.block.RespawnAnchorBlock;
-import net.minecraft.block.SpreadableBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.enums.DoorHinge;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.base.DirectionalAxisKineticBlock;
+import com.simibubi.create.content.contraptions.components.structureMovement.chassis.AbstractChassisBlock;
+import com.simibubi.create.content.contraptions.relays.belt.BeltBlock;
+import com.simibubi.create.content.contraptions.relays.belt.BeltSlope;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.DirectionHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BellBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.SlabBlock;
+import net.minecraft.block.StairsBlock;
+import net.minecraft.block.WallMountedBlock;
+import net.minecraft.block.enums.Attachment;
+import net.minecraft.block.enums.BlockHalf;
+import net.minecraft.block.enums.SlabType;
 import net.minecraft.block.enums.WallMountLocation;
-import net.minecraft.block.piston.PistonHandler;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.predicate.block.BlockPredicate;
-import net.minecraft.state.property.Property;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.util.math.Vec3d;
 
 public class StructureTransform {
 
 	// Assuming structures cannot be rotated around multiple axes at once
-	RespawnAnchorBlock rotation;
+	BlockRotation rotation;
 	int angle;
 	Axis rotationAxis;
 	BlockPos offset;
 
-	private StructureTransform(BlockPos offset, int angle, Axis axis, RespawnAnchorBlock rotation) {
+	private StructureTransform(BlockPos offset, int angle, Axis axis, BlockRotation rotation) {
 		this.offset = offset;
 		this.angle = angle;
 		rotationAxis = axis;
@@ -68,26 +69,26 @@ public class StructureTransform {
 		if (angle < -90)
 			angle += 360;
 
-		this.rotation = RespawnAnchorBlock.CHARGES;
+		this.rotation = BlockRotation.NONE;
 		if (angle == -90 || angle == 270)
-			this.rotation = RespawnAnchorBlock.field_26442;
+			this.rotation = BlockRotation.CLOCKWISE_90;
 		if (angle == 90)
-			this.rotation = RespawnAnchorBlock.d;
+			this.rotation = BlockRotation.COUNTERCLOCKWISE_90;
 		if (angle == 180)
-			this.rotation = RespawnAnchorBlock.field_26443;
+			this.rotation = BlockRotation.CLOCKWISE_180;
 
 	}
 
-	public EntityHitResult apply(EntityHitResult localVec) {
-		EntityHitResult vec = localVec;
+	public Vec3d apply(Vec3d localVec) {
+		Vec3d vec = localVec;
 		if (rotationAxis != null)
 			vec = VecHelper.rotateCentered(vec, angle, rotationAxis);
-		vec = vec.e(EntityHitResult.b(offset));
+		vec = vec.add(Vec3d.of(offset));
 		return vec;
 	}
 
 	public BlockPos apply(BlockPos localPos) {
-		EntityHitResult vec = VecHelper.getCenterOf(localPos);
+		Vec3d vec = VecHelper.getCenterOf(localPos);
 		if (rotationAxis != null)
 			vec = VecHelper.rotateCentered(vec, angle, rotationAxis);
 		localPos = new BlockPos(vec);
@@ -99,55 +100,55 @@ public class StructureTransform {
 	 * specific cases here for blockstates, that should react to rotations around
 	 * horizontal axes
 	 */
-	public PistonHandler apply(PistonHandler state) {
-		BeetrootsBlock block = state.b();
+	public BlockState apply(BlockState state) {
+		Block block = state.getBlock();
 
 		if (rotationAxis == Axis.Y) {
-			if (block instanceof BedBlock) {
-				if (state.c(BambooLeaves.R) == WallMountLocation.name) {
-					state = state.a(BambooLeaves.R, WallMountLocation.SINGLE_WALL);
+			if (block instanceof BellBlock) {
+				if (state.get(Properties.ATTACHMENT) == Attachment.DOUBLE_WALL) {
+					state = state.with(Properties.ATTACHMENT, Attachment.SINGLE_WALL);
 				}
-				return state.a(EndRodBlock.aq,
-					rotation.a(state.c(EndRodBlock.aq)));
+				return state.with(WallMountedBlock.FACING,
+					rotation.rotate(state.get(WallMountedBlock.FACING)));
 			}
-			return state.a(rotation);
+			return state.rotate(rotation);
 		}
 
 		if (block instanceof AbstractChassisBlock)
 			return rotateChassis(state);
 
-		if (block instanceof EndRodBlock) {
-			Direction stateFacing = state.c(EndRodBlock.aq);
-			BlockPredicate stateFace = state.c(u);
+		if (block instanceof WallMountedBlock) {
+			Direction stateFacing = state.get(WallMountedBlock.FACING);
+			WallMountLocation stateFace = state.get(FACE);
 			Direction forcedAxis = rotationAxis == Axis.Z ? Direction.EAST : Direction.SOUTH;
 
-			if (stateFacing.getAxis() == rotationAxis && stateFace == BlockPredicate.b)
+			if (stateFacing.getAxis() == rotationAxis && stateFace == WallMountLocation.WALL)
 				return state;
 
 			for (int i = 0; i < rotation.ordinal(); i++) {
-				stateFace = state.c(u);
-				stateFacing = state.c(EndRodBlock.aq);
+				stateFace = state.get(FACE);
+				stateFacing = state.get(WallMountedBlock.FACING);
 
-				boolean b = state.c(u) == BlockPredicate.c;
-				state = state.a(O, b ? forcedAxis : forcedAxis.getOpposite());
+				boolean b = state.get(FACE) == WallMountLocation.CEILING;
+				state = state.with(HORIZONTAL_FACING, b ? forcedAxis : forcedAxis.getOpposite());
 
-				if (stateFace != BlockPredicate.b) {
-					state = state.a(u, BlockPredicate.b);
+				if (stateFace != WallMountLocation.WALL) {
+					state = state.with(FACE, WallMountLocation.WALL);
 					continue;
 				}
 
 				if (stateFacing.getDirection() == AxisDirection.POSITIVE) {
-					state = state.a(u, BlockPredicate.block);
+					state = state.with(FACE, WallMountLocation.FLOOR);
 					continue;
 				}
-				state = state.a(u, BlockPredicate.c);
+				state = state.with(FACE, WallMountLocation.CEILING);
 			}
 
 			return state;
 		}
 
-		boolean halfTurn = rotation == RespawnAnchorBlock.field_26443;
-		if (block instanceof SpreadableBlock) {
+		boolean halfTurn = rotation == BlockRotation.CLOCKWISE_180;
+		if (block instanceof StairsBlock) {
 			state = transformStairs(state, halfTurn);
 			return state;
 		}
@@ -157,69 +158,69 @@ public class StructureTransform {
 			return state;
 		}
 
-		if (BlockHelper.hasBlockStateProperty(state, M)) {
-			Direction newFacing = transformFacing(state.c(M));
+		if (BlockHelper.hasBlockStateProperty(state, FACING)) {
+			Direction newFacing = transformFacing(state.get(FACING));
 			if (BlockHelper.hasBlockStateProperty(state, DirectionalAxisKineticBlock.AXIS_ALONG_FIRST_COORDINATE)) {
 				if (rotationAxis == newFacing.getAxis() && rotation.ordinal() % 2 == 1)
-					state = state.a(DirectionalAxisKineticBlock.AXIS_ALONG_FIRST_COORDINATE);
+					state = state.cycle(DirectionalAxisKineticBlock.AXIS_ALONG_FIRST_COORDINATE);
 			}
-			state = state.a(M, newFacing);
+			state = state.with(FACING, newFacing);
 
-		} else if (BlockHelper.hasBlockStateProperty(state, F)) {
-			state = state.a(F, transformAxis(state.c(F)));
+		} else if (BlockHelper.hasBlockStateProperty(state, AXIS)) {
+			state = state.with(AXIS, transformAxis(state.get(AXIS)));
 
 		} else if (halfTurn) {
 
-			if (BlockHelper.hasBlockStateProperty(state, M)) {
-				Direction stateFacing = state.c(M);
+			if (BlockHelper.hasBlockStateProperty(state, FACING)) {
+				Direction stateFacing = state.get(FACING);
 				if (stateFacing.getAxis() == rotationAxis)
 					return state;
 			}
 
-			if (BlockHelper.hasBlockStateProperty(state, O)) {
-				Direction stateFacing = state.c(O);
+			if (BlockHelper.hasBlockStateProperty(state, HORIZONTAL_FACING)) {
+				Direction stateFacing = state.get(HORIZONTAL_FACING);
 				if (stateFacing.getAxis() == rotationAxis)
 					return state;
 			}
 
-			state = state.a(rotation);
-			if (BlockHelper.hasBlockStateProperty(state, AbstractSignBlock.WATERLOGGED) && state.c(AbstractSignBlock.WATERLOGGED) != Property.hashCodeCache)
-				state = state.a(AbstractSignBlock.WATERLOGGED,
-					state.c(AbstractSignBlock.WATERLOGGED) == Property.name ? Property.type : Property.name);
+			state = state.rotate(rotation);
+			if (BlockHelper.hasBlockStateProperty(state, SlabBlock.TYPE) && state.get(SlabBlock.TYPE) != SlabType.DOUBLE)
+				state = state.with(SlabBlock.TYPE,
+					state.get(SlabBlock.TYPE) == SlabType.BOTTOM ? SlabType.TOP : SlabType.BOTTOM);
 		}
 
 		return state;
 	}
 
-	protected PistonHandler transformStairs(PistonHandler state, boolean halfTurn) {
-		if (state.c(SpreadableBlock.a)
+	protected BlockState transformStairs(BlockState state, boolean halfTurn) {
+		if (state.get(StairsBlock.FACING)
 			.getAxis() != rotationAxis) {
 			for (int i = 0; i < rotation.ordinal(); i++) {
-				Direction direction = state.c(SpreadableBlock.a);
-				DoorHinge half = state.c(SpreadableBlock.b);
-				if (direction.getDirection() == AxisDirection.POSITIVE ^ half == DoorHinge.BOTTOM
+				Direction direction = state.get(StairsBlock.FACING);
+				BlockHalf half = state.get(StairsBlock.HALF);
+				if (direction.getDirection() == AxisDirection.POSITIVE ^ half == BlockHalf.BOTTOM
 					^ direction.getAxis() == Axis.Z)
-					state = state.a(SpreadableBlock.b);
+					state = state.cycle(StairsBlock.HALF);
 				else
-					state = state.a(SpreadableBlock.a, direction.getOpposite());
+					state = state.with(StairsBlock.FACING, direction.getOpposite());
 			}
 		} else {
 			if (halfTurn) {
-				state = state.a(SpreadableBlock.b);
+				state = state.cycle(StairsBlock.HALF);
 			}
 		}
 		return state;
 	}
 
-	protected PistonHandler transformBelt(PistonHandler state, boolean halfTurn) {
-		Direction initialDirection = state.c(BeltBlock.HORIZONTAL_FACING);
+	protected BlockState transformBelt(BlockState state, boolean halfTurn) {
+		Direction initialDirection = state.get(BeltBlock.HORIZONTAL_FACING);
 		boolean diagonal =
-			state.c(BeltBlock.SLOPE) == BeltSlope.DOWNWARD || state.c(BeltBlock.SLOPE) == BeltSlope.UPWARD;
+			state.get(BeltBlock.SLOPE) == BeltSlope.DOWNWARD || state.get(BeltBlock.SLOPE) == BeltSlope.UPWARD;
 
 		if (!diagonal) {
 			for (int i = 0; i < rotation.ordinal(); i++) {
-				Direction direction = state.c(BeltBlock.HORIZONTAL_FACING);
-				BeltSlope slope = state.c(BeltBlock.SLOPE);
+				Direction direction = state.get(BeltBlock.HORIZONTAL_FACING);
+				BeltSlope slope = state.get(BeltBlock.SLOPE);
 				boolean vertical = slope == BeltSlope.VERTICAL;
 				boolean horizontal = slope == BeltSlope.HORIZONTAL;
 				boolean sideways = slope == BeltSlope.SIDEWAYS;
@@ -255,37 +256,37 @@ public class StructureTransform {
 						newDirection = direction.getOpposite();
 				}
 
-				state = state.a(BeltBlock.HORIZONTAL_FACING, newDirection);
-				state = state.a(BeltBlock.SLOPE, newSlope);
+				state = state.with(BeltBlock.HORIZONTAL_FACING, newDirection);
+				state = state.with(BeltBlock.SLOPE, newSlope);
 			}
 
 		} else if (initialDirection.getAxis() != rotationAxis) {
 			for (int i = 0; i < rotation.ordinal(); i++) {
-				Direction direction = state.c(BeltBlock.HORIZONTAL_FACING);
+				Direction direction = state.get(BeltBlock.HORIZONTAL_FACING);
 				Direction newDirection = direction.getOpposite();
-				BeltSlope slope = state.c(BeltBlock.SLOPE);
+				BeltSlope slope = state.get(BeltBlock.SLOPE);
 				boolean upward = slope == BeltSlope.UPWARD;
 				boolean downward = slope == BeltSlope.DOWNWARD;
 
 				// Rotate diagonal
 				if (direction.getDirection() == AxisDirection.POSITIVE ^ downward ^ direction.getAxis() == Axis.Z) {
-					state = state.a(BeltBlock.SLOPE, upward ? BeltSlope.DOWNWARD : BeltSlope.UPWARD);
+					state = state.with(BeltBlock.SLOPE, upward ? BeltSlope.DOWNWARD : BeltSlope.UPWARD);
 				} else {
-					state = state.a(BeltBlock.HORIZONTAL_FACING, newDirection);
+					state = state.with(BeltBlock.HORIZONTAL_FACING, newDirection);
 				}
 			}
 
 		} else if (halfTurn) {
-			Direction direction = state.c(BeltBlock.HORIZONTAL_FACING);
+			Direction direction = state.get(BeltBlock.HORIZONTAL_FACING);
 			Direction newDirection = direction.getOpposite();
-			BeltSlope slope = state.c(BeltBlock.SLOPE);
+			BeltSlope slope = state.get(BeltBlock.SLOPE);
 			boolean vertical = slope == BeltSlope.VERTICAL;
 
 			if (diagonal) {
-				state = state.a(BeltBlock.SLOPE, slope == BeltSlope.UPWARD ? BeltSlope.DOWNWARD
+				state = state.with(BeltBlock.SLOPE, slope == BeltSlope.UPWARD ? BeltSlope.DOWNWARD
 					: slope == BeltSlope.DOWNWARD ? BeltSlope.UPWARD : slope);
 			} else if (vertical) {
-				state = state.a(BeltBlock.HORIZONTAL_FACING, newDirection);
+				state = state.with(BeltBlock.HORIZONTAL_FACING, newDirection);
 			}
 		}
 		return state;
@@ -304,27 +305,27 @@ public class StructureTransform {
 		return facing;
 	}
 
-	private PistonHandler rotateChassis(PistonHandler state) {
-		if (rotation == RespawnAnchorBlock.CHARGES)
+	private BlockState rotateChassis(BlockState state) {
+		if (rotation == BlockRotation.NONE)
 			return state;
 
-		PistonHandler rotated = state.a(F, transformAxis(state.c(F)));
-		AbstractChassisBlock block = (AbstractChassisBlock) state.b();
+		BlockState rotated = state.with(AXIS, transformAxis(state.get(AXIS)));
+		AbstractChassisBlock block = (AbstractChassisBlock) state.getBlock();
 
 		for (Direction face : Iterate.directions) {
-			BedPart glueableSide = block.getGlueableSide(rotated, face);
+			BooleanProperty glueableSide = block.getGlueableSide(rotated, face);
 			if (glueableSide != null)
-				rotated = rotated.a(glueableSide, false);
+				rotated = rotated.with(glueableSide, false);
 		}
 
 		for (Direction face : Iterate.directions) {
-			BedPart glueableSide = block.getGlueableSide(state, face);
-			if (glueableSide == null || !state.c(glueableSide))
+			BooleanProperty glueableSide = block.getGlueableSide(state, face);
+			if (glueableSide == null || !state.get(glueableSide))
 				continue;
 			Direction rotatedFacing = transformFacing(face);
-			BedPart rotatedGlueableSide = block.getGlueableSide(rotated, rotatedFacing);
+			BooleanProperty rotatedGlueableSide = block.getGlueableSide(rotated, rotatedFacing);
 			if (rotatedGlueableSide != null)
-				rotated = rotated.a(rotatedGlueableSide, true);
+				rotated = rotated.with(rotatedGlueableSide, true);
 		}
 
 		return rotated;
@@ -336,7 +337,7 @@ public class StructureTransform {
 		int axisIndex = buffer.readVarInt();
 		int rotationIndex = buffer.readVarInt();
 		return new StructureTransform(readBlockPos, readAngle, axisIndex == -1 ? null : Axis.values()[axisIndex],
-			rotationIndex == -1 ? null : RespawnAnchorBlock.values()[rotationIndex]);
+			rotationIndex == -1 ? null : BlockRotation.values()[rotationIndex]);
 	}
 
 	public void writeToBuffer(PacketByteBuf buffer) {

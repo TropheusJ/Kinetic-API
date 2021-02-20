@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.config;
+package com.simibubi.create.foundation.config;
 
 public class CServer extends ConfigBase {
 
@@ -21,11 +21,11 @@ public class CServer extends ConfigBase {
 	private static class Comments {
 		static String recipes = "Packmakers' control panel for internal recipe compat";
 		static String schematics = "Everything related to Schematic tools";
-		static String kinetics = "Parameters and abilities of KineticAPI's kinetic mechanisms";
-		static String fluids = "KineticAPI's liquid manipulation tools";
+		static String kinetics = "Parameters and abilities of Create's kinetic mechanisms";
+		static String fluids = "Create's liquid manipulation tools";
 		static String logistics = "Tweaks for logistical components";
-		static String curiosities = "Gadgets and other Shenanigans added by KineticAPI";
-		static String infrastructure = "The Backbone of KineticAPI";
+		static String curiosities = "Gadgets and other Shenanigans added by Create";
+		static String infrastructure = "The Backbone of Create";
 		static String tickrateSyncTimer =
 			"The amount of time a server waits before sending out tickrate synchronization packets.";
 		static String tickrateSyncTimer2 = "These packets help animations to be more accurate when tps is below 20.";

@@ -1,20 +1,22 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper;
+package com.simibubi.create.content.curiosities.zapper.blockzapper;
 
 import java.util.Collections;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.content.curiosities.zapper.ZapperScreen;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.gui.widgets.IconButton;
+import com.simibubi.create.foundation.gui.widgets.Indicator;
+import com.simibubi.create.foundation.gui.widgets.Indicator.State;
+import com.simibubi.create.foundation.gui.widgets.Label;
+import com.simibubi.create.foundation.gui.widgets.ScrollInput;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import com.simibubi.kinetic_api.content.curiosities.zapper.ZapperScreen;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.gui.widgets.IconButton;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Indicator;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Indicator.State;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Label;
-import com.simibubi.kinetic_api.foundation.gui.widgets.ScrollInput;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
 
 public class BlockzapperScreen extends ZapperScreen {
 
@@ -30,18 +32,18 @@ public class BlockzapperScreen extends ZapperScreen {
 	private ScrollInput spreadRangeInput;
 	private Label spreadRangeLabel;
 	
-	public BlockzapperScreen(ItemCooldownManager zapper, boolean offhand) {
+	public BlockzapperScreen(ItemStack zapper, boolean offhand) {
 		super(AllGuiTextures.BLOCKZAPPER, zapper, offhand);
 		title = Lang.translate("gui.blockzapper.title");
 	}
 
 	@Override
-	protected void b() {
-		super.b();
+	protected void init() {
+		super.init();
 
 		int i = guiLeft - 20;
 		int j = guiTop;
-		CompoundTag nbt = zapper.p();
+		CompoundTag nbt = zapper.getOrCreateTag();
 
 		replaceModeIndicator = new Indicator(i + 49, j + 67, LiteralText.EMPTY);
 		replaceModeButton = new IconButton(i + 49, j + 73, AllIcons.I_REPLACE_SOLID);
@@ -76,31 +78,31 @@ public class BlockzapperScreen extends ZapperScreen {
 	}
 
 	@Override
-	public boolean a(double x, double y, int button) {
-		CompoundTag nbt = zapper.o();
+	public boolean mouseClicked(double x, double y, int button) {
+		CompoundTag nbt = zapper.getTag();
 
-		if (replaceModeButton.g()) {
+		if (replaceModeButton.isHovered()) {
 			boolean mode = nbt.contains("Replace") && nbt.getBoolean("Replace");
 			mode = !mode;
 			replaceModeIndicator.state = mode ? State.ON : State.OFF;
 			nbt.putBoolean("Replace", mode);
 		}
 
-		if (spreadDiagonallyButton.g()) {
+		if (spreadDiagonallyButton.isHovered()) {
 			boolean mode = nbt.contains("SearchDiagonal") && nbt.getBoolean("SearchDiagonal");
 			mode = !mode;
 			spreadDiagonallyIndicator.state = mode ? State.ON : State.OFF;
 			nbt.putBoolean("SearchDiagonal", mode);
 		}
 
-		if (spreadMaterialButton.g()) {
+		if (spreadMaterialButton.isHovered()) {
 			boolean mode = nbt.contains("SearchFuzzy") && nbt.getBoolean("SearchFuzzy");
 			mode = !mode;
 			spreadMaterialIndicator.state = mode ? State.ON : State.OFF;
 			nbt.putBoolean("SearchFuzzy", mode);
 		}
 
-		return super.a(x, y, button);
+		return super.mouseClicked(x, y, button);
 	}
 
 	

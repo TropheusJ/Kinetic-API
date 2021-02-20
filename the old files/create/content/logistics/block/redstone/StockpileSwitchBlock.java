@@ -1,53 +1,54 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.wrench.IWrenchable;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import com.simibubi.kinetic_api.foundation.gui.ScreenOpener;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import dcg;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.wrench.IWrenchable;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.gui.ScreenOpener;
+import com.simibubi.create.foundation.utility.Iterate;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.HayBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.particle.FishingParticle;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.HorizontalFacingBlock;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.items.CapabilityItemHandler;
 
-public class StockpileSwitchBlock extends HayBlock implements ITE<StockpileSwitchTileEntity>, IWrenchable {
+public class StockpileSwitchBlock extends HorizontalFacingBlock implements ITE<StockpileSwitchTileEntity>, IWrenchable {
 
-	public static final DoubleBlockHalf INDICATOR = DoubleBlockHalf.of("indicator", 0, 6);
+	public static final IntProperty INDICATOR = IntProperty.of("indicator", 0, 6);
 
-	public StockpileSwitchBlock(c p_i48377_1_) {
+	public StockpileSwitchBlock(Settings p_i48377_1_) {
 		super(p_i48377_1_);
 	}
 
 	@Override
-	public void b(PistonHandler state, GameMode worldIn, BlockPos pos, PistonHandler oldState, boolean isMoving) {
+	public void onBlockAdded(BlockState state, World worldIn, BlockPos pos, BlockState oldState, boolean isMoving) {
 		updateObservedInventory(state, worldIn, pos);
 	}
 
 	@Override
-	public void onNeighborChange(PistonHandler state, ItemConvertible world, BlockPos pos, BlockPos neighbor) {
-		if (world.s_())
+	public void onNeighborChange(BlockState state, WorldView world, BlockPos pos, BlockPos neighbor) {
+		if (world.isClient())
 			return;
 		if (!isObserving(state, pos, neighbor))
 			return;
@@ -55,32 +56,32 @@ public class StockpileSwitchBlock extends HayBlock implements ITE<StockpileSwitc
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic p_220053_2_, BlockPos p_220053_3_,
-		ArrayVoxelShape p_220053_4_) {
-		return AllShapes.STOCKPILE_SWITCH.get(state.c(aq));
+	public VoxelShape getOutlineShape(BlockState state, BlockView p_220053_2_, BlockPos p_220053_3_,
+		ShapeContext p_220053_4_) {
+		return AllShapes.STOCKPILE_SWITCH.get(state.get(FACING));
 	}
 
-	private void updateObservedInventory(PistonHandler state, ItemConvertible world, BlockPos pos) {
+	private void updateObservedInventory(BlockState state, WorldView world, BlockPos pos) {
 		withTileEntityDo(world, pos, StockpileSwitchTileEntity::updateCurrentLevel);
 	}
 
-	private boolean isObserving(PistonHandler state, BlockPos pos, BlockPos observing) {
-		return observing.equals(pos.offset(state.c(aq)));
+	private boolean isObserving(BlockState state, BlockPos pos, BlockPos observing) {
+		return observing.equals(pos.offset(state.get(FACING)));
 	}
 
 	@Override
-	public boolean canConnectRedstone(PistonHandler state, MobSpawnerLogic world, BlockPos pos, Direction side) {
-		return side != null && side.getOpposite() != state.c(aq);
+	public boolean canConnectRedstone(BlockState state, BlockView world, BlockPos pos, Direction side) {
+		return side != null && side.getOpposite() != state.get(FACING);
 	}
 
 	@Override
-	public boolean b_(PistonHandler state) {
+	public boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public int a(PistonHandler blockState, MobSpawnerLogic blockAccess, BlockPos pos, Direction side) {
-		if (side == blockState.c(aq).getOpposite())
+	public int getWeakRedstonePower(BlockState blockState, BlockView blockAccess, BlockPos pos, Direction side) {
+		if (side == blockState.get(FACING).getOpposite())
 			return 0;
 		try {
 			return getTileEntity(blockAccess, pos).isPowered() ? 15 : 0;
@@ -90,35 +91,35 @@ public class StockpileSwitchBlock extends HayBlock implements ITE<StockpileSwitc
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(aq, INDICATOR);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(FACING, INDICATOR);
+		super.appendProperties(builder);
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode worldIn, BlockPos pos, PlayerAbilities player, ItemScatterer handIn,
-		dcg hit) {
-		if (player != null && AllItems.WRENCH.isIn(player.b(handIn)))
-			return Difficulty.PASS;
-		DistExecutor.runWhenOn(Dist.CLIENT,
+	public ActionResult onUse(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn,
+		BlockHitResult hit) {
+		if (player != null && AllItems.WRENCH.isIn(player.getStackInHand(handIn)))
+			return ActionResult.PASS;
+		DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
 			() -> () -> withTileEntityDo(worldIn, pos, te -> this.displayScreen(te, player)));
-		return Difficulty.SUCCESS;
+		return ActionResult.SUCCESS;
 	}
 
 	@Environment(EnvType.CLIENT)
-	protected void displayScreen(StockpileSwitchTileEntity te, PlayerAbilities player) {
-		if (player instanceof FishingParticle)
+	protected void displayScreen(StockpileSwitchTileEntity te, PlayerEntity player) {
+		if (player instanceof ClientPlayerEntity)
 			ScreenOpener.open(new StockpileSwitchScreen(te));
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		PistonHandler state = n();
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		BlockState state = getDefaultState();
 
 		Direction preferredFacing = null;
 		for (Direction face : Iterate.horizontalDirections) {
-			BeehiveBlockEntity te = context.p()
-				.c(context.a()
+			BlockEntity te = context.getWorld()
+				.getBlockEntity(context.getBlockPos()
 					.offset(face));
 			if (te != null && te.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY)
 				.isPresent())
@@ -131,13 +132,13 @@ public class StockpileSwitchBlock extends HayBlock implements ITE<StockpileSwitc
 		}
 
 		if (preferredFacing != null) {
-			state = state.a(aq, preferredFacing);
-		} else if (context.j()
+			state = state.with(FACING, preferredFacing);
+		} else if (context.getSide()
 			.getAxis()
 			.isHorizontal()) {
-			state = state.a(aq, context.j());
+			state = state.with(FACING, context.getSide());
 		} else {
-			state = state.a(aq, context.f()
+			state = state.with(FACING, context.getPlayerFacing()
 				.getOpposite());
 		}
 
@@ -145,12 +146,12 @@ public class StockpileSwitchBlock extends HayBlock implements ITE<StockpileSwitc
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.STOCKPILE_SWITCH.create();
 	}
 

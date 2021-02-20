@@ -1,21 +1,22 @@
-package com.simibubi.kinetic_api;
+package com.simibubi.create;
 
 import javax.annotation.Nullable;
-import bqx;
-import com.simibubi.kinetic_api.content.contraptions.fluids.VirtualFluid;
-import com.simibubi.kinetic_api.content.contraptions.fluids.potion.PotionFluid;
-import com.simibubi.kinetic_api.content.contraptions.fluids.potion.PotionFluid.PotionFluidAttributes;
-import com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks;
-import com.simibubi.kinetic_api.foundation.data.CreateRegistrate;
+
+import com.simibubi.create.content.contraptions.fluids.VirtualFluid;
+import com.simibubi.create.content.contraptions.fluids.potion.PotionFluid;
+import com.simibubi.create.content.contraptions.fluids.potion.PotionFluid.PotionFluidAttributes;
+import com.simibubi.create.content.palettes.AllPaletteBlocks;
+import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.tterrag.registrate.util.entry.RegistryEntry;
-import cut;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.chunk.BlockBufferBuilderStorage;
-import net.minecraft.fluid.EmptyFluid;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockRenderView;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fluids.FluidAttributes;
@@ -27,22 +28,22 @@ public class AllFluids {
 
 	public static RegistryEntry<PotionFluid> POTION =
 		REGISTRATE.virtualFluid("potion", PotionFluidAttributes::new, PotionFluid::new)
-			.lang(f -> "fluid.kinetic_api.potion", "Potion")
+			.lang(f -> "fluid.create.potion", "Potion")
 			.register();
 
 	public static RegistryEntry<VirtualFluid> TEA = REGISTRATE.virtualFluid("tea")
-		.lang(f -> "fluid.kinetic_api.tea", "Builder's Tea")
+		.lang(f -> "fluid.create.tea", "Builder's Tea")
 		.tag(AllTags.forgeFluidTag("tea"))
 		.register();
 
 	public static RegistryEntry<VirtualFluid> MILK = REGISTRATE.virtualFluid("milk")
-		.lang(f -> "fluid.kinetic_api.milk", "Milk")
+		.lang(f -> "fluid.create.milk", "Milk")
 		.tag(AllTags.forgeFluidTag("milk"))
 		.register();
 
 	public static RegistryEntry<ForgeFlowingFluid.Flowing> HONEY =
 		REGISTRATE.standardFluid("honey", NoColorFluidAttributes::new)
-			.lang(f -> "fluid.kinetic_api.honey", "Honey")
+			.lang(f -> "fluid.create.honey", "Honey")
 			.attributes(b -> b.viscosity(500)
 				.density(1400))
 			.properties(p -> p.levelDecreasePerBlock(2)
@@ -51,13 +52,13 @@ public class AllFluids {
 				.explosionResistance(100f))
 			.tag(AllTags.forgeFluidTag("honey"))
 			.bucket()
-			.properties(p -> p.a(1))
+			.properties(p -> p.maxCount(1))
 			.build()
 			.register();
 
 	public static RegistryEntry<ForgeFlowingFluid.Flowing> CHOCOLATE =
 		REGISTRATE.standardFluid("chocolate", NoColorFluidAttributes::new)
-			.lang(f -> "fluid.kinetic_api.chocolate", "Chocolate")
+			.lang(f -> "fluid.create.chocolate", "Chocolate")
 			.tag(AllTags.forgeFluidTag("chocolate"))
 			.attributes(b -> b.viscosity(500)
 				.density(1400))
@@ -66,7 +67,7 @@ public class AllFluids {
 				.slopeFindDistance(3)
 				.explosionResistance(100f))
 			.bucket()
-			.properties(p -> p.a(1))
+			.properties(p -> p.maxCount(1))
 			.build()
 			.register();
 
@@ -80,36 +81,36 @@ public class AllFluids {
 	@Environment(EnvType.CLIENT)
 	private static void makeTranslucent(RegistryEntry<? extends ForgeFlowingFluid> entry) {
 		ForgeFlowingFluid fluid = entry.get();
-		BlockBufferBuilderStorage.setRenderLayer(fluid, VertexConsumerProvider.f());
-		BlockBufferBuilderStorage.setRenderLayer(fluid.e(), VertexConsumerProvider.f());
+		RenderLayers.setRenderLayer(fluid, RenderLayer.getTranslucent());
+		RenderLayers.setRenderLayer(fluid.getStill(), RenderLayer.getTranslucent());
 	}
 
 	@Nullable
-	public static PistonHandler getLavaInteraction(EmptyFluid fluidState) {
-		cut fluid = fluidState.a();
-		if (fluid.a(HONEY.get()))
-			return fluidState.b() ? AllPaletteBlocks.LIMESTONE.getDefaultState()
+	public static BlockState getLavaInteraction(FluidState fluidState) {
+		Fluid fluid = fluidState.getFluid();
+		if (fluid.matchesType(HONEY.get()))
+			return fluidState.isStill() ? AllPaletteBlocks.LIMESTONE.getDefaultState()
 				: AllPaletteBlocks.LIMESTONE_VARIANTS.registeredBlocks.get(0)
 					.getDefaultState();
-		if (fluid.a(CHOCOLATE.get()))
-			return fluidState.b() ? AllPaletteBlocks.SCORIA.getDefaultState()
+		if (fluid.matchesType(CHOCOLATE.get()))
+			return fluidState.isStill() ? AllPaletteBlocks.SCORIA.getDefaultState()
 				: AllPaletteBlocks.SCORIA_VARIANTS.registeredBlocks.get(0)
 					.getDefaultState();
 		return null;
 	}
 
-	*
+	/**
 	 * Removing alpha from tint prevents optifine from forcibly applying biome
 	 * colors to modded fluids (Makes translucent fluids disappear)
-	 *
+	 */
 	private static class NoColorFluidAttributes extends FluidAttributes {
 
-		protected NoColorFluidAttributes(Builder builder, cut fluid) {
+		protected NoColorFluidAttributes(Builder builder, Fluid fluid) {
 			super(builder, fluid);
 		}
 
 		@Override
-		public int getColor(bqx world, BlockPos pos) {
+		public int getColor(BlockRenderView world, BlockPos pos) {
 			return 0x00ffffff;
 		}
 

@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.content.contraptions.components.crusher;
+package com.simibubi.create.content.contraptions.components.crusher;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
 
 import net.minecraftforge.items.wrapper.RecipeWrapper;
 

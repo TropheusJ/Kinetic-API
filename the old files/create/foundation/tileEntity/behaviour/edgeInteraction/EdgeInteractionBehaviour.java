@@ -1,14 +1,15 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.edgeInteraction;
+package com.simibubi.create.foundation.tileEntity.behaviour.edgeInteraction;
 
 import java.util.Optional;
 
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import net.minecraft.item.HoeItem;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+
+import net.minecraft.item.Item;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 public class EdgeInteractionBehaviour extends TileEntityBehaviour {
 
@@ -16,7 +17,7 @@ public class EdgeInteractionBehaviour extends TileEntityBehaviour {
 	
 	ConnectionCallback connectionCallback;
 	ConnectivityPredicate connectivityPredicate;
-	Optional<HoeItem> requiredItem;
+	Optional<Item> requiredItem;
 
 	public EdgeInteractionBehaviour(SmartTileEntity te, ConnectionCallback callback) {
 		super(te);
@@ -30,7 +31,7 @@ public class EdgeInteractionBehaviour extends TileEntityBehaviour {
 		return this;
 	}
 	
-	public EdgeInteractionBehaviour require(HoeItem item) {
+	public EdgeInteractionBehaviour require(Item item) {
 		this.requiredItem = Optional.of(item);
 		return this;
 	}
@@ -42,12 +43,12 @@ public class EdgeInteractionBehaviour extends TileEntityBehaviour {
 	
 	@FunctionalInterface
 	public interface ConnectionCallback {
-		public void apply(GameMode world, BlockPos clicked, BlockPos neighbour);
+		public void apply(World world, BlockPos clicked, BlockPos neighbour);
 	}
 	
 	@FunctionalInterface
 	public interface ConnectivityPredicate {
-		public boolean test(GameMode world, BlockPos pos, Direction selectedFace, Direction connectedFace);
+		public boolean test(World world, BlockPos pos, Direction selectedFace, Direction connectedFace);
 	}
 
 }

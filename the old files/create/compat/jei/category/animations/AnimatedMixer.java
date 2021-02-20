@@ -1,21 +1,21 @@
-package com.simibubi.kinetic_api.compat.jei.category.animations;
+package com.simibubi.create.compat.jei.category.animations;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.util.math.MathHelper;
 
 public class AnimatedMixer extends AnimatedKinetics {
 
 	@Override
-	public void draw(BufferVertexConsumer matrixStack, int xOffset, int yOffset) {
-		matrixStack.a();
-		matrixStack.a(xOffset, yOffset, 200);
-		matrixStack.a(Vector3f.POSITIVE_X.getDegreesQuaternion(-15.5f));
-		matrixStack.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(22.5f));
+	public void draw(MatrixStack matrixStack, int xOffset, int yOffset) {
+		matrixStack.push();
+		matrixStack.translate(xOffset, yOffset, 200);
+		matrixStack.multiply(Vector3f.POSITIVE_X.getDegreesQuaternion(-15.5f));
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(22.5f));
 		int scale = 23;
 
 		GuiGameElement.of(cogwheel())
@@ -29,7 +29,7 @@ public class AnimatedMixer extends AnimatedKinetics {
 			.scale(scale)
 			.render(matrixStack);
 
-		float animation = ((afj.a(AnimationTickHolder.getRenderTick() / 32f) + 1) / 5) + .5f;
+		float animation = ((MathHelper.sin(AnimationTickHolder.getRenderTick() / 32f) + 1) / 5) + .5f;
 
 		GuiGameElement.of(AllBlockPartials.MECHANICAL_MIXER_POLE)
 			.atLocal(0, animation, 0)
@@ -47,7 +47,7 @@ public class AnimatedMixer extends AnimatedKinetics {
 			.scale(scale)
 			.render(matrixStack);
 
-		matrixStack.b();
+		matrixStack.pop();
 	}
 
 }

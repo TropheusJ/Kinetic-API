@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.capability;
+package com.simibubi.create.content.contraptions.components.structureMovement.train.capability;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -9,27 +9,29 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import afj;
-import apx;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AbstractContraptionEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.OrientedContraptionEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.CouplingHandler;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.utility.Couple;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.WallPlayerSkullBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.entity.vehicle.StorageMinecartEntity;
+
+import com.simibubi.create.Create;
+import com.simibubi.create.content.contraptions.components.structureMovement.AbstractContraptionEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.OrientedContraptionEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.train.CouplingHandler;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.utility.Couple;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.NBTHelper;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.PoweredRailBlock;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+import net.minecraft.entity.vehicle.MinecartEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.stat.StatHandler;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.fml.network.PacketDistributor;
@@ -42,7 +44,7 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 
 	public static MinecartController EMPTY;
 	private boolean needsEntryRefresh;
-	private WeakReference<ScheduleBuilder> weakRef;
+	private WeakReference<AbstractMinecartEntity> weakRef;
 
 	/*
 	 * Stall information, <Internal (waiting couplings), External (stalled
@@ -56,7 +58,7 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 	 */
 	private Couple<Optional<CouplingData>> couplings;
 
-	public MinecartController(ScheduleBuilder minecart) {
+	public MinecartController(AbstractMinecartEntity minecart) {
 		weakRef = new WeakReference<>(minecart);
 		stallData = Couple.create(Optional::empty);
 		couplings = Couple.create(Optional::empty);
@@ -64,8 +66,8 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 	}
 
 	public void tick() {
-		ScheduleBuilder cart = cart();
-		GameMode world = getWorld();
+		AbstractMinecartEntity cart = cart();
+		World world = getWorld();
 
 		if (needsEntryRefresh) {
 			CapabilityMinecartController.queuedAdditions.get(world).add(cart);
@@ -83,43 +85,43 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 				internalStall.booleanValue() || otherCart == null || !otherCart.isPresent() || otherCart.isStalled(false));
 
 		}));
-		if (!world.v) {
+		if (!world.isClient) {
 			setStalled(internalStall.booleanValue(), true);
 			disassemble(cart);
 		}
 	}
 
-	private void disassemble(ScheduleBuilder cart) {
-		if (cart instanceof StorageMinecartEntity) {
+	private void disassemble(AbstractMinecartEntity cart) {
+		if (cart instanceof MinecartEntity) {
 			return;
 		}
-		List<apx> passengers = cart.cm();
+		List<Entity> passengers = cart.getPassengerList();
 		if (passengers.isEmpty() || !(passengers.get(0) instanceof AbstractContraptionEntity)) {
 			return;
 		}
-		GameMode world = cart.l;
-		int i = afj.c(cart.cC());
-		int j = afj.c(cart.cD());
-		int k = afj.c(cart.cG());
-		if (world.d_(new BlockPos(i, j - 1, k))
-				.a(StatHandler.H)) {
+		World world = cart.world;
+		int i = MathHelper.floor(cart.getX());
+		int j = MathHelper.floor(cart.getY());
+		int k = MathHelper.floor(cart.getZ());
+		if (world.getBlockState(new BlockPos(i, j - 1, k))
+				.isIn(BlockTags.RAILS)) {
 			--j;
 		}
 		BlockPos blockpos = new BlockPos(i, j, k);
-		PistonHandler blockstate = world.d_(blockpos);
-		if (cart.canUseRail() && blockstate.a(StatHandler.H)
-				&& blockstate.b() instanceof WallPlayerSkullBlock
-				&& ((WallPlayerSkullBlock) blockstate.b())
+		BlockState blockstate = world.getBlockState(blockpos);
+		if (cart.canUseRail() && blockstate.isIn(BlockTags.RAILS)
+				&& blockstate.getBlock() instanceof PoweredRailBlock
+				&& ((PoweredRailBlock) blockstate.getBlock())
 						.isActivatorRail()) {
-			if (cart.br()) {
-				cart.bd();
+			if (cart.hasPassengers()) {
+				cart.removeAllPassengers();
 			}
 
-			if (cart.m() == 0) {
-				cart.d(-cart.n());
-				cart.c(10);
-				cart.a(50.0F);
-				cart.w = true;
+			if (cart.getDamageWobbleTicks() == 0) {
+				cart.setDamageWobbleSide(-cart.getDamageWobbleSide());
+				cart.setDamageWobbleTicks(10);
+				cart.setDamageWobbleStrength(50.0F);
+				cart.velocityModified = true;
 			}
 		}
 	}
@@ -170,10 +172,10 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 	}
 
 	public void removeConnection(boolean main) {
-		if (hasContraptionCoupling(main) && !getWorld().v) {
-			List<apx> passengers = cart().cm();
+		if (hasContraptionCoupling(main) && !getWorld().isClient) {
+			List<Entity> passengers = cart().getPassengerList();
 			if (!passengers.isEmpty()) {
-				apx entity = passengers.get(0);
+				Entity entity = passengers.get(0);
 				if (entity instanceof AbstractContraptionEntity) 
 					((AbstractContraptionEntity) entity).disassemble();
 			}
@@ -210,11 +212,11 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 					cd.flip();
 					if (!cd.contraption)
 						return;
-					List<apx> passengers = mc.cart()
-						.cm();
+					List<Entity> passengers = mc.cart()
+						.getPassengerList();
 					if (passengers.isEmpty())
 						return;
-					apx entity = passengers.get(0);
+					Entity entity = passengers.get(0);
 					if (!(entity instanceof OrientedContraptionEntity))
 						return;
 					OrientedContraptionEntity contraption = (OrientedContraptionEntity) entity;
@@ -238,8 +240,8 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 	}
 
 	public void coupleWith(boolean isLeading, UUID coupled, float length, boolean contraption) {
-		UUID mainID = isLeading ? cart().bR() : coupled;
-		UUID connectedID = isLeading ? coupled : cart().bR();
+		UUID mainID = isLeading ? cart().getUuid() : coupled;
+		UUID connectedID = isLeading ? coupled : cart().getUuid();
 		couplings.set(isLeading, Optional.of(new CouplingData(mainID, connectedID, length, contraption)));
 		needsEntryRefresh |= isLeading;
 		sendData();
@@ -271,7 +273,7 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 		if (isStalled(internal) == stall)
 			return;
 
-		ScheduleBuilder cart = cart();
+		AbstractMinecartEntity cart = cart();
 		if (stall) {
 			stallData.set(internal, Optional.of(new StallData(cart)));
 			sendData();
@@ -288,7 +290,7 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 	}
 
 	public void sendData() {
-		if (getWorld().v)
+		if (getWorld().isClient)
 			return;
 		AllPackets.channel.send(PacketDistributor.TRACKING_ENTITY.with(this::cart),
 			new MinecartControllerUpdatePacket(this));
@@ -328,10 +330,10 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 	}
 
 	public boolean isPresent() {
-		return weakRef.get() != null && cart().aW();
+		return weakRef.get() != null && cart().isAlive();
 	}
 
-	public ScheduleBuilder cart() {
+	public AbstractMinecartEntity cart() {
 		return weakRef.get();
 	}
 
@@ -339,8 +341,8 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 		return EMPTY != null ? EMPTY : (EMPTY = new MinecartController(null));
 	}
 
-	private GameMode getWorld() {
-		return cart().cf();
+	private World getWorld() {
+		return cart().getEntityWorld();
 	}
 
 	private static class CouplingData {
@@ -387,29 +389,29 @@ public class MinecartController implements INBTSerializable<CompoundTag> {
 	}
 
 	private static class StallData {
-		EntityHitResult position;
-		EntityHitResult motion;
+		Vec3d position;
+		Vec3d motion;
 		float yaw, pitch;
 
 		private StallData() {}
 
-		StallData(ScheduleBuilder entity) {
-			position = entity.cz();
-			motion = entity.cB();
-			yaw = entity.p;
-			pitch = entity.q;
+		StallData(AbstractMinecartEntity entity) {
+			position = entity.getPos();
+			motion = entity.getVelocity();
+			yaw = entity.yaw;
+			pitch = entity.pitch;
 			tick(entity);
 		}
 
-		void tick(ScheduleBuilder entity) {
-			entity.d(position.entity, position.c, position.d);
-			entity.f(EntityHitResult.a);
-			entity.p = yaw;
-			entity.q = pitch;
+		void tick(AbstractMinecartEntity entity) {
+			entity.updatePosition(position.x, position.y, position.z);
+			entity.setVelocity(Vec3d.ZERO);
+			entity.yaw = yaw;
+			entity.pitch = pitch;
 		}
 
-		void release(ScheduleBuilder entity) {
-			entity.f(motion);
+		void release(AbstractMinecartEntity entity) {
+			entity.setVelocity(motion);
 		}
 
 		CompoundTag serialize() {

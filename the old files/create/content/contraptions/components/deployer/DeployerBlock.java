@@ -1,105 +1,107 @@
-package com.simibubi.kinetic_api.content.contraptions.components.deployer;
+package com.simibubi.create.content.contraptions.components.deployer;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import bnx;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalAxisKineticBlock;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import dcg;
+
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.DirectionalAxisKineticBlock;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
+
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.fluid.LavaFluid;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
 public class DeployerBlock extends DirectionalAxisKineticBlock implements ITE<DeployerTileEntity> {
 
-	public DeployerBlock(c properties) {
+	public DeployerBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.DEPLOYER.create();
 	}
 
 	@Override
-	public LavaFluid f(PistonHandler state) {
-		return LavaFluid.a;
+	public PistonBehavior getPistonBehavior(BlockState state) {
+		return PistonBehavior.NORMAL;
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
-		return AllShapes.CASING_12PX.get(state.c(FACING));
+	public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
+		return AllShapes.CASING_12PX.get(state.get(FACING));
 	}
 
 	@Override
-	public Difficulty onWrenched(PistonHandler state, bnx context) {
-		if (context.j() == state.c(FACING)) {
-			if (!context.p().v)
-				withTileEntityDo(context.p(), context.a(), DeployerTileEntity::changeMode);
-			return Difficulty.SUCCESS;
+	public ActionResult onWrenched(BlockState state, ItemUsageContext context) {
+		if (context.getSide() == state.get(FACING)) {
+			if (!context.getWorld().isClient)
+				withTileEntityDo(context.getWorld(), context.getBlockPos(), DeployerTileEntity::changeMode);
+			return ActionResult.SUCCESS;
 		}
 		return super.onWrenched(state, context);
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, PistonHandler newState, boolean isMoving) {
-		if (state.hasTileEntity() && state.b() != newState.b()) {
+	public void onStateReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+		if (state.hasTileEntity() && state.getBlock() != newState.getBlock()) {
 			withTileEntityDo(worldIn, pos, te -> {
 				if (te.player != null && !isMoving) {
-					te.player.bm.k();
-					te.overflowItems.forEach(itemstack -> te.player.a(itemstack, true, false));
-					te.player.ac();
+					te.player.inventory.dropAll();
+					te.overflowItems.forEach(itemstack -> te.player.dropItem(itemstack, true, false));
+					te.player.remove();
 					te.player = null;
 				}
 			});
 
 			TileEntityBehaviour.destroy(worldIn, pos, FilteringBehaviour.TYPE);
-			worldIn.o(pos);
+			worldIn.removeBlockEntity(pos);
 		}
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode worldIn, BlockPos pos, PlayerAbilities player, ItemScatterer handIn,
-		dcg hit) {
-		ItemCooldownManager heldByPlayer = player.b(handIn)
-			.i();
+	public ActionResult onUse(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn,
+		BlockHitResult hit) {
+		ItemStack heldByPlayer = player.getStackInHand(handIn)
+			.copy();
 		if (AllItems.WRENCH.isIn(heldByPlayer))
-			return Difficulty.PASS;
+			return ActionResult.PASS;
 
-		if (hit.b() != state.c(FACING))
-			return Difficulty.PASS;
-		if (worldIn.v)
-			return Difficulty.SUCCESS;
+		if (hit.getSide() != state.get(FACING))
+			return ActionResult.PASS;
+		if (worldIn.isClient)
+			return ActionResult.SUCCESS;
 
 		withTileEntityDo(worldIn, pos, te -> {
-			ItemCooldownManager heldByDeployer = te.player.dC()
-				.i();
-			if (heldByDeployer.a() && heldByPlayer.a())
+			ItemStack heldByDeployer = te.player.getMainHandStack()
+				.copy();
+			if (heldByDeployer.isEmpty() && heldByPlayer.isEmpty())
 				return;
 
-			player.a(handIn, heldByDeployer);
-			te.player.a(ItemScatterer.RANDOM, heldByPlayer);
+			player.setStackInHand(handIn, heldByDeployer);
+			te.player.setStackInHand(Hand.MAIN_HAND, heldByPlayer);
 			te.sendData();
 		});
 
-		return Difficulty.SUCCESS;
+		return ActionResult.SUCCESS;
 	}
 
 	@Override
@@ -108,13 +110,13 @@ public class DeployerBlock extends DirectionalAxisKineticBlock implements ITE<De
 	}
 	
 	@Override
-	public void b(PistonHandler state, GameMode world, BlockPos pos, PistonHandler oldState, boolean isMoving) {
-		super.b(state, world, pos, oldState, isMoving);
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean isMoving) {
+		super.onBlockAdded(state, world, pos, oldState, isMoving);
 		withTileEntityDo(world, pos, DeployerTileEntity::redstoneUpdate);
 	}
 	
 	@Override
-	public void a(PistonHandler state, GameMode world, BlockPos pos, BeetrootsBlock p_220069_4_,
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block p_220069_4_,
 		BlockPos p_220069_5_, boolean p_220069_6_) {
 		withTileEntityDo(world, pos, DeployerTileEntity::redstoneUpdate);
 	}

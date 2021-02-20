@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.config;
+package com.simibubi.create.foundation.config;
 
 public class CCommon extends ConfigBase {
 
@@ -11,7 +11,7 @@ public class CCommon extends ConfigBase {
 	}
 
 	private static class Comments {
-		static String worldGen = "Modify KineticAPI's impact on your terrain";
+		static String worldGen = "Modify Create's impact on your terrain";
 		static String logTeErrors = "Forward caught TileEntityExceptions to the log at debug level.";
 	}
 

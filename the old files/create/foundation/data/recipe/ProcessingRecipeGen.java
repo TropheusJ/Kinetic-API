@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -6,16 +6,16 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeSerializer;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeSerializer;
 import net.minecraft.data.DataCache;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
-import net.minecraft.recipe.FireworkRocketRecipe;
-import net.minecraft.world.GameRules;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.recipe.Ingredient;
 import net.minecraftforge.fluids.FluidAttributes;
 
 public abstract class ProcessingRecipeGen extends CreateRecipeProvider {
@@ -40,7 +40,7 @@ public abstract class ProcessingRecipeGen extends CreateRecipeProvider {
 			
 			@Override
 			public String getName() {
-				return "KineticAPI's Processing Recipes";
+				return "Create's Processing Recipes";
 			}
 			
 			@Override
@@ -61,18 +61,18 @@ public abstract class ProcessingRecipeGen extends CreateRecipeProvider {
 	}
 	
 	/**
-	 * KineticAPI a processing recipe with a single itemstack ingredient, using its id
+	 * Create a processing recipe with a single itemstack ingredient, using its id
 	 * as the name of the recipe
 	 */
-	protected <T extends ProcessingRecipe<?>> GeneratedRecipe create(Supplier<GameRules> singleIngredient,
+	protected <T extends ProcessingRecipe<?>> GeneratedRecipe create(Supplier<ItemConvertible> singleIngredient,
 		UnaryOperator<ProcessingRecipeBuilder<T>> transform) {
 		ProcessingRecipeSerializer<T> serializer = getSerializer();
 		GeneratedRecipe generatedRecipe = c -> {
-			GameRules iItemProvider = singleIngredient.get();
+			ItemConvertible iItemProvider = singleIngredient.get();
 			transform
-				.apply(new ProcessingRecipeBuilder<>(serializer.getFactory(), Create.asResource(iItemProvider.h()
+				.apply(new ProcessingRecipeBuilder<>(serializer.getFactory(), Create.asResource(iItemProvider.asItem()
 					.getRegistryName()
-					.getPath())).withItemIngredients(FireworkRocketRecipe.a(iItemProvider)))
+					.getPath())).withItemIngredients(Ingredient.ofItems(iItemProvider)))
 				.build(c);
 		};
 		all.add(generatedRecipe);
@@ -80,7 +80,7 @@ public abstract class ProcessingRecipeGen extends CreateRecipeProvider {
 	}
 
 	/**
-	 * KineticAPI a new processing recipe, with recipe definitions provided by the
+	 * Create a new processing recipe, with recipe definitions provided by the
 	 * function
 	 */
 	protected <T extends ProcessingRecipe<?>> GeneratedRecipe create(String name,
@@ -101,7 +101,7 @@ public abstract class ProcessingRecipeGen extends CreateRecipeProvider {
 
 	@Override
 	public final String getName() {
-		return "KineticAPI's Processing Recipes: " + getRecipeType();
+		return "Create's Processing Recipes: " + getRecipeType();
 	}
 	
 	protected abstract AllRecipeTypes getRecipeType();

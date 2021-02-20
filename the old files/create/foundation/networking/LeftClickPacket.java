@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.foundation.networking;
+package com.simibubi.create.foundation.networking;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.events.CommonEvents;
+import com.simibubi.create.events.CommonEvents;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkEvent.Context;

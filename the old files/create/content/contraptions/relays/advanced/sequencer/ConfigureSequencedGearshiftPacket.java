@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.advanced.sequencer;
+package com.simibubi.create.content.contraptions.relays.advanced.sequencer;
 
-import com.simibubi.kinetic_api.foundation.networking.TileEntityConfigurationPacket;
+import com.simibubi.create.foundation.networking.TileEntityConfigurationPacket;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.PacketByteBuf;
@@ -22,13 +22,13 @@ public class ConfigureSequencedGearshiftPacket extends TileEntityConfigurationPa
 
 	@Override
 	protected void readSettings(PacketByteBuf buffer) {
-		instructions = buffer.readCompoundTag().getList("data_unused", NBT.TAG_COMPOUND);
+		instructions = buffer.readCompoundTag().getList("data", NBT.TAG_COMPOUND);
 	}
 
 	@Override
 	protected void writeSettings(PacketByteBuf buffer) {
 		CompoundTag tag = new CompoundTag();
-		tag.put("data_unused", instructions);
+		tag.put("data", instructions);
 		buffer.writeCompoundTag(tag);
 	}
 

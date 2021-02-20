@@ -1,32 +1,32 @@
-package com.simibubi.kinetic_api.content.contraptions.processing.burner;
+package com.simibubi.create.content.contraptions.processing.burner;
 
 import java.util.Random;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllItems;
-import dcg;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllItems;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public class LitBlazeBurnerBlock extends BeetrootsBlock {
+public class LitBlazeBurnerBlock extends Block {
 
 // 	1.16: add a soul fire variant
 
@@ -40,53 +40,53 @@ public class LitBlazeBurnerBlock extends BeetrootsBlock {
 //
 //	}
 
-	public LitBlazeBurnerBlock(c p_i48440_1_) {
+	public LitBlazeBurnerBlock(Settings p_i48440_1_) {
 		super(p_i48440_1_);
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode world, BlockPos pos, PlayerAbilities player, ItemScatterer hand,
-		dcg blockRayTraceResult) {
-		ItemCooldownManager heldItem = player.b(hand);
+	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
+		BlockHitResult blockRayTraceResult) {
+		ItemStack heldItem = player.getStackInHand(hand);
 
 		// Check for 'Shovels'
-		if (!heldItem.b(BellBlock.cC.n()))
-			return Difficulty.PASS;
+		if (!heldItem.isEffectiveOn(Blocks.SNOW.getDefaultState()))
+			return ActionResult.PASS;
 
-		world.a(player, pos, MusicType.eM, SoundEvent.e, .5f, 2);
+		world.playSound(player, pos, SoundEvents.ENTITY_GENERIC_EXTINGUISH_FIRE, SoundCategory.BLOCKS, .5f, 2);
 
-		if (world.v)
-			return Difficulty.SUCCESS;
-		if (!player.b_())
-			heldItem.a(1, player, p -> p.d(hand));
+		if (world.isClient)
+			return ActionResult.SUCCESS;
+		if (!player.isCreative())
+			heldItem.damage(1, player, p -> p.sendToolBreakStatus(hand));
 
-		world.a(pos, AllBlocks.BLAZE_BURNER.getDefaultState());
-		return Difficulty.SUCCESS;
+		world.setBlockState(pos, AllBlocks.BLAZE_BURNER.getDefaultState());
+		return ActionResult.SUCCESS;
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic reader, BlockPos pos, ArrayVoxelShape context) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView reader, BlockPos pos, ShapeContext context) {
 		return AllBlocks.BLAZE_BURNER.get()
-			.b(state, reader, pos, context);
+			.getOutlineShape(state, reader, pos, context);
 	}
 
 	@Override
-	public ItemCooldownManager getPickBlock(PistonHandler state, Box target, MobSpawnerLogic world, BlockPos pos,
-		PlayerAbilities player) {
+	public ItemStack getPickBlock(BlockState state, HitResult target, BlockView world, BlockPos pos,
+		PlayerEntity player) {
 		return AllItems.EMPTY_BLAZE_BURNER.asStack();
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void a(PistonHandler p_180655_1_, GameMode world, BlockPos pos, Random random) {
-		world.b(ParticleTypes.LARGE_SMOKE, true,
+	public void randomDisplayTick(BlockState p_180655_1_, World world, BlockPos pos, Random random) {
+		world.addImportantParticle(ParticleTypes.LARGE_SMOKE, true,
 			(double) pos.getX() + 0.5D + random.nextDouble() / 3.0D * (double) (random.nextBoolean() ? 1 : -1),
 			(double) pos.getY() + random.nextDouble() + random.nextDouble(),
 			(double) pos.getZ() + 0.5D + random.nextDouble() / 3.0D * (double) (random.nextBoolean() ? 1 : -1), 0.0D,
 			0.07D, 0.0D);
 
 		if (random.nextInt(10) == 0) {
-			world.a((double) ((float) pos.getX() + 0.5F), (double) ((float) pos.getY() + 0.5F),
-				(double) ((float) pos.getZ() + 0.5F), MusicType.bp, SoundEvent.e,
+			world.playSound((double) ((float) pos.getX() + 0.5F), (double) ((float) pos.getY() + 0.5F),
+				(double) ((float) pos.getZ() + 0.5F), SoundEvents.BLOCK_CAMPFIRE_CRACKLE, SoundCategory.BLOCKS,
 				0.25F + random.nextFloat() * .25f, random.nextFloat() * 0.7F + 0.6F, false);
 		}
 
@@ -100,20 +100,20 @@ public class LitBlazeBurnerBlock extends BeetrootsBlock {
 	}
 	
 	@Override
-	public boolean a(PistonHandler p_149740_1_) {
+	public boolean hasComparatorOutput(BlockState p_149740_1_) {
 		return true;
 	}
 	
 	@Override
-	public int a(PistonHandler state, GameMode p_180641_2_, BlockPos p_180641_3_) {
+	public int getComparatorOutput(BlockState state, World p_180641_2_, BlockPos p_180641_3_) {
 		return 1;
 	}
 
 	@Override
-	public VoxelShapes c(PistonHandler state, MobSpawnerLogic reader, BlockPos pos,
-		ArrayVoxelShape context) {
+	public VoxelShape getCollisionShape(BlockState state, BlockView reader, BlockPos pos,
+		ShapeContext context) {
 		return AllBlocks.BLAZE_BURNER.get()
-			.c(state, reader, pos, context);
+			.getCollisionShape(state, reader, pos, context);
 	}
 
 }

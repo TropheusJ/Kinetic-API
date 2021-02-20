@@ -1,14 +1,14 @@
-package com.simibubi.kinetic_api.foundation.command;
+package com.simibubi.create.foundation.command;
 
 import com.mojang.brigadier.builder.ArgumentBuilder;
-import com.simibubi.kinetic_api.Create;
+import com.simibubi.create.Create;
 import net.minecraft.command.argument.ColumnPosArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.text.LiteralText;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ColumnPos;
-import net.minecraft.world.BlockRenderView;
 
 public class ChunkUtilCommand {
 
@@ -19,7 +19,7 @@ public class ChunkUtilCommand {
 						.executes(ctx -> {
 							//chunk reload <pos>
 							ColumnPos columnPos = ColumnPosArgumentType.getColumnPos(ctx, "pos");
-							BlockRenderView chunkPos = new BlockRenderView(columnPos.x >> 4, columnPos.z >> 4);
+							ChunkPos chunkPos = new ChunkPos(columnPos.x >> 4, columnPos.z >> 4);
 							ServerChunkManager chunkProvider = ctx.getSource().getWorld().getChunkManager();
 
 							boolean success = Create.chunkUtil.reloadChunk(chunkProvider, chunkPos);
@@ -37,7 +37,7 @@ public class ChunkUtilCommand {
 						.executes(ctx -> {
 							//chunk unload <pos>
 							ColumnPos columnPos = ColumnPosArgumentType.getColumnPos(ctx, "pos");
-							BlockRenderView chunkPos = new BlockRenderView(columnPos.x >> 4, columnPos.z >> 4);
+							ChunkPos chunkPos = new ChunkPos(columnPos.x >> 4, columnPos.z >> 4);
 							ServerChunkManager chunkProvider = ctx.getSource().getWorld().getChunkManager();
 
 							boolean success  = Create.chunkUtil.unloadChunk(chunkProvider, chunkPos);

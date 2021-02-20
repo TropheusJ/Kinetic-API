@@ -1,33 +1,37 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.base.IRotate;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.base.KineticTileEntityRenderer;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.render.backend.FastRenderDispatcher;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 
 public class SplitShaftRenderer extends KineticTileEntityRenderer {
 
-	public SplitShaftRenderer(ebv dispatcher) {
+	public SplitShaftRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(KineticTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(KineticTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 			int light, int overlay) {
-		BeetrootsBlock block = te.p().b();
-		final Axis boxAxis = ((IRotate) block).getRotationAxis(te.p());
-		final BlockPos pos = te.o();
+		if (FastRenderDispatcher.available(te.getWorld())) return;
+
+		Block block = te.getCachedState().getBlock();
+		final Axis boxAxis = ((IRotate) block).getRotationAxis(te.getCachedState());
+		final BlockPos pos = te.getPos();
 		float time = AnimationTickHolder.getRenderTick();
 
 		for (Direction direction : Iterate.directions) {
@@ -47,9 +51,9 @@ public class SplitShaftRenderer extends KineticTileEntityRenderer {
 			angle = angle / 180f * (float) Math.PI;
 
 			SuperByteBuffer superByteBuffer =
-				AllBlockPartials.SHAFT_HALF.renderOnDirectionalSouth(te.p(), direction);
+				AllBlockPartials.SHAFT_HALF.renderOnDirectionalSouth(te.getCachedState(), direction);
 			kineticRotationTransform(superByteBuffer, te, axis, angle, light);
-			superByteBuffer.renderInto(ms, buffer.getBuffer(VertexConsumerProvider.c()));
+			superByteBuffer.renderInto(ms, buffer.getBuffer(RenderLayer.getSolid()));
 		}
 	}
 

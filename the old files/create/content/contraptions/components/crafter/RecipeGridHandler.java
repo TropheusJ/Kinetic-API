@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.content.contraptions.components.crafter;
+package com.simibubi.create.content.contraptions.components.crafter;
 
-import static com.simibubi.kinetic_api.content.contraptions.base.HorizontalKineticBlock.HORIZONTAL_FACING;
+import static com.simibubi.create.content.contraptions.base.HorizontalKineticBlock.HORIZONTAL_FACING;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,20 +13,21 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.base.Predicates;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Pointing;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Pointing;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.screen.PropertyDelegate;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants.NBT;
 
 public class RecipeGridHandler {
@@ -62,8 +63,8 @@ public class RecipeGridHandler {
 				empty = true;
 			else
 				allEmpty = false;
-			if (poweredStart && current.v()
-				.r(current.o()))
+			if (poweredStart && current.getWorld()
+				.isReceivingRedstonePower(current.getPos()))
 				powered = true;
 
 			crafters.add(current);
@@ -81,33 +82,33 @@ public class RecipeGridHandler {
 	}
 
 	public static MechanicalCrafterTileEntity getTargetingCrafter(MechanicalCrafterTileEntity crafter) {
-		PistonHandler state = crafter.p();
+		BlockState state = crafter.getCachedState();
 		if (!isCrafter(state))
 			return null;
 
-		BlockPos targetPos = crafter.o()
+		BlockPos targetPos = crafter.getPos()
 			.offset(MechanicalCrafterBlock.getTargetDirection(state));
-		MechanicalCrafterTileEntity targetTE = CrafterHelper.getCrafter(crafter.v(), targetPos);
+		MechanicalCrafterTileEntity targetTE = CrafterHelper.getCrafter(crafter.getWorld(), targetPos);
 		if (targetTE == null)
 			return null;
 
-		PistonHandler targetState = targetTE.p();
+		BlockState targetState = targetTE.getCachedState();
 		if (!isCrafter(targetState))
 			return null;
-		if (state.c(HORIZONTAL_FACING) != targetState.c(HORIZONTAL_FACING))
+		if (state.get(HORIZONTAL_FACING) != targetState.get(HORIZONTAL_FACING))
 			return null;
 		return targetTE;
 	}
 
 	public static List<MechanicalCrafterTileEntity> getPrecedingCrafters(MechanicalCrafterTileEntity crafter) {
-		BlockPos pos = crafter.o();
-		GameMode world = crafter.v();
+		BlockPos pos = crafter.getPos();
+		World world = crafter.getWorld();
 		List<MechanicalCrafterTileEntity> crafters = new ArrayList<>();
-		PistonHandler blockState = crafter.p();
+		BlockState blockState = crafter.getCachedState();
 		if (!isCrafter(blockState))
 			return crafters;
 
-		Direction blockFacing = blockState.c(HORIZONTAL_FACING);
+		Direction blockFacing = blockState.get(HORIZONTAL_FACING);
 		Direction blockPointing = MechanicalCrafterBlock.getTargetDirection(blockState);
 		for (Direction facing : Iterate.directions) {
 			if (blockFacing.getAxis() == facing.getAxis())
@@ -116,12 +117,12 @@ public class RecipeGridHandler {
 				continue;
 
 			BlockPos neighbourPos = pos.offset(facing);
-			PistonHandler neighbourState = world.d_(neighbourPos);
+			BlockState neighbourState = world.getBlockState(neighbourPos);
 			if (!isCrafter(neighbourState))
 				continue;
 			if (MechanicalCrafterBlock.getTargetDirection(neighbourState) != facing.getOpposite())
 				continue;
-			if (blockFacing != neighbourState.c(HORIZONTAL_FACING))
+			if (blockFacing != neighbourState.get(HORIZONTAL_FACING))
 				continue;
 			MechanicalCrafterTileEntity te = CrafterHelper.getCrafter(world, neighbourPos);
 			if (te == null)
@@ -133,34 +134,34 @@ public class RecipeGridHandler {
 		return crafters;
 	}
 
-	private static boolean isCrafter(PistonHandler state) {
+	private static boolean isCrafter(BlockState state) {
 		return AllBlocks.MECHANICAL_CRAFTER.has(state);
 	}
 
-	public static ItemCooldownManager tryToApplyRecipe(GameMode world, GroupedItems items) {
+	public static ItemStack tryToApplyRecipe(World world, GroupedItems items) {
 		items.calcStats();
-		PropertyDelegate craftinginventory = new MechanicalCraftingInventory(items);
-		ItemCooldownManager result = null;
+		CraftingInventory craftinginventory = new MechanicalCraftingInventory(items);
+		ItemStack result = null;
 		if (AllConfigs.SERVER.recipes.allowRegularCraftingInCrafter.get())
-			result = world.o()
-				.a(Recipe.a, craftinginventory, world)
-				.map(r -> r.a(craftinginventory))
+			result = world.getRecipeManager()
+				.getFirstMatch(RecipeType.CRAFTING, craftinginventory, world)
+				.map(r -> r.craft(craftinginventory))
 				.orElse(null);
 		if (result == null)
 			result = AllRecipeTypes.MECHANICAL_CRAFTING.find(craftinginventory, world)
-				.map(r -> r.a(craftinginventory))
+				.map(r -> r.craft(craftinginventory))
 				.orElse(null);
 		return result;
 	}
 
 	public static class GroupedItems {
-		Map<Pair<Integer, Integer>, ItemCooldownManager> grid = new HashMap<>();
+		Map<Pair<Integer, Integer>, ItemStack> grid = new HashMap<>();
 		int minX, minY, maxX, maxY, width, height;
 		boolean statsReady;
 
 		public GroupedItems() {}
 
-		public GroupedItems(ItemCooldownManager stack) {
+		public GroupedItems(ItemStack stack) {
 			grid.put(Pair.of(0, 0), stack);
 		}
 
@@ -191,7 +192,7 @@ public class RecipeGridHandler {
 				CompoundTag entry = (CompoundTag) inbt;
 				int x = entry.getInt("x");
 				int y = entry.getInt("y");
-				ItemCooldownManager stack = ItemCooldownManager.a(entry.getCompound("item"));
+				ItemStack stack = ItemStack.fromTag(entry.getCompound("item"));
 				items.grid.put(Pair.of(x, y), stack);
 			});
 			return items;

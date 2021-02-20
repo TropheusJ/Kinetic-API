@@ -1,15 +1,16 @@
-package com.simibubi.kinetic_api.content;
+package com.simibubi.create.content;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.item.ItemDescription.Palette;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.HoeItem;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.item.ItemDescription.Palette;
+
+import net.minecraft.block.Block;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 
 public enum AllSections {
 
-	/** KineticAPI's kinetic mechanisms */
+	/** Create's kinetic mechanisms */
 	KINETICS(Palette.Red),
 
 	/** Item transport and other Utility */
@@ -42,19 +43,19 @@ public enum AllSections {
 		return tooltipPalette;
 	}
 
-	public static AllSections of(ItemCooldownManager stack) {
-		HoeItem item = stack.b();
-		if (item instanceof BannerItem)
-			return ofBlock(((BannerItem) item).e());
+	public static AllSections of(ItemStack stack) {
+		Item item = stack.getItem();
+		if (item instanceof BlockItem)
+			return ofBlock(((BlockItem) item).getBlock());
 		return ofItem(item);
 	}
 
-	static AllSections ofItem(HoeItem item) {
+	static AllSections ofItem(Item item) {
 		return Create.registrate()
 			.getSection(item);
 	}
 
-	static AllSections ofBlock(BeetrootsBlock block) {
+	static AllSections ofBlock(Block block) {
 		return Create.registrate()
 			.getSection(block);
 	}

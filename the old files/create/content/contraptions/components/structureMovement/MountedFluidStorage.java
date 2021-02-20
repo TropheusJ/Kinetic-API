@@ -1,15 +1,15 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement;
+package com.simibubi.create.content.contraptions.components.structureMovement;
 
-import apx;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.sync.ContraptionFluidPacket;
-import com.simibubi.kinetic_api.content.contraptions.fluids.tank.CreativeFluidTankTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.fluids.tank.CreativeFluidTankTileEntity.CreativeSmartFluidTank;
-import com.simibubi.kinetic_api.content.contraptions.fluids.tank.FluidTankTileEntity;
-import com.simibubi.kinetic_api.foundation.fluid.SmartFluidTank;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedChasingValue;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import net.minecraft.block.entity.BeehiveBlockEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.sync.ContraptionFluidPacket;
+import com.simibubi.create.content.contraptions.fluids.tank.CreativeFluidTankTileEntity;
+import com.simibubi.create.content.contraptions.fluids.tank.CreativeFluidTankTileEntity.CreativeSmartFluidTank;
+import com.simibubi.create.content.contraptions.fluids.tank.FluidTankTileEntity;
+import com.simibubi.create.foundation.fluid.SmartFluidTank;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedChasingValue;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.utility.NBTHelper;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.util.LazyOptional;
@@ -23,27 +23,27 @@ public class MountedFluidStorage {
 
 	SmartFluidTank tank;
 	private boolean valid;
-	private BeehiveBlockEntity te;
+	private BlockEntity te;
 
 	private int packetCooldown = 0;
 	private boolean sendPacket = false;
 
-	public static boolean canUseAsStorage(BeehiveBlockEntity te) {
+	public static boolean canUseAsStorage(BlockEntity te) {
 		if (te instanceof FluidTankTileEntity)
 			return ((FluidTankTileEntity) te).isController();
 		return false;
 	}
 
-	public MountedFluidStorage(BeehiveBlockEntity te) {
+	public MountedFluidStorage(BlockEntity te) {
 		assignTileEntity(te);
 	}
 
-	public void assignTileEntity(BeehiveBlockEntity te) {
+	public void assignTileEntity(BlockEntity te) {
 		this.te = te;
 		tank = createMountedTank(te);
 	}
 
-	private SmartFluidTank createMountedTank(BeehiveBlockEntity te) {
+	private SmartFluidTank createMountedTank(BlockEntity te) {
 		if (te instanceof CreativeFluidTankTileEntity)
 			return new CreativeSmartFluidTank(
 				((FluidTankTileEntity) te).getTotalTankSize() * FluidTankTileEntity.getCapacityMultiplier(), $ -> {
@@ -55,14 +55,14 @@ public class MountedFluidStorage {
 		return null;
 	}
 
-	public void tick(apx entity, BlockPos pos, boolean isRemote) {
+	public void tick(Entity entity, BlockPos pos, boolean isRemote) {
 		if (!isRemote) {
 			if (packetCooldown > 0)
 				packetCooldown--;
 			else if (sendPacket) {
 				sendPacket = false;
 				AllPackets.channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> entity),
-					new ContraptionFluidPacket(entity.X(), pos, tank.getFluid()));
+					new ContraptionFluidPacket(entity.getEntityId(), pos, tank.getFluid()));
 				packetCooldown = 8;
 			}
 			return;
@@ -109,7 +109,7 @@ public class MountedFluidStorage {
 		sendPacket = true;
 	}
 
-	public void addStorageToWorld(BeehiveBlockEntity te) {
+	public void addStorageToWorld(BlockEntity te) {
 		if (tank instanceof CreativeSmartFluidTank)
 			return;
 

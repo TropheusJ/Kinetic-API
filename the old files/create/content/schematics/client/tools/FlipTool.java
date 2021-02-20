@@ -1,18 +1,18 @@
-package com.simibubi.kinetic_api.content.schematics.client.tools;
+package com.simibubi.create.content.schematics.client.tools;
 
-import com.simibubi.kinetic_api.AllSpecialTextures;
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import com.simibubi.kinetic_api.foundation.utility.outliner.AABBOutline;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.AllSpecialTextures;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import com.simibubi.create.foundation.utility.outliner.AABBOutline;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.AxisDirection;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Vec3d;
 
 public class FlipTool extends PlacementToolBase {
 
-	private AABBOutline outline = new AABBOutline(new Timer(BlockPos.ORIGIN));
+	private AABBOutline outline = new AABBOutline(new Box(BlockPos.ORIGIN));
 
 	@Override
 	public void init() {
@@ -47,7 +47,7 @@ public class FlipTool extends PlacementToolBase {
 	}
 
 	@Override
-	public void renderOnSchematic(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
+	public void renderOnSchematic(MatrixStack ms, SuperRenderTypeBuffer buffer) {
 		if (!schematicSelected || !selectedFace.getAxis()
 			.isHorizontal()) {
 			super.renderOnSchematic(ms, buffer);
@@ -55,16 +55,16 @@ public class FlipTool extends PlacementToolBase {
 		}
 
 		Direction facing = selectedFace.rotateYClockwise();
-		Timer bounds = schematicHandler.getBounds();
+		Box bounds = schematicHandler.getBounds();
 
-		EntityHitResult directionVec = EntityHitResult.b(Direction.get(AxisDirection.POSITIVE, facing.getAxis())
+		Vec3d directionVec = Vec3d.of(Direction.get(AxisDirection.POSITIVE, facing.getAxis())
 			.getVector());
-		EntityHitResult boundsSize = new EntityHitResult(bounds.b(), bounds.c(), bounds.d());
-		EntityHitResult vec = boundsSize.h(directionVec);
-		bounds = bounds.a(vec.entity, vec.c, vec.d)
-			.c(1 - directionVec.entity, 1 - directionVec.c, 1 - directionVec.d);
-		bounds = bounds.c(directionVec.a(.5f)
-			.h(boundsSize));
+		Vec3d boundsSize = new Vec3d(bounds.getXLength(), bounds.getYLength(), bounds.getZLength());
+		Vec3d vec = boundsSize.multiply(directionVec);
+		bounds = bounds.shrink(vec.x, vec.y, vec.z)
+			.expand(1 - directionVec.x, 1 - directionVec.y, 1 - directionVec.z);
+		bounds = bounds.offset(directionVec.multiply(.5f)
+			.multiply(boundsSize));
 		
 		outline.setBounds(bounds);
 		AllSpecialTextures tex = AllSpecialTextures.CHECKERED;

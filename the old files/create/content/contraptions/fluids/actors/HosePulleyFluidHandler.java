@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
 import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import com.simibubi.kinetic_api.foundation.fluid.SmartFluidTank;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+import com.simibubi.create.foundation.fluid.SmartFluidTank;
 
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fluids.FluidStack;

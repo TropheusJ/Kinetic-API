@@ -1,40 +1,41 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.base.KineticTileEntityRenderer;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class PumpRenderer extends KineticTileEntityRenderer {
 
-	public PumpRenderer(ebv dispatcher) {
+	public PumpRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(KineticTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(KineticTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
 		super.renderSafe(te, partialTicks, ms, buffer, light, overlay);
 		if (!(te instanceof PumpTileEntity))
 			return;
 		PumpTileEntity pump = (PumpTileEntity) te;
-		EntityHitResult rotationOffset = new EntityHitResult(.5, 14 / 16f, .5);
-		PistonHandler blockState = te.p();
-		float angle = afj.g(pump.arrowDirection.getValue(partialTicks), 0, 90) - 90;
+		Vec3d rotationOffset = new Vec3d(.5, 14 / 16f, .5);
+		BlockState blockState = te.getCachedState();
+		float angle = MathHelper.lerp(pump.arrowDirection.getValue(partialTicks), 0, 90) - 90;
 		for (float yRot : new float[] { 0, 90 }) {
-			ms.a();
+			ms.push();
 			SuperByteBuffer arrow = AllBlockPartials.MECHANICAL_PUMP_ARROW.renderOn(blockState);
-			Direction direction = blockState.c(PumpBlock.FACING);
+			Direction direction = blockState.get(PumpBlock.FACING);
 			MatrixStacker.of(ms)
 				.centre()
 				.rotateY(AngleHelper.horizontalAngle(direction) + 180)
@@ -44,14 +45,14 @@ public class PumpRenderer extends KineticTileEntityRenderer {
 				.rotateY(yRot)
 				.rotateZ(angle)
 				.translateBack(rotationOffset);
-			arrow.light(light).renderInto(ms, buffer.getBuffer(VertexConsumerProvider.c()));
-			ms.b();
+			arrow.light(light).renderInto(ms, buffer.getBuffer(RenderLayer.getSolid()));
+			ms.pop();
 		}
 	}
 
 	@Override
 	protected SuperByteBuffer getRotatedModel(KineticTileEntity te) {
-		return AllBlockPartials.MECHANICAL_PUMP_COG.renderOnDirectionalSouth(te.p());
+		return AllBlockPartials.MECHANICAL_PUMP_COG.renderOnDirectionalSouth(te.getCachedState());
 	}
 
 }

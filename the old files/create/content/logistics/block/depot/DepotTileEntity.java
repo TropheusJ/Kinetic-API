@@ -1,25 +1,26 @@
-package com.simibubi.kinetic_api.content.logistics.block.depot;
+package com.simibubi.create.content.logistics.block.depot;
 
 import java.util.List;
 import java.util.function.Function;
 
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltHelper;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.inventory.Inventory;
+import com.simibubi.create.content.contraptions.relays.belt.BeltHelper;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.CapabilityItemHandler;
@@ -35,21 +36,21 @@ public class DepotTileEntity extends SmartTileEntity {
 	LazyOptional<DepotItemHandler> lazyItemHandler;
 	private TransportedItemStackHandlerBehaviour transportedHandler;
 
-	public DepotTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public DepotTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		itemHandler = new DepotItemHandler(this);
 		lazyItemHandler = LazyOptional.of(() -> itemHandler);
 		processingOutputBuffer = new ItemStackHandler(8) {
 			protected void onContentsChanged(int slot) {
-				X_();
+				markDirty();
 				sendData();
 			};
 		};
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		if (heldItem == null)
 			return;
 
@@ -64,19 +65,19 @@ public class DepotTileEntity extends SmartTileEntity {
 
 		if (diff > 1 / 16f)
 			return;
-		if (d.v)
+		if (world.isClient)
 			return;
 		if (handleBeltFunnelOutput())
 			return;
 
 		BeltProcessingBehaviour processingBehaviour =
-			TileEntityBehaviour.get(d, e.up(2), BeltProcessingBehaviour.TYPE);
+			TileEntityBehaviour.get(world, pos.up(2), BeltProcessingBehaviour.TYPE);
 		if (processingBehaviour == null)
 			return;
-		if (!heldItem.locked && BeltProcessingBehaviour.isBlocked(d, e))
+		if (!heldItem.locked && BeltProcessingBehaviour.isBlocked(world, pos))
 			return;
 
-		ItemCooldownManager previousItem = heldItem.stack;
+		ItemStack previousItem = heldItem.stack;
 		boolean wasLocked = heldItem.locked;
 		ProcessingResult result = wasLocked ? processingBehaviour.handleHeldItem(heldItem, transportedHandler)
 			: processingBehaviour.handleReceivedItem(heldItem, transportedHandler);
@@ -93,23 +94,23 @@ public class DepotTileEntity extends SmartTileEntity {
 
 	private boolean handleBeltFunnelOutput() {
 		for (int slot = 0; slot < processingOutputBuffer.getSlots(); slot++) {
-			ItemCooldownManager previousItem = processingOutputBuffer.getStackInSlot(slot);
-			if (previousItem.a())
+			ItemStack previousItem = processingOutputBuffer.getStackInSlot(slot);
+			if (previousItem.isEmpty())
 				continue;
-			ItemCooldownManager afterInsert =
+			ItemStack afterInsert =
 				getBehaviour(DirectBeltInputBehaviour.TYPE).tryExportingToBeltFunnel(previousItem, null);
-			if (previousItem.E() != afterInsert.E()) {
+			if (previousItem.getCount() != afterInsert.getCount()) {
 				processingOutputBuffer.setStackInSlot(slot, afterInsert);
 				notifyUpdate();
 				return true;
 			}
 		}
 
-		ItemCooldownManager previousItem = heldItem.stack;
-		ItemCooldownManager afterInsert =
+		ItemStack previousItem = heldItem.stack;
+		ItemStack afterInsert =
 			getBehaviour(DirectBeltInputBehaviour.TYPE).tryExportingToBeltFunnel(previousItem, null);
-		if (previousItem.E() != afterInsert.E()) {
-			if (afterInsert.a())
+		if (previousItem.getCount() != afterInsert.getCount()) {
+			if (afterInsert.isEmpty())
 				heldItem = null;
 			else
 				heldItem.stack = afterInsert;
@@ -121,8 +122,8 @@ public class DepotTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	public void al_() {
-		super.al_();
+	public void markRemoved() {
+		super.markRemoved();
 		if (lazyItemHandler != null)
 			lazyItemHandler.invalidate();
 	}
@@ -136,7 +137,7 @@ public class DepotTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		heldItem = null;
 		if (compound.contains("HeldItem"))
 			heldItem = TransportedItemStack.read(compound.getCompound("HeldItem"));
@@ -153,8 +154,8 @@ public class DepotTileEntity extends SmartTileEntity {
 		behaviours.add(transportedHandler);
 	}
 
-	public ItemCooldownManager getHeldItemStack() {
-		return heldItem == null ? ItemCooldownManager.tick : heldItem.stack;
+	public ItemStack getHeldItemStack() {
+		return heldItem == null ? ItemStack.EMPTY : heldItem.stack;
 	}
 
 	public void setHeldItem(TransportedItemStack heldItem) {
@@ -174,11 +175,11 @@ public class DepotTileEntity extends SmartTileEntity {
 		return super.getCapability(cap, side);
 	}
 
-	private ItemCooldownManager tryInsertingFromSide(TransportedItemStack transportedStack, Direction side, boolean simulate) {
-		ItemCooldownManager inserted = transportedStack.stack;
-		ItemCooldownManager empty = ItemCooldownManager.tick;
+	private ItemStack tryInsertingFromSide(TransportedItemStack transportedStack, Direction side, boolean simulate) {
+		ItemStack inserted = transportedStack.stack;
+		ItemStack empty = ItemStack.EMPTY;
 
-		if (!getHeldItemStack().a())
+		if (!getHeldItemStack().isEmpty())
 			return inserted;
 		if (!isOutputEmpty())
 			return inserted;
@@ -192,7 +193,7 @@ public class DepotTileEntity extends SmartTileEntity {
 		transportedStack.prevSideOffset = transportedStack.sideOffset;
 		transportedStack.prevBeltPosition = transportedStack.beltPosition;
 		setHeldItem(transportedStack);
-		X_();
+		markDirty();
 		sendData();
 
 		return empty;
@@ -207,7 +208,7 @@ public class DepotTileEntity extends SmartTileEntity {
 
 		boolean dirty = false;
 		TransportedItemStack transportedItemStack = heldItem;
-		ItemCooldownManager stackBefore = transportedItemStack.stack.i();
+		ItemStack stackBefore = transportedItemStack.stack.copy();
 		TransportedResult result = processFunction.apply(transportedItemStack);
 		if (result == null || result.didntChangeFrom(stackBefore))
 			return;
@@ -218,17 +219,17 @@ public class DepotTileEntity extends SmartTileEntity {
 			setCenteredHeldItem(result.getHeldOutput());
 
 		for (TransportedItemStack added : result.getOutputs()) {
-			if (getHeldItemStack().a()) {
+			if (getHeldItemStack().isEmpty()) {
 				setCenteredHeldItem(added);
 				continue;
 			}
-			ItemCooldownManager remainder = ItemHandlerHelper.insertItemStacked(processingOutputBuffer, added.stack, false);
-			EntityHitResult vec = VecHelper.getCenterOf(e);
-			Inventory.a(d, vec.entity, vec.c + .5f, vec.d, remainder);
+			ItemStack remainder = ItemHandlerHelper.insertItemStacked(processingOutputBuffer, added.stack, false);
+			Vec3d vec = VecHelper.getCenterOf(pos);
+			ItemScatterer.spawn(world, vec.x, vec.y + .5f, vec.z, remainder);
 		}
 
 		if (dirty) {
-			X_();
+			markDirty();
 			sendData();
 		}
 	}
@@ -236,14 +237,14 @@ public class DepotTileEntity extends SmartTileEntity {
 	public boolean isOutputEmpty() {
 		for (int i = 0; i < processingOutputBuffer.getSlots(); i++)
 			if (!processingOutputBuffer.getStackInSlot(i)
-				.a())
+				.isEmpty())
 				return false;
 		return true;
 	}
 
-	private EntityHitResult getWorldPositionOf(TransportedItemStack transported) {
-		EntityHitResult offsetVec = new EntityHitResult(.5f, 14 / 16f, .5f);
-		return offsetVec.e(EntityHitResult.b(e));
+	private Vec3d getWorldPositionOf(TransportedItemStack transported) {
+		Vec3d offsetVec = new Vec3d(.5f, 14 / 16f, .5f);
+		return offsetVec.add(Vec3d.of(pos));
 	}
 
 }

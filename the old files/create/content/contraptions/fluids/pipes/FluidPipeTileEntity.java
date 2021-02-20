@@ -1,22 +1,24 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.pipes;
+package com.simibubi.create.content.contraptions.fluids.pipes;
 
 import java.util.List;
-import bqx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidTransportBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.fluids.pipes.FluidPipeTileEntity.StandardPipeFluidTransportBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.relays.elementary.BracketedTileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.fluids.FluidTransportBehaviour;
+import com.simibubi.create.content.contraptions.fluids.pipes.FluidPipeTileEntity.StandardPipeFluidTransportBehaviour;
+import com.simibubi.create.content.contraptions.relays.elementary.BracketedTileEntityBehaviour;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 
 public class FluidPipeTileEntity extends SmartTileEntity {
 
-	public FluidPipeTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public FluidPipeTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 	}
 
@@ -27,8 +29,8 @@ public class FluidPipeTileEntity extends SmartTileEntity {
 			.withTrigger(state -> AllTriggers.BRACKET_PIPE));
 	}
 
-	private boolean canHaveBracket(PistonHandler state) {
-		return !(state.b() instanceof EncasedPipeBlock);
+	private boolean canHaveBracket(BlockState state) {
+		return !(state.getBlock() instanceof EncasedPipeBlock);
 	}
 
 	class StandardPipeFluidTransportBehaviour extends FluidTransportBehaviour {
@@ -38,13 +40,13 @@ public class FluidPipeTileEntity extends SmartTileEntity {
 		}
 
 		@Override
-		public boolean canHaveFlowToward(PistonHandler state, Direction direction) {
-			return (FluidPipeBlock.isPipe(state) || state.b() instanceof EncasedPipeBlock)
-				&& state.c(FluidPipeBlock.g.get(direction));
+		public boolean canHaveFlowToward(BlockState state, Direction direction) {
+			return (FluidPipeBlock.isPipe(state) || state.getBlock() instanceof EncasedPipeBlock)
+				&& state.get(FluidPipeBlock.FACING_PROPERTIES.get(direction));
 		}
 
 		@Override
-		public AttachmentTypes getRenderedRimAttachment(bqx world, BlockPos pos, PistonHandler state,
+		public AttachmentTypes getRenderedRimAttachment(BlockRenderView world, BlockPos pos, BlockState state,
 			Direction direction) {
 			AttachmentTypes attachment = super.getRenderedRimAttachment(world, pos, state, direction);
 
@@ -52,11 +54,11 @@ public class FluidPipeTileEntity extends SmartTileEntity {
 				return AttachmentTypes.RIM;
 
 			BlockPos offsetPos = pos.offset(direction);
-			if (!FluidPipeBlock.isPipe(world.d_(offsetPos))) {
+			if (!FluidPipeBlock.isPipe(world.getBlockState(offsetPos))) {
 				FluidTransportBehaviour pipeBehaviour =
 					TileEntityBehaviour.get(world, offsetPos, FluidTransportBehaviour.TYPE);
 				if (pipeBehaviour != null
-					&& pipeBehaviour.canHaveFlowToward(world.d_(offsetPos), direction.getOpposite()))
+					&& pipeBehaviour.canHaveFlowToward(world.getBlockState(offsetPos), direction.getOpposite()))
 					return AttachmentTypes.NONE;
 			}
 

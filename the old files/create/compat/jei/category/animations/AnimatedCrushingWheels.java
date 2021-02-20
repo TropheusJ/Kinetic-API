@@ -1,26 +1,27 @@
-package com.simibubi.kinetic_api.compat.jei.category.animations;
+package com.simibubi.create.compat.jei.category.animations;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.Direction.Axis;
 
 public class AnimatedCrushingWheels extends AnimatedKinetics {
 
 	@Override
-	public void draw(BufferVertexConsumer matrixStack, int xOffset, int yOffset) {
+	public void draw(MatrixStack matrixStack, int xOffset, int yOffset) {
 		RenderSystem.enableDepthTest();
-		matrixStack.a(xOffset, yOffset, 100);
-		matrixStack.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(-22.5f));
+		matrixStack.translate(xOffset, yOffset, 100);
+		matrixStack.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(-22.5f));
 		int scale = 22;
 		
-		PistonHandler wheel = AllBlocks.CRUSHING_WHEEL.get()
-				.n()
-				.a(BambooLeaves.F, Axis.X);
+		BlockState wheel = AllBlocks.CRUSHING_WHEEL.get()
+				.getDefaultState()
+				.with(Properties.AXIS, Axis.X);
 
 		GuiGameElement.of(wheel)
 				.rotateBlock(0, 90, -getCurrentAngle())

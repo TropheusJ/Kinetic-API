@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.gui.widgets;
+package com.simibubi.create.foundation.gui.widgets;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,7 +6,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.Lang;
 
 public class SelectionScrollInput extends ScrollInput {
 
@@ -31,8 +31,8 @@ public class SelectionScrollInput extends ScrollInput {
 	}
 
 	@Override
-	public boolean a(double mouseX, double mouseY, double delta) {
-		return super.a(mouseX, mouseY, -delta);
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		return super.mouseScrolled(mouseX, mouseY, -delta);
 	}
 
 	@Override

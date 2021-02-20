@@ -1,27 +1,30 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.glue;
+package com.simibubi.create.content.contraptions.components.structureMovement.glue;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import apx;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.utility.worldWrappers.RayTraceWorld;
-import dcg;
-import net.minecraft.block.BellBlock;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.passive.TameableEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
+
+import com.simibubi.create.AllItems;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.utility.placement.IPlacementHelper;
+import com.simibubi.create.foundation.utility.worldWrappers.RayTraceWorld;
+
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult.Type;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box.a;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.world.BlockEvent.EntityPlaceEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -31,8 +34,8 @@ import net.minecraftforge.fml.network.PacketDistributor;
 @EventBusSubscriber
 public class SuperGlueHandler {
 
-	public static Map<Direction, SuperGlueEntity> gatherGlue(GrassColors world, BlockPos pos) {
-		List<SuperGlueEntity> entities = world.a(SuperGlueEntity.class, new Timer(pos));
+	public static Map<Direction, SuperGlueEntity> gatherGlue(WorldAccess world, BlockPos pos) {
+		List<SuperGlueEntity> entities = world.getNonSpectatingEntities(SuperGlueEntity.class, new Box(pos));
 		Map<Direction, SuperGlueEntity> map = new HashMap<>();
 		for (SuperGlueEntity entity : entities)
 			map.put(entity.getAttachedDirection(pos), entity);
@@ -41,13 +44,13 @@ public class SuperGlueHandler {
 
 	@SubscribeEvent
 	public static void glueListensForBlockPlacement(EntityPlaceEvent event) {
-		GrassColors world = event.getWorld();
-		apx entity = event.getEntity();
+		WorldAccess world = event.getWorld();
+		Entity entity = event.getEntity();
 		BlockPos pos = event.getPos();
 
 		if (entity == null || world == null || pos == null)
 			return;
-		if (world.s_())
+		if (world.isClient())
 			return;
 
 		Map<Direction, SuperGlueEntity> gatheredGlue = gatherGlue(world, pos);
@@ -55,53 +58,55 @@ public class SuperGlueHandler {
 			AllPackets.channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity),
 				new GlueEffectPacket(pos, direction, true));
 
-		if (entity instanceof PlayerAbilities)
-			glueInOffHandAppliesOnBlockPlace(event, pos, (PlayerAbilities) entity);
+		if (entity instanceof PlayerEntity)
+			glueInOffHandAppliesOnBlockPlace(event, pos, (PlayerEntity) entity);
 	}
 
-	public static void glueInOffHandAppliesOnBlockPlace(EntityPlaceEvent event, BlockPos pos, PlayerAbilities placer) {
-		ItemCooldownManager itemstack = placer.dD();
-		TameableEntity reachAttribute = placer.a(ForgeMod.REACH_DISTANCE.get());
+	public static void glueInOffHandAppliesOnBlockPlace(EntityPlaceEvent event, BlockPos pos, PlayerEntity placer) {
+		ItemStack itemstack = placer.getOffHandStack();
+		EntityAttributeInstance reachAttribute = placer.getAttributeInstance(ForgeMod.REACH_DISTANCE.get());
 		if (!AllItems.SUPER_GLUE.isIn(itemstack) || reachAttribute == null)
 			return;
-		if (AllItems.WRENCH.isIn(placer.dC()))
+		if (AllItems.WRENCH.isIn(placer.getMainHandStack()))
+			return;
+		if (event.getPlacedAgainst() == IPlacementHelper.ID)
 			return;
 
-		double distance = reachAttribute.f();
-		EntityHitResult start = placer.j(1);
-		EntityHitResult look = placer.f(1);
-		EntityHitResult end = start.b(look.entity * distance, look.c * distance, look.d * distance);
-		GameMode world = placer.l;
+		double distance = reachAttribute.getValue();
+		Vec3d start = placer.getCameraPosVec(1);
+		Vec3d look = placer.getRotationVec(1);
+		Vec3d end = start.add(look.x * distance, look.y * distance, look.z * distance);
+		World world = placer.world;
 
 		RayTraceWorld rayTraceWorld =
-			new RayTraceWorld(world, (p, state) -> p.equals(pos) ? BellBlock.FACING.n() : state);
-		dcg ray = rayTraceWorld.a(
-			new BlockView(start, end, BlockView.a.b, BlockView.b.a, placer));
+			new RayTraceWorld(world, (p, state) -> p.equals(pos) ? Blocks.AIR.getDefaultState() : state);
+		BlockHitResult ray = rayTraceWorld.raycast(
+			new RaycastContext(start, end, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, placer));
 
-		Direction face = ray.b();
-		if (face == null || ray.c() == a.a)
+		Direction face = ray.getSide();
+		if (face == null || ray.getType() == Type.MISS)
 			return;
 
-		if (!ray.a()
+		if (!ray.getBlockPos()
 			.offset(face)
 			.equals(pos)) {
 			event.setCanceled(true);
 			return;
 		}
 
-		SuperGlueEntity entity = new SuperGlueEntity(world, ray.a(), face.getOpposite());
-		CompoundTag compoundnbt = itemstack.o();
+		SuperGlueEntity entity = new SuperGlueEntity(world, ray.getBlockPos(), face.getOpposite());
+		CompoundTag compoundnbt = itemstack.getTag();
 		if (compoundnbt != null)
-			EntityDimensions.a(world, placer, entity, compoundnbt);
+			EntityType.loadFromEntityTag(world, placer, entity, compoundnbt);
 
 		if (entity.onValidSurface()) {
-			if (!world.v) {
+			if (!world.isClient) {
 				entity.playPlaceSound();
-				world.c(entity);
+				world.spawnEntity(entity);
 				AllPackets.channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity),
-					new GlueEffectPacket(ray.a(), face, true));
+					new GlueEffectPacket(ray.getBlockPos(), face, true));
 			}
-			itemstack.a(1, placer, SuperGlueItem::onBroken);
+			itemstack.damage(1, placer, SuperGlueItem::onBroken);
 		}
 	}
 

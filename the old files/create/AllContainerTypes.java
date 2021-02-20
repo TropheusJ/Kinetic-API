@@ -1,25 +1,25 @@
-package com.simibubi.kinetic_api;
+package com.simibubi.create;
 
-import com.simibubi.kinetic_api.content.logistics.block.inventories.AdjustableCrateContainer;
-import com.simibubi.kinetic_api.content.logistics.block.inventories.AdjustableCrateScreen;
-import com.simibubi.kinetic_api.content.logistics.item.filter.AttributeFilterContainer;
-import com.simibubi.kinetic_api.content.logistics.item.filter.AttributeFilterScreen;
-import com.simibubi.kinetic_api.content.logistics.item.filter.FilterContainer;
-import com.simibubi.kinetic_api.content.logistics.item.filter.FilterScreen;
-import com.simibubi.kinetic_api.content.schematics.block.SchematicTableContainer;
-import com.simibubi.kinetic_api.content.schematics.block.SchematicTableScreen;
-import com.simibubi.kinetic_api.content.schematics.block.SchematicannonContainer;
-import com.simibubi.kinetic_api.content.schematics.block.SchematicannonScreen;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.content.logistics.block.inventories.AdjustableCrateContainer;
+import com.simibubi.create.content.logistics.block.inventories.AdjustableCrateScreen;
+import com.simibubi.create.content.logistics.item.filter.AttributeFilterContainer;
+import com.simibubi.create.content.logistics.item.filter.AttributeFilterScreen;
+import com.simibubi.create.content.logistics.item.filter.FilterContainer;
+import com.simibubi.create.content.logistics.item.filter.FilterScreen;
+import com.simibubi.create.content.schematics.block.SchematicTableContainer;
+import com.simibubi.create.content.schematics.block.SchematicTableScreen;
+import com.simibubi.create.content.schematics.block.SchematicannonContainer;
+import com.simibubi.create.content.schematics.block.SchematicannonScreen;
+import com.simibubi.create.foundation.utility.Lang;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screen.PresetsScreen;
-import net.minecraft.client.gui.screen.ingame.JigsawBlockScreen;
-import net.minecraft.client.gui.screen.options.LanguageOptionsScreen;
-import net.minecraft.client.gui.screen.options.LanguageOptionsScreen.LanguageSelectionListWidget;
-import net.minecraft.item.FoodComponent;
-import net.minecraft.screen.LecternScreenHandler;
-import net.minecraft.screen.LecternScreenHandler.a;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import net.minecraft.client.gui.screen.ingame.HandledScreens.Provider;
+import net.minecraft.client.gui.screen.ingame.ScreenHandlerProvider;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.ScreenHandlerType.Factory;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -36,16 +36,16 @@ public enum AllContainerTypes {
 
 	;
 
-	public LecternScreenHandler<? extends FoodComponent> type;
-	private a<?> factory;
+	public ScreenHandlerType<? extends ScreenHandler> type;
+	private Factory<?> factory;
 
-	private <C extends FoodComponent> AllContainerTypes(IContainerFactory<C> factory) {
+	private <C extends ScreenHandler> AllContainerTypes(IContainerFactory<C> factory) {
 		this.factory = factory;
 	}
 
-	public static void register(RegistryEvent.Register<LecternScreenHandler<?>> event) {
+	public static void register(RegistryEvent.Register<ScreenHandlerType<?>> event) {
 		for (AllContainerTypes container : values()) {
-			container.type = new LecternScreenHandler<>(container.factory)
+			container.type = new ScreenHandlerType<>(container.factory)
 					.setRegistryName(new Identifier(Create.ID, Lang.asId(container.name())));
 			event.getRegistry().register(container.type);
 		}
@@ -62,9 +62,9 @@ public enum AllContainerTypes {
 
 	@Environment(EnvType.CLIENT)
 	@SuppressWarnings("unchecked")
-	private static <C extends FoodComponent, S extends PresetsScreen & JigsawBlockScreen<C>> void bind(AllContainerTypes c,
-			LanguageSelectionListWidget<C, S> factory) {
-		LanguageOptionsScreen.a((LecternScreenHandler<C>) c.type, factory);
+	private static <C extends ScreenHandler, S extends Screen & ScreenHandlerProvider<C>> void bind(AllContainerTypes c,
+			Provider<C, S> factory) {
+		HandledScreens.register((ScreenHandlerType<C>) c.type, factory);
 	}
 
 }

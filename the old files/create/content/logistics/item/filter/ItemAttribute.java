@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter;
+package com.simibubi.create.content.logistics.item.filter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,32 +12,32 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.base.Predicates;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.logistics.InWorldProcessing;
-import com.simibubi.kinetic_api.content.logistics.item.filter.attribute.BookAuthorAttribute;
-import com.simibubi.kinetic_api.content.logistics.item.filter.attribute.BookCopyAttribute;
-import com.simibubi.kinetic_api.content.logistics.item.filter.attribute.EnchantAttribute;
-import com.simibubi.kinetic_api.content.logistics.item.filter.attribute.FluidContentsAttribute;
-import com.simibubi.kinetic_api.content.logistics.item.filter.attribute.ItemNameAttribute;
-import com.simibubi.kinetic_api.content.logistics.item.filter.attribute.astralsorcery.AstralSorceryAmuletAttribute;
-import com.simibubi.kinetic_api.content.logistics.item.filter.attribute.astralsorcery.AstralSorceryAttunementAttribute;
-import com.simibubi.kinetic_api.content.logistics.item.filter.attribute.astralsorcery.AstralSorceryCrystalAttribute;
-import com.simibubi.kinetic_api.content.logistics.item.filter.attribute.astralsorcery.AstralSorceryPerkGemAttribute;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.logistics.InWorldProcessing;
+import com.simibubi.create.content.logistics.item.filter.attribute.BookAuthorAttribute;
+import com.simibubi.create.content.logistics.item.filter.attribute.BookCopyAttribute;
+import com.simibubi.create.content.logistics.item.filter.attribute.EnchantAttribute;
+import com.simibubi.create.content.logistics.item.filter.attribute.FluidContentsAttribute;
+import com.simibubi.create.content.logistics.item.filter.attribute.ItemNameAttribute;
+import com.simibubi.create.content.logistics.item.filter.attribute.astralsorcery.AstralSorceryAmuletAttribute;
+import com.simibubi.create.content.logistics.item.filter.attribute.astralsorcery.AstralSorceryAttunementAttribute;
+import com.simibubi.create.content.logistics.item.filter.attribute.astralsorcery.AstralSorceryCrystalAttribute;
+import com.simibubi.create.content.logistics.item.filter.attribute.astralsorcery.AstralSorceryPerkGemAttribute;
+import com.simibubi.create.foundation.utility.Lang;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.WallWitherSkullBlock;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.HoeItem;
+import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.Recipe;
+import net.minecraft.recipe.RecipeType;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
@@ -53,7 +53,7 @@ public interface ItemAttribute {
 
 	static ItemAttribute standard = register(StandardTraits.DUMMY);
 	static ItemAttribute inTag = register(new InTag(new Identifier("dummy")));
-	static ItemAttribute inItemGroup = register(new InItemGroup(ChorusFruitItem.f));
+	static ItemAttribute inItemGroup = register(new InItemGroup(ItemGroup.MISC));
 	static ItemAttribute addedBy = register(new InItemGroup.AddedBy("dummy"));
 	static ItemAttribute hasEnchant = register(EnchantAttribute.EMPTY);
 	static ItemAttribute hasFluid = register(FluidContentsAttribute.EMPTY);
@@ -70,17 +70,17 @@ public interface ItemAttribute {
 		return attributeType;
 	}
 
-	default boolean appliesTo(ItemCooldownManager stack, GameMode world) {
+	default boolean appliesTo(ItemStack stack, World world) {
 		return appliesTo(stack);
 	}
 
-	boolean appliesTo(ItemCooldownManager stack);
+	boolean appliesTo(ItemStack stack);
 
-	default List<ItemAttribute> listAttributesOf(ItemCooldownManager stack, GameMode world) {
+	default List<ItemAttribute> listAttributesOf(ItemStack stack, World world) {
 		return listAttributesOf(stack);
 	}
 
-	public List<ItemAttribute> listAttributesOf(ItemCooldownManager stack);
+	public List<ItemAttribute> listAttributesOf(ItemStack stack);
 
 	public String getTranslationKey();
 
@@ -124,56 +124,56 @@ public interface ItemAttribute {
 	public static enum StandardTraits implements ItemAttribute {
 
 		DUMMY(s -> false),
-		PLACEABLE(s -> s.b() instanceof BannerItem),
-		CONSUMABLE(ItemCooldownManager::F),
+		PLACEABLE(s -> s.getItem() instanceof BlockItem),
+		CONSUMABLE(ItemStack::isFood),
 		FLUID_CONTAINER(s -> s.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY).isPresent()),
-		ENCHANTED(ItemCooldownManager::x),
-		RENAMED(ItemCooldownManager::t),
-		DAMAGED(ItemCooldownManager::f),
-		BADLY_DAMAGED(s -> s.f() && s.g() / s.h() > 3 / 4f),
-		NOT_STACKABLE(Predicates.not(ItemCooldownManager::d)),
+		ENCHANTED(ItemStack::hasEnchantments),
+		RENAMED(ItemStack::hasCustomName),
+		DAMAGED(ItemStack::isDamaged),
+		BADLY_DAMAGED(s -> s.isDamaged() && s.getDamage() / s.getMaxDamage() > 3 / 4f),
+		NOT_STACKABLE(Predicates.not(ItemStack::isStackable)),
 		EQUIPABLE(s -> s.getEquipmentSlot() != null),
-		FURNACE_FUEL(WallWitherSkullBlock::b),
+		FURNACE_FUEL(AbstractFurnaceBlockEntity::canUseAsFuel),
 		WASHABLE(InWorldProcessing::isWashable),
 		CRUSHABLE((s, w) -> testRecipe(s, w, AllRecipeTypes.CRUSHING.getType())
 			|| testRecipe(s, w, AllRecipeTypes.MILLING.getType())),
-		SMELTABLE((s, w) -> testRecipe(s, w, Recipe.b)),
-		SMOKABLE((s, w) -> testRecipe(s, w, Recipe.d)),
-		BLASTABLE((s, w) -> testRecipe(s, w, Recipe.c));
+		SMELTABLE((s, w) -> testRecipe(s, w, RecipeType.SMELTING)),
+		SMOKABLE((s, w) -> testRecipe(s, w, RecipeType.SMOKING)),
+		BLASTABLE((s, w) -> testRecipe(s, w, RecipeType.BLASTING));
 
 		private static final RecipeWrapper RECIPE_WRAPPER = new RecipeWrapper(new ItemStackHandler(1));
-		private Predicate<ItemCooldownManager> test;
-		private BiPredicate<ItemCooldownManager, GameMode> testWithWorld;
+		private Predicate<ItemStack> test;
+		private BiPredicate<ItemStack, World> testWithWorld;
 
-		private StandardTraits(Predicate<ItemCooldownManager> test) {
+		private StandardTraits(Predicate<ItemStack> test) {
 			this.test = test;
 		}
 
-		private static boolean testRecipe(ItemCooldownManager s, GameMode w, Recipe<? extends Ingredient<BossBar>> type) {
-			RECIPE_WRAPPER.a(0, s.i());
-			return w.o()
-				.a(type, RECIPE_WRAPPER, w)
+		private static boolean testRecipe(ItemStack s, World w, RecipeType<? extends Recipe<Inventory>> type) {
+			RECIPE_WRAPPER.setStack(0, s.copy());
+			return w.getRecipeManager()
+				.getFirstMatch(type, RECIPE_WRAPPER, w)
 				.isPresent();
 		}
 
-		private StandardTraits(BiPredicate<ItemCooldownManager, GameMode> test) {
+		private StandardTraits(BiPredicate<ItemStack, World> test) {
 			this.testWithWorld = test;
 		}
 
 		@Override
-		public boolean appliesTo(ItemCooldownManager stack, GameMode world) {
+		public boolean appliesTo(ItemStack stack, World world) {
 			if (testWithWorld != null)
 				return testWithWorld.test(stack, world);
 			return appliesTo(stack);
 		}
 
 		@Override
-		public boolean appliesTo(ItemCooldownManager stack) {
+		public boolean appliesTo(ItemStack stack) {
 			return test.test(stack);
 		}
 
 		@Override
-		public List<ItemAttribute> listAttributesOf(ItemCooldownManager stack, GameMode world) {
+		public List<ItemAttribute> listAttributesOf(ItemStack stack, World world) {
 			List<ItemAttribute> attributes = new ArrayList<>();
 			for (StandardTraits trait : values())
 				if (trait.appliesTo(stack, world))
@@ -182,7 +182,7 @@ public interface ItemAttribute {
 		}
 
 		@Override
-		public List<ItemAttribute> listAttributesOf(ItemCooldownManager stack) {
+		public List<ItemAttribute> listAttributesOf(ItemStack stack) {
 			return null;
 		}
 
@@ -220,15 +220,15 @@ public interface ItemAttribute {
 		}
 
 		@Override
-		public boolean appliesTo(ItemCooldownManager stack) {
-			return stack.b()
+		public boolean appliesTo(ItemStack stack) {
+			return stack.getItem()
 				.getTags()
 				.contains(tagName);
 		}
 
 		@Override
-		public List<ItemAttribute> listAttributesOf(ItemCooldownManager stack) {
-			return stack.b()
+		public List<ItemAttribute> listAttributesOf(ItemStack stack) {
+			return stack.getItem()
 				.getTags()
 				.stream()
 				.map(InTag::new)
@@ -260,22 +260,22 @@ public interface ItemAttribute {
 
 	public static class InItemGroup implements ItemAttribute {
 
-		private ChorusFruitItem group;
+		private ItemGroup group;
 
-		public InItemGroup(ChorusFruitItem group) {
+		public InItemGroup(ItemGroup group) {
 			this.group = group;
 		}
 
 		@Override
-		public boolean appliesTo(ItemCooldownManager stack) {
-			HoeItem item = stack.b();
-			return item.q() == group;
+		public boolean appliesTo(ItemStack stack) {
+			Item item = stack.getItem();
+			return item.getGroup() == group;
 		}
 
 		@Override
-		public List<ItemAttribute> listAttributesOf(ItemCooldownManager stack) {
-			ChorusFruitItem group = stack.b()
-				.q();
+		public List<ItemAttribute> listAttributesOf(ItemStack stack) {
+			ItemGroup group = stack.getItem()
+				.getGroup();
 			return group == null ? Collections.emptyList() : Arrays.asList(new InItemGroup(group));
 		}
 
@@ -288,19 +288,19 @@ public interface ItemAttribute {
 		@Environment(EnvType.CLIENT)
 		public TranslatableText format(boolean inverted) {
 			return Lang.translate("item_attributes." + getTranslationKey() + (inverted ? ".inverted" : ""),
-				group.c());
+				group.getTranslationKey());
 		}
 
 		@Override
 		public void writeNBT(CompoundTag nbt) {
-			nbt.putString("path", group.b());
+			nbt.putString("path", group.getName());
 		}
 
 		@Override
 		public ItemAttribute readNBT(CompoundTag nbt) {
 			String readPath = nbt.getString("path");
-			for (ChorusFruitItem group : ChorusFruitItem.a)
-				if (group.b()
+			for (ItemGroup group : ItemGroup.GROUPS)
+				if (group.getName()
 					.equals(readPath))
 					return new InItemGroup(group);
 			return null;
@@ -317,14 +317,14 @@ public interface ItemAttribute {
 		}
 
 		@Override
-		public boolean appliesTo(ItemCooldownManager stack) {
-			return modId.equals(stack.b()
+		public boolean appliesTo(ItemStack stack) {
+			return modId.equals(stack.getItem()
 				.getCreatorModId(stack));
 		}
 
 		@Override
-		public List<ItemAttribute> listAttributesOf(ItemCooldownManager stack) {
-			String id = stack.b()
+		public List<ItemAttribute> listAttributesOf(ItemStack stack) {
+			String id = stack.getItem()
 				.getCreatorModId(stack);
 			return id == null ? Collections.emptyList() : Arrays.asList(new AddedBy(id));
 		}

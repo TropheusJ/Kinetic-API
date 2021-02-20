@@ -1,62 +1,64 @@
-package com.simibubi.kinetic_api.content.logistics.block.diodes;
+package com.simibubi.create.content.logistics.block.diodes;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllTileEntities;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllTileEntities;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
 
 public class AdjustableRepeaterBlock extends AbstractDiodeBlock {
 
-	public static BedPart POWERING = BedPart.a("powering");
+	public static BooleanProperty POWERING = BooleanProperty.of("powering");
 
-	public AdjustableRepeaterBlock(c properties) {
+	public AdjustableRepeaterBlock(Settings properties) {
 		super(properties);
-		j(n().a(SHAPE, false)
-			.a(POWERING, false));
+		setDefaultState(getDefaultState().with(POWERED, false)
+			.with(POWERING, false));
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(SHAPE, POWERING, aq);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(POWERED, POWERING, FACING);
+		super.appendProperties(builder);
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllBlocks.ADJUSTABLE_REPEATER.is(this) ? AllTileEntities.ADJUSTABLE_REPEATER.create()
 			: AllTileEntities.ADJUSTABLE_PULSE_REPEATER.create();
 	}
 
 	@Override
-	protected int b(MobSpawnerLogic worldIn, BlockPos pos, PistonHandler state) {
-		return state.c(POWERING) ? 15 : 0;
+	protected int getOutputLevel(BlockView worldIn, BlockPos pos, BlockState state) {
+		return state.get(POWERING) ? 15 : 0;
 	}
 
 	@Override
-	public int a(PistonHandler blockState, MobSpawnerLogic blockAccess, BlockPos pos, Direction side) {
-		return blockState.c(aq) == side ? this.b(blockAccess, pos, blockState) : 0;
+	public int getWeakRedstonePower(BlockState blockState, BlockView blockAccess, BlockPos pos, Direction side) {
+		return blockState.get(FACING) == side ? this.getOutputLevel(blockAccess, pos, blockState) : 0;
 	}
 
 	@Override
-	protected int g(PistonHandler p_196346_1_) {
+	protected int getUpdateDelayInternal(BlockState p_196346_1_) {
 		return 0;
 	}
 
 	@Override
-	public boolean canConnectRedstone(PistonHandler state, MobSpawnerLogic world, BlockPos pos, Direction side) {
+	public boolean canConnectRedstone(BlockState state, BlockView world, BlockPos pos, Direction side) {
 		if (side == null)
 			return false;
-		return side.getAxis() == state.c(aq)
+		return side.getAxis() == state.get(FACING)
 			.getAxis();
 	}
 

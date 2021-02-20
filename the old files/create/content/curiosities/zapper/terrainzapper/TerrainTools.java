@@ -1,18 +1,20 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.terrainzapper;
+package com.simibubi.create.content.curiosities.zapper.terrainzapper;
 
 import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.content.curiosities.zapper.ZapperItem;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.content.curiosities.zapper.ZapperItem;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 public enum TerrainTools {
 
@@ -35,18 +37,18 @@ public enum TerrainTools {
 		return this != Clear && this != Flatten;
 	}
 
-	public void run(GameMode world, List<BlockPos> targetPositions, Direction facing, @Nullable PistonHandler paintedState, @Nullable CompoundTag data) {
+	public void run(World world, List<BlockPos> targetPositions, Direction facing, @Nullable BlockState paintedState, @Nullable CompoundTag data, PlayerEntity player) {
 		switch (this) {
 		case Clear:
-			targetPositions.forEach(p -> world.a(p, BellBlock.FACING.n()));
+			targetPositions.forEach(p -> world.setBlockState(p, Blocks.AIR.getDefaultState()));
 			break;
 		case Fill:
 			targetPositions.forEach(p -> {
-				PistonHandler toReplace = world.d_(p);
+				BlockState toReplace = world.getBlockState(p);
 				if (!isReplaceable(toReplace))
 					return;
-				world.a(p, paintedState);
-				ZapperItem.setTileData(world, p, paintedState, data);
+				world.setBlockState(p, paintedState);
+				ZapperItem.setTileData(world, p, paintedState, data, player);
 			});
 			break;
 		case Flatten:
@@ -54,7 +56,7 @@ public enum TerrainTools {
 			break;
 		case Overlay:
 			targetPositions.forEach(p -> {
-				PistonHandler toOverlay = world.d_(p);
+				BlockState toOverlay = world.getBlockState(p);
 				if (isReplaceable(toOverlay))
 					return;
 				if (toOverlay == paintedState)
@@ -62,33 +64,33 @@ public enum TerrainTools {
 
 				p = p.up();
 
-				PistonHandler toReplace = world.d_(p);
+				BlockState toReplace = world.getBlockState(p);
 				if (!isReplaceable(toReplace))
 					return;
-				world.a(p, paintedState);
-				ZapperItem.setTileData(world, p, paintedState, data);
+				world.setBlockState(p, paintedState);
+				ZapperItem.setTileData(world, p, paintedState, data, player);
 			});
 			break;
 		case Place:
 			targetPositions.forEach(p -> {
-				world.a(p, paintedState);
-				ZapperItem.setTileData(world, p, paintedState, data);
+				world.setBlockState(p, paintedState);
+				ZapperItem.setTileData(world, p, paintedState, data, player);
 			});
 			break;
 		case Replace:
 			targetPositions.forEach(p -> {
-				PistonHandler toReplace = world.d_(p);
+				BlockState toReplace = world.getBlockState(p);
 				if (isReplaceable(toReplace))
 					return;
-				world.a(p, paintedState);
-				ZapperItem.setTileData(world, p, paintedState, data);
+				world.setBlockState(p, paintedState);
+				ZapperItem.setTileData(world, p, paintedState, data, player);
 			});
 			break;
 		}
 	}
 
-	public static boolean isReplaceable(PistonHandler toReplace) {
-		return toReplace.c().e();
+	public static boolean isReplaceable(BlockState toReplace) {
+		return toReplace.getMaterial().isReplaceable();
 	}
 
 }

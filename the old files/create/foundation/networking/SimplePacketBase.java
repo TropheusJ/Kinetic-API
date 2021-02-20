@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.networking;
+package com.simibubi.create.foundation.networking;
 
 import java.util.function.Supplier;
 import net.minecraft.network.PacketByteBuf;

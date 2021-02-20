@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;

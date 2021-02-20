@@ -1,36 +1,36 @@
-package com.simibubi.kinetic_api.content.logistics.block.inventories;
+package com.simibubi.create.content.logistics.block.inventories;
 
-import bfs;
-import com.simibubi.kinetic_api.AllContainerTypes;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.FoodComponent;
+import com.simibubi.create.AllContainerTypes;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.screen.ShulkerBoxScreenHandler;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
 import net.minecraftforge.items.SlotItemHandler;
 
-public class AdjustableCrateContainer extends FoodComponent {
+public class AdjustableCrateContainer extends ScreenHandler {
 
 	public AdjustableCrateTileEntity te;
-	public bfs playerInventory;
+	public PlayerInventory playerInventory;
 	public boolean doubleCrate;
 
-	public AdjustableCrateContainer(int id, bfs inv, PacketByteBuf extraData) {
+	public AdjustableCrateContainer(int id, PlayerInventory inv, PacketByteBuf extraData) {
 		super(AllContainerTypes.FLEXCRATE.type, id);
-		DragonHeadEntityModel world = KeyBinding.B().r;
-		BeehiveBlockEntity tileEntity = world.c(extraData.readBlockPos());
+		ClientWorld world = MinecraftClient.getInstance().world;
+		BlockEntity tileEntity = world.getBlockEntity(extraData.readBlockPos());
 		this.playerInventory = inv;
 		if (tileEntity instanceof AdjustableCrateTileEntity) {
 			this.te = (AdjustableCrateTileEntity) tileEntity;
-			this.te.handleUpdateTag(te.p(), extraData.readCompoundTag());
+			this.te.handleUpdateTag(te.getCachedState(), extraData.readCompoundTag());
 			init();
 		}
 	}
 
-	public AdjustableCrateContainer(int id, bfs inv, AdjustableCrateTileEntity te) {
+	public AdjustableCrateContainer(int id, PlayerInventory inv, AdjustableCrateTileEntity te) {
 		super(AllContainerTypes.FLEXCRATE.type, id);
 		this.te = te;
 		this.playerInventory = inv;
@@ -43,7 +43,7 @@ public class AdjustableCrateContainer extends FoodComponent {
 		int maxCol = doubleCrate ? 8 : 4;
 		for (int row = 0; row < 4; ++row) {
 			for (int col = 0; col < maxCol; ++col) {
-				this.a(new SlotItemHandler(te.inventory, col + row * maxCol, x + col * 18, 20 + row * 18));
+				this.addSlot(new SlotItemHandler(te.inventory, col + row * maxCol, x + col * 18, 20 + row * 18));
 			}
 		}
 
@@ -52,36 +52,36 @@ public class AdjustableCrateContainer extends FoodComponent {
 		int yOffset = 155;
 		for (int row = 0; row < 3; ++row) {
 			for (int col = 0; col < 9; ++col) {
-				this.a(new ShulkerBoxScreenHandler(playerInventory, col + row * 9 + 9, xOffset + col * 18, yOffset + row * 18));
+				this.addSlot(new Slot(playerInventory, col + row * 9 + 9, xOffset + col * 18, yOffset + row * 18));
 			}
 		}
 
 		for (int hotbarSlot = 0; hotbarSlot < 9; ++hotbarSlot) {
-			this.a(new ShulkerBoxScreenHandler(playerInventory, hotbarSlot, xOffset + hotbarSlot * 18, yOffset + 58));
+			this.addSlot(new Slot(playerInventory, hotbarSlot, xOffset + hotbarSlot * 18, yOffset + 58));
 		}
 
-		c();
+		sendContentUpdates();
 	}
 
 	@Override
-	public ItemCooldownManager b(PlayerAbilities playerIn, int index) {
-		ShulkerBoxScreenHandler clickedSlot = a(index);
-		if (!clickedSlot.f())
-			return ItemCooldownManager.tick;
+	public ItemStack transferSlot(PlayerEntity playerIn, int index) {
+		Slot clickedSlot = getSlot(index);
+		if (!clickedSlot.hasStack())
+			return ItemStack.EMPTY;
 
-		ItemCooldownManager stack = clickedSlot.e();
+		ItemStack stack = clickedSlot.getStack();
 		int crateSize = doubleCrate ? 32 : 16;
 		if (index < crateSize) {
-			a(stack, crateSize, hunger.size(), false);
+			insertItem(stack, crateSize, slots.size(), false);
 			te.inventory.onContentsChanged(index);
 		} else
-			a(stack, 0, crateSize - 1, false);
+			insertItem(stack, 0, crateSize - 1, false);
 
-		return ItemCooldownManager.tick;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public boolean a(PlayerAbilities playerIn) {
+	public boolean canUse(PlayerEntity playerIn) {
 		return true;
 	}
 

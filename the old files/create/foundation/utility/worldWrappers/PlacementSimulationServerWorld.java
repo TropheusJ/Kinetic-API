@@ -1,14 +1,15 @@
-package com.simibubi.kinetic_api.foundation.utility.worldWrappers;
+package com.simibubi.create.foundation.utility.worldWrappers;
 
 import java.util.HashMap;
 import java.util.function.Predicate;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
 public class PlacementSimulationServerWorld extends WrappedServerWorld {
-	public HashMap<BlockPos, PistonHandler> blocksAdded;
+	public HashMap<BlockPos, BlockState> blocksAdded;
 
 	public PlacementSimulationServerWorld(ServerWorld wrapped) {
 		super(wrapped);
@@ -20,23 +21,23 @@ public class PlacementSimulationServerWorld extends WrappedServerWorld {
 	}
 
 	@Override
-	public boolean a(BlockPos pos, PistonHandler newState, int flags) {
+	public boolean setBlockState(BlockPos pos, BlockState newState, int flags) {
 		blocksAdded.put(pos.toImmutable(), newState);
 		return true;
 	}
 
 	@Override
-	public boolean a(BlockPos pos, PistonHandler state) {
-		return a(pos, state, 0);
+	public boolean setBlockState(BlockPos pos, BlockState state) {
+		return setBlockState(pos, state, 0);
 	}
 
 	@Override
-	public boolean a(BlockPos pos, Predicate<PistonHandler> condition) {
-		return condition.test(d_(pos));
+	public boolean testBlockState(BlockPos pos, Predicate<BlockState> condition) {
+		return condition.test(getBlockState(pos));
 	}
 	
 	@Override
-	public boolean p(BlockPos pos) {
+	public boolean canSetBlock(BlockPos pos) {
 		return true;
 	}
 	
@@ -46,10 +47,10 @@ public class PlacementSimulationServerWorld extends WrappedServerWorld {
 	}
 
 	@Override
-	public PistonHandler d_(BlockPos pos) {
+	public BlockState getBlockState(BlockPos pos) {
 		if (blocksAdded.containsKey(pos))
 			return blocksAdded.get(pos);
-		return BellBlock.FACING.n();
+		return Blocks.AIR.getDefaultState();
 	}
 	
 }

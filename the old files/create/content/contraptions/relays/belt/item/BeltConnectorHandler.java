@@ -1,62 +1,62 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.belt.item;
+package com.simibubi.create.content.contraptions.relays.belt.item;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.content.contraptions.relays.elementary.ShaftBlock;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import dcg;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.content.contraptions.relays.elementary.ShaftBlock;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 public class BeltConnectorHandler {
 
 	private static Random r = new Random();
 
 	public static void tick() {
-		PlayerAbilities player = KeyBinding.B().s;
-		GameMode world = KeyBinding.B().r;
+		PlayerEntity player = MinecraftClient.getInstance().player;
+		World world = MinecraftClient.getInstance().world;
 
 		if (player == null || world == null)
 			return;
-		if (KeyBinding.B().y != null)
+		if (MinecraftClient.getInstance().currentScreen != null)
 			return;
 
-		for (ItemScatterer hand : ItemScatterer.values()) {
-			ItemCooldownManager heldItem = player.b(hand);
+		for (Hand hand : Hand.values()) {
+			ItemStack heldItem = player.getStackInHand(hand);
 
 			if (!AllItems.BELT_CONNECTOR.isIn(heldItem))
 				continue;
-			if (!heldItem.n())
+			if (!heldItem.hasTag())
 				continue;
 
-			CompoundTag tag = heldItem.o();
+			CompoundTag tag = heldItem.getTag();
 			if (!tag.contains("FirstPulley"))
 				continue;
 
 			BlockPos first = NbtHelper.toBlockPos(tag.getCompound("FirstPulley"));
 
-			if (!BlockHelper.hasBlockStateProperty(world.d_(first), BambooLeaves.F))
+			if (!BlockHelper.hasBlockStateProperty(world.getBlockState(first), Properties.AXIS))
 				continue;
-			Axis axis = world.d_(first)
-				.c(BambooLeaves.F);
+			Axis axis = world.getBlockState(first)
+				.get(Properties.AXIS);
 
-			Box rayTrace = KeyBinding.B().v;
-			if (rayTrace == null || !(rayTrace instanceof dcg)) {
+			HitResult rayTrace = MinecraftClient.getInstance().crosshairTarget;
+			if (rayTrace == null || !(rayTrace instanceof BlockHitResult)) {
 				if (r.nextInt(50) == 0) {
 					world.addParticle(new DustParticleEffect(.3f, .9f, .5f, 1),
 						first.getX() + .5f + randomOffset(.25f), first.getY() + .5f + randomOffset(.25f),
@@ -65,36 +65,36 @@ public class BeltConnectorHandler {
 				return;
 			}
 
-			BlockPos selected = ((dcg) rayTrace).a();
+			BlockPos selected = ((BlockHitResult) rayTrace).getBlockPos();
 
-			if (world.d_(selected)
-				.c()
-				.e())
+			if (world.getBlockState(selected)
+				.getMaterial()
+				.isReplaceable())
 				return;
-			if (!ShaftBlock.isShaft(world.d_(selected)))
-				selected = selected.offset(((dcg) rayTrace).b());
+			if (!ShaftBlock.isShaft(world.getBlockState(selected)))
+				selected = selected.offset(((BlockHitResult) rayTrace).getSide());
 			if (!selected.isWithinDistance(first, AllConfigs.SERVER.kinetics.maxBeltLength.get()))
 				return;
 
 			boolean canConnect =
 				BeltConnectorItem.validateAxis(world, selected) && BeltConnectorItem.canConnect(world, first, selected);
 
-			EntityHitResult start = EntityHitResult.b(first);
-			EntityHitResult end = EntityHitResult.b(selected);
-			EntityHitResult actualDiff = end.d(start);
-			end = end.a(axis.choose(actualDiff.entity, 0, 0), axis.choose(0, actualDiff.c, 0),
-				axis.choose(0, 0, actualDiff.d));
-			EntityHitResult diff = end.d(start);
+			Vec3d start = Vec3d.of(first);
+			Vec3d end = Vec3d.of(selected);
+			Vec3d actualDiff = end.subtract(start);
+			end = end.subtract(axis.choose(actualDiff.x, 0, 0), axis.choose(0, actualDiff.y, 0),
+				axis.choose(0, 0, actualDiff.z));
+			Vec3d diff = end.subtract(start);
 
-			double x = Math.abs(diff.entity);
-			double y = Math.abs(diff.c);
-			double z = Math.abs(diff.d);
+			double x = Math.abs(diff.x);
+			double y = Math.abs(diff.y);
+			double z = Math.abs(diff.z);
 			float length = (float) Math.max(x, Math.max(y, z));
-			EntityHitResult step = diff.d();
+			Vec3d step = diff.normalize();
 
 			int sames = ((x == y) ? 1 : 0) + ((y == z) ? 1 : 0) + ((z == x) ? 1 : 0);
 			if (sames == 0) {
-				List<EntityHitResult> validDiffs = new LinkedList<>();
+				List<Vec3d> validDiffs = new LinkedList<>();
 				for (int i = -1; i <= 1; i++)
 					for (int j = -1; j <= 1; j++)
 						for (int k = -1; k <= 1; k++) {
@@ -104,12 +104,12 @@ public class BeltConnectorHandler {
 								continue;
 							if (i == 0 && j == 0 && k == 0)
 								continue;
-							validDiffs.add(new EntityHitResult(i, j, k));
+							validDiffs.add(new Vec3d(i, j, k));
 						}
 				int closestIndex = 0;
 				float closest = Float.MAX_VALUE;
-				for (EntityHitResult validDiff : validDiffs) {
-					double distanceTo = step.f(validDiff);
+				for (Vec3d validDiff : validDiffs) {
+					double distanceTo = step.distanceTo(validDiff);
 					if (distanceTo < closest) {
 						closest = (float) distanceTo;
 						closestIndex = validDiffs.indexOf(validDiff);
@@ -118,15 +118,15 @@ public class BeltConnectorHandler {
 				step = validDiffs.get(closestIndex);
 			}
 
-			if (axis == Axis.Y && step.entity != 0 && step.d != 0)
+			if (axis == Axis.Y && step.x != 0 && step.z != 0)
 				return;
 
-			step = new EntityHitResult(Math.signum(step.entity), Math.signum(step.c), Math.signum(step.d));
+			step = new Vec3d(Math.signum(step.x), Math.signum(step.y), Math.signum(step.z));
 			for (float f = 0; f < length; f += .0625f) {
-				EntityHitResult position = start.e(step.a(f));
+				Vec3d position = start.add(step.multiply(f));
 				if (r.nextInt(10) == 0) {
 					world.addParticle(new DustParticleEffect(canConnect ? .3f : .9f, canConnect ? .9f : .3f, .5f, 1),
-						position.entity + .5f, position.c + .5f, position.d + .5f, 0, 0, 0);
+						position.x + .5f, position.y + .5f, position.z + .5f, 0, 0, 0);
 				}
 			}
 

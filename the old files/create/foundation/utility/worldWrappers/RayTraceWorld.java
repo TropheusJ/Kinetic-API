@@ -1,36 +1,37 @@
-package com.simibubi.kinetic_api.foundation.utility.worldWrappers;
+package com.simibubi.create.foundation.utility.worldWrappers;
 
 import java.util.function.BiFunction;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.fluid.EmptyFluid;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.WorldAccess;
 
-public class RayTraceWorld implements MobSpawnerLogic {
+public class RayTraceWorld implements BlockView {
 
-	private GrassColors template;
-	private BiFunction<BlockPos, PistonHandler, PistonHandler> stateGetter;
+	private WorldAccess template;
+	private BiFunction<BlockPos, BlockState, BlockState> stateGetter;
 
-	public RayTraceWorld(GrassColors template, BiFunction<BlockPos, PistonHandler, PistonHandler> stateGetter) {
+	public RayTraceWorld(WorldAccess template, BiFunction<BlockPos, BlockState, BlockState> stateGetter) {
 		this.template = template;
 		this.stateGetter = stateGetter;
 	}
 
 	@Override
-	public BeehiveBlockEntity c(BlockPos pos) {
-		return template.c(pos);
+	public BlockEntity getBlockEntity(BlockPos pos) {
+		return template.getBlockEntity(pos);
 	}
 
 	@Override
-	public PistonHandler d_(BlockPos pos) {
-		return stateGetter.apply(pos, template.d_(pos));
+	public BlockState getBlockState(BlockPos pos) {
+		return stateGetter.apply(pos, template.getBlockState(pos));
 	}
 
 	@Override
-	public EmptyFluid b(BlockPos pos) {
-		return template.b(pos);
+	public FluidState getFluidState(BlockPos pos) {
+		return template.getFluidState(pos);
 	}
 
 }

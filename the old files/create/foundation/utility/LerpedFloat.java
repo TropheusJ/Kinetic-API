@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
-import afj;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.math.MathHelper;
 
 // Can replace all Interpolated value classes
 // InterpolatedChasingValue, InterpolatedValue, InterpolatedChasingAngle, InterpolatedAngle
@@ -24,7 +24,7 @@ public class LerpedFloat {
 	}
 
 	public static LerpedFloat linear() {
-		return new LerpedFloat((p, c, t) -> (float) afj.d(p, c, t));
+		return new LerpedFloat((p, c, t) -> (float) MathHelper.lerp(p, c, t));
 	}
 
 	public static LerpedFloat angular() {
@@ -49,14 +49,14 @@ public class LerpedFloat {
 	public boolean updateChaseSpeed(double speed) {
 		float prevSpeed = this.chaseSpeed;
 		this.chaseSpeed = (float) speed;
-		return !afj.b(prevSpeed, speed);
+		return !MathHelper.approximatelyEquals(prevSpeed, speed);
 	}
 
 	public void tickChaser() {
 		previousValue = value;
 		if (chaseFunction == null)
 			return;
-		if (afj.b((double) value, chaseTarget)) {
+		if (MathHelper.approximatelyEquals((double) value, chaseTarget)) {
 			value = chaseTarget;
 			return;
 		}
@@ -73,7 +73,7 @@ public class LerpedFloat {
 	}
 
 	public float getValue(float partialTicks) {
-		return afj.g(partialTicks, previousValue, value);
+		return MathHelper.lerp(partialTicks, previousValue, value);
 	}
 
 	public float getChaseTarget() {
@@ -116,10 +116,10 @@ public class LerpedFloat {
 
 		public static final Chaser IDLE = (c, s, t) -> (float) c;
 		public static final Chaser EXP = exp(Double.MAX_VALUE);
-		public static final Chaser LINEAR = (c, s, t) -> (float) (c + afj.a(t - c, -s, s));
+		public static final Chaser LINEAR = (c, s, t) -> (float) (c + MathHelper.clamp(t - c, -s, s));
 
 		public static Chaser exp(double maxEffectiveSpeed) {
-			return (c, s, t) -> (float) (c + afj.a((t - c) * s, -maxEffectiveSpeed, maxEffectiveSpeed));
+			return (c, s, t) -> (float) (c + MathHelper.clamp((t - c) * s, -maxEffectiveSpeed, maxEffectiveSpeed));
 		}
 
 		float chase(double current, double speed, double target);

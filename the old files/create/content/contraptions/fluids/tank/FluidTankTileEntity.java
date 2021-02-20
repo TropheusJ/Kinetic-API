@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.tank;
+package com.simibubi.create.content.contraptions.fluids.tank;
 
 import static java.lang.Math.abs;
 
@@ -7,22 +7,22 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.content.contraptions.fluids.tank.FluidTankBlock.Shape;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.fluid.SmartFluidTank;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedChasingValue;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.content.contraptions.fluids.tank.FluidTankBlock.Shape;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.fluid.SmartFluidTank;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedChasingValue;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.timer.Timer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
@@ -57,7 +57,7 @@ public class FluidTankTileEntity extends SmartTileEntity {
 	// For rendering purposes only
 	InterpolatedChasingValue fluidLevel;
 
-	public FluidTankTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public FluidTankTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		tankInventory = createInventory();
 		fluidCapability = LazyOptional.of(() -> tankInventory);
@@ -75,7 +75,7 @@ public class FluidTankTileEntity extends SmartTileEntity {
 
 	protected void updateConnectivity() {
 		updateConnectivity = false;
-		if (d.v)
+		if (world.isClient)
 			return;
 		if (!isController())
 			return;
@@ -83,8 +83,8 @@ public class FluidTankTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		if (syncCooldown > 0) {
 			syncCooldown--;
 			if (syncCooldown == 0 && queuedSync)
@@ -92,8 +92,8 @@ public class FluidTankTileEntity extends SmartTileEntity {
 		}
 		
 		if (lastKnownPos == null)
-			lastKnownPos = o();
-		else if (!lastKnownPos.equals(e) && e != null) {
+			lastKnownPos = getPos();
+		else if (!lastKnownPos.equals(pos) && pos != null) {
 			onPositionChanged();
 			return;
 		}
@@ -105,7 +105,10 @@ public class FluidTankTileEntity extends SmartTileEntity {
 	}
 
 	public boolean isController() {
-		return controller == null || controller.equals(e);
+		return controller == null ||
+				pos.getX() == controller.getX() &&
+				pos.getY() == controller.getY() &&
+				pos.getZ() == controller.getZ();
 	}
 
 	@Override
@@ -116,11 +119,11 @@ public class FluidTankTileEntity extends SmartTileEntity {
 
 	private void onPositionChanged() {
 		removeController(true);
-		lastKnownPos = e;
+		lastKnownPos = pos;
 	}
 
 	protected void onFluidStackChanged(FluidStack newFluidStack) {
-		if (!n())
+		if (!hasWorld())
 			return;
 
 		FluidAttributes attributes = newFluidStack.getFluid()
@@ -135,8 +138,8 @@ public class FluidTankTileEntity extends SmartTileEntity {
 
 			for (int xOffset = 0; xOffset < width; xOffset++) {
 				for (int zOffset = 0; zOffset < width; zOffset++) {
-					BlockPos pos = this.e.add(xOffset, yOffset, zOffset);
-					FluidTankTileEntity tankAt = FluidTankConnectivityHandler.anyTankAt(d, pos);
+					BlockPos pos = this.pos.add(xOffset, yOffset, zOffset);
+					FluidTankTileEntity tankAt = FluidTankConnectivityHandler.anyTankAt(world, pos);
 					if (tankAt == null)
 						continue;
 					if (tankAt.luminosity == actualLuminosity)
@@ -146,14 +149,14 @@ public class FluidTankTileEntity extends SmartTileEntity {
 			}
 		}
 
-		if (!d.v) {
-			X_();
+		if (!world.isClient) {
+			markDirty();
 			sendData();
 		}
 	}
 
 	protected void setLuminosity(int luminosity) {
-		if (d.v)
+		if (world.isClient)
 			return;
 		if (this.luminosity == luminosity)
 			return;
@@ -164,7 +167,7 @@ public class FluidTankTileEntity extends SmartTileEntity {
 	public FluidTankTileEntity getControllerTE() {
 		if (isController())
 			return this;
-		BeehiveBlockEntity tileEntity = d.c(controller);
+		BlockEntity tileEntity = world.getBlockEntity(controller);
 		if (tileEntity instanceof FluidTankTileEntity)
 			return (FluidTankTileEntity) tileEntity;
 		return null;
@@ -179,7 +182,7 @@ public class FluidTankTileEntity extends SmartTileEntity {
 	}
 
 	public void removeController(boolean keepFluids) {
-		if (d.v)
+		if (world.isClient)
 			return;
 		updateConnectivity = true;
 		if (!keepFluids)
@@ -189,16 +192,16 @@ public class FluidTankTileEntity extends SmartTileEntity {
 		height = 1;
 		onFluidStackChanged(tankInventory.getFluid());
 
-		PistonHandler state = p();
+		BlockState state = getCachedState();
 		if (FluidTankBlock.isTank(state)) {
-			state = state.a(FluidTankBlock.BOTTOM, true);
-			state = state.a(FluidTankBlock.TOP, true);
-			state = state.a(FluidTankBlock.SHAPE, window ? Shape.WINDOW : Shape.PLAIN);
-			v().a(e, state, 22);
+			state = state.with(FluidTankBlock.BOTTOM, true);
+			state = state.with(FluidTankBlock.TOP, true);
+			state = state.with(FluidTankBlock.SHAPE, window ? Shape.WINDOW : Shape.PLAIN);
+			getWorld().setBlockState(pos, state, 22);
 		}
 
 		refreshCapability();
-		X_();
+		markDirty();
 		sendData();
 	}
 
@@ -232,8 +235,8 @@ public class FluidTankTileEntity extends SmartTileEntity {
 			for (int xOffset = 0; xOffset < width; xOffset++) {
 				for (int zOffset = 0; zOffset < width; zOffset++) {
 
-					BlockPos pos = this.e.add(xOffset, yOffset, zOffset);
-					PistonHandler blockState = d.d_(pos);
+					BlockPos pos = this.pos.add(xOffset, yOffset, zOffset);
+					BlockState blockState = world.getBlockState(pos);
 					if (!FluidTankBlock.isTank(blockState))
 						continue;
 
@@ -251,9 +254,9 @@ public class FluidTankTileEntity extends SmartTileEntity {
 							shape = Shape.WINDOW;
 					}
 
-					d.a(pos, blockState.a(FluidTankBlock.SHAPE, shape), 22);
-					d.G()
-						.l()
+					world.setBlockState(pos, blockState.with(FluidTankBlock.SHAPE, shape), 22);
+					world.getChunkManager()
+						.getLightingProvider()
 						.checkBlock(pos);
 				}
 			}
@@ -261,13 +264,13 @@ public class FluidTankTileEntity extends SmartTileEntity {
 	}
 
 	public void setController(BlockPos controller) {
-		if (d.v)
+		if (world.isClient)
 			return;
 		if (controller.equals(this.controller))
 			return;
 		this.controller = controller;
 		refreshCapability();
-		X_();
+		markDirty();
 		sendData();
 	}
 
@@ -279,34 +282,39 @@ public class FluidTankTileEntity extends SmartTileEntity {
 	}
 
 	public BlockPos getController() {
-		return isController() ? e : controller;
+		return isController() ? pos : controller;
+	}
+
+	private Box cachedBoundingBox;
+	@Override
+	@Environment(EnvType.CLIENT)
+	public Box getRenderBoundingBox() {
+		if (cachedBoundingBox == null) {
+			if (isController())
+				cachedBoundingBox = super.getRenderBoundingBox().stretch(width - 1, height - 1, width - 1);
+			else
+				cachedBoundingBox = super.getRenderBoundingBox();
+		}
+		return cachedBoundingBox;
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public Timer getRenderBoundingBox() {
-		if (isController())
-			return super.getRenderBoundingBox().b(width - 1, height - 1, width - 1);
-		return super.getRenderBoundingBox();
-	}
-
-	@Override
-	@Environment(EnvType.CLIENT)
-	public double i() {
+	public double getSquaredRenderDistance() {
 		int dist = 64 + getMaxHeight() * 2;
 		return dist * dist;
 	}
 
 	@Nullable
 	public FluidTankTileEntity getOtherFluidTankTileEntity(Direction direction) {
-		BeehiveBlockEntity otherTE = d.c(e.offset(direction));
+		BlockEntity otherTE = world.getBlockEntity(pos.offset(direction));
 		if (otherTE instanceof FluidTankTileEntity)
 			return (FluidTankTileEntity) otherTE;
 		return null;
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		super.fromTag(state, compound, clientPacket);
 		
 		BlockPos controllerBefore = controller;
@@ -344,8 +352,8 @@ public class FluidTankTileEntity extends SmartTileEntity {
 		boolean changeOfController =
 			controllerBefore == null ? controller != null : !controllerBefore.equals(controller);
 		if (changeOfController || prevSize != width || prevHeight != height) {
-			if (n())
-				d.a(o(), p(), p(), 16);
+			if (hasWorld())
+				world.updateListeners(getPos(), getCachedState(), getCachedState(), 16);
 			if (isController())
 				tankInventory.setCapacity(getCapacityMultiplier() * getTotalTankSize());
 		}
@@ -355,10 +363,10 @@ public class FluidTankTileEntity extends SmartTileEntity {
 				fluidLevel = new InterpolatedChasingValue().start(fillState);
 			fluidLevel.target(fillState);
 		}
-		if (luminosity != prevLum && n())
-			d.G()
-				.l()
-				.checkBlock(e);
+		if (luminosity != prevLum && hasWorld())
+			world.getChunkManager()
+				.getLightingProvider()
+				.checkBlock(pos);
 
 		if (compound.contains("LazySync"))
 			fluidLevel.withSpeed(compound.contains("LazySync") ? 1 / 8f : 1 / 2f);
@@ -405,8 +413,8 @@ public class FluidTankTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	public void al_() {
-		super.al_();
+	public void markRemoved() {
+		super.markRemoved();
 	}
 
 	@Override

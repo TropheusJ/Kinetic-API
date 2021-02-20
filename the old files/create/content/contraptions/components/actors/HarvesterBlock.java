@@ -1,23 +1,24 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
-import com.simibubi.kinetic_api.AllTileEntities;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.world.MobSpawnerLogic;
+import com.simibubi.create.AllTileEntities;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.world.BlockView;
 
 public class HarvesterBlock extends AttachedActorBlock {
 
-	public HarvesterBlock(c p_i48377_1_) {
+	public HarvesterBlock(Settings p_i48377_1_) {
 		super(p_i48377_1_);
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return new HarvesterTileEntity(AllTileEntities.HARVESTER.get());
 	}
 }

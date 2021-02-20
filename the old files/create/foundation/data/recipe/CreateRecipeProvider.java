@@ -1,21 +1,21 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllTags;
-import com.simibubi.kinetic_api.Create;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllTags;
+import com.simibubi.create.Create;
 
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.server.RecipesProvider;
 import net.minecraft.data.server.recipe.RecipeJsonProvider;
-import net.minecraft.item.HoeItem;
-import net.minecraft.tag.EntityTypeTags;
-import net.minecraft.tag.RequiredTagList;
-import net.minecraft.world.GameRules;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.tag.ItemTags;
+import net.minecraft.tag.Tag;
 import net.minecraftforge.common.Tags;
 
 public abstract class CreateRecipeProvider extends RecipesProvider {
@@ -47,115 +47,115 @@ public abstract class CreateRecipeProvider extends RecipesProvider {
 
 	protected static class I {
 
-		static RequiredTagList.e<HoeItem> redstone() {
+		static Tag.Identified<Item> redstone() {
 			return Tags.Items.DUSTS_REDSTONE;
 		}
 		
-		static RequiredTagList.e<HoeItem> planks() {
-			return EntityTypeTags.field_19168;
+		static Tag.Identified<Item> planks() {
+			return ItemTags.PLANKS;
 		}
 
-		static RequiredTagList.e<HoeItem> gold() {
+		static Tag.Identified<Item> gold() {
 			return AllTags.forgeItemTag("ingots/gold");
 		}
 
-		static RequiredTagList.e<HoeItem> goldSheet() {
+		static Tag.Identified<Item> goldSheet() {
 			return AllTags.forgeItemTag("plates/gold");
 		}
 
-		static RequiredTagList.e<HoeItem> stone() {
+		static Tag.Identified<Item> stone() {
 			return Tags.Items.STONE;
 		}
 
-		static GameRules andesite() {
+		static ItemConvertible andesite() {
 			return AllItems.ANDESITE_ALLOY.get();
 		}
 
-		static GameRules shaft() {
+		static ItemConvertible shaft() {
 			return AllBlocks.SHAFT.get();
 		}
 
-		static GameRules cog() {
+		static ItemConvertible cog() {
 			return AllBlocks.COGWHEEL.get();
 		}
 
-		static GameRules andesiteCasing() {
+		static ItemConvertible andesiteCasing() {
 			return AllBlocks.ANDESITE_CASING.get();
 		}
 
-		static RequiredTagList.e<HoeItem> brass() {
+		static Tag.Identified<Item> brass() {
 			return AllTags.forgeItemTag("ingots/brass");
 		}
 
-		static RequiredTagList.e<HoeItem> brassSheet() {
+		static Tag.Identified<Item> brassSheet() {
 			return AllTags.forgeItemTag("plates/brass");
 		}
 
-		static RequiredTagList.e<HoeItem> iron() {
+		static Tag.Identified<Item> iron() {
 			return Tags.Items.INGOTS_IRON;
 		}
 
-		static RequiredTagList.e<HoeItem> zinc() {
+		static Tag.Identified<Item> zinc() {
 			return AllTags.forgeItemTag("ingots/zinc");
 		}
 
-		static RequiredTagList.e<HoeItem> ironSheet() {
+		static Tag.Identified<Item> ironSheet() {
 			return AllTags.forgeItemTag("plates/iron");
 		}
 
-		static GameRules brassCasing() {
+		static ItemConvertible brassCasing() {
 			return AllBlocks.BRASS_CASING.get();
 		}
 
-		static GameRules electronTube() {
+		static ItemConvertible electronTube() {
 			return AllItems.ELECTRON_TUBE.get();
 		}
 
-		static GameRules circuit() {
+		static ItemConvertible circuit() {
 			return AllItems.INTEGRATED_CIRCUIT.get();
 		}
 
-		static RequiredTagList.e<HoeItem> copperBlock() {
+		static Tag.Identified<Item> copperBlock() {
 			return AllTags.forgeItemTag("storage_blocks/copper");
 		}
 
-		static RequiredTagList.e<HoeItem> brassBlock() {
+		static Tag.Identified<Item> brassBlock() {
 			return AllTags.forgeItemTag("storage_blocks/brass");
 		}
 
-		static RequiredTagList.e<HoeItem> zincBlock() {
+		static Tag.Identified<Item> zincBlock() {
 			return AllTags.forgeItemTag("storage_blocks/zinc");
 		}
 
-		static RequiredTagList.e<HoeItem> copper() {
+		static Tag.Identified<Item> copper() {
 			return AllTags.forgeItemTag("ingots/copper");
 		}
 
-		static RequiredTagList.e<HoeItem> copperSheet() {
+		static Tag.Identified<Item> copperSheet() {
 			return AllTags.forgeItemTag("plates/copper");
 		}
 
-		static RequiredTagList.e<HoeItem> copperNugget() {
+		static Tag.Identified<Item> copperNugget() {
 			return AllTags.forgeItemTag("nuggets/copper");
 		}
 
-		static RequiredTagList.e<HoeItem> brassNugget() {
+		static Tag.Identified<Item> brassNugget() {
 			return AllTags.forgeItemTag("nuggets/brass");
 		}
 
-		static RequiredTagList.e<HoeItem> zincNugget() {
+		static Tag.Identified<Item> zincNugget() {
 			return AllTags.forgeItemTag("nuggets/zinc");
 		}
 
-		static GameRules copperCasing() {
+		static ItemConvertible copperCasing() {
 			return AllBlocks.COPPER_CASING.get();
 		}
 
-		static GameRules refinedRadiance() {
+		static ItemConvertible refinedRadiance() {
 			return AllItems.REFINED_RADIANCE.get();
 		}
 
-		static GameRules shadowSteel() {
+		static ItemConvertible shadowSteel() {
 			return AllItems.SHADOW_STEEL.get();
 		}
 

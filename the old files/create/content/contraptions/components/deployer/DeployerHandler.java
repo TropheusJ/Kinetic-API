@@ -1,61 +1,61 @@
-package com.simibubi.kinetic_api.content.contraptions.components.deployer;
+package com.simibubi.create.content.contraptions.components.deployer;
 
 import static net.minecraftforge.eventbus.api.Event.Result.DEFAULT;
 import static net.minecraftforge.eventbus.api.Event.Result.DENY;
 
-import apx;
-import aqc;
-import bnx;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.Multimap;
-import com.simibubi.kinetic_api.content.contraptions.components.deployer.DeployerTileEntity.Mode;
-import com.simibubi.kinetic_api.content.curiosities.tools.SandPaperItem;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.worldWrappers.WrappedWorld;
-import cut;
-import dcg;
+import com.simibubi.create.content.contraptions.components.deployer.DeployerTileEntity.Mode;
+import com.simibubi.create.content.curiosities.tools.SandPaperItem;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.worldWrappers.WrappedWorld;
 import net.minecraft.advancement.criterion.Criteria;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.CoralParentBlock;
-import net.minecraft.block.Stainable;
+import net.minecraft.block.AbstractFireBlock;
+import net.minecraft.block.BeehiveBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.Material;
 import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.LockableContainerBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.enchantment.EfficiencyEnchantment;
-import net.minecraft.enchantment.EnchantmentTarget;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.SpawnRestriction;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.GlassBottleItem;
-import net.minecraft.item.HoeItem;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.BucketItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.potion.PotionUtil;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.stat.StatFormatter;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.BlockView.a;
-import net.minecraft.world.BlockView.b;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.LocalDifficulty;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.RaycastContext.FluidHandling;
+import net.minecraft.world.RaycastContext.ShapeType;
+import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
@@ -68,98 +68,98 @@ public class DeployerHandler {
 		private final BlockPos pos;
 		boolean rayMode = false;
 
-		private ItemUseWorld(GameMode world, Direction face, BlockPos pos) {
+		private ItemUseWorld(World world, Direction face, BlockPos pos) {
 			super(world);
 			this.face = face;
 			this.pos = pos;
 		}
 
 		@Override
-		public dcg a(BlockView context) {
+		public BlockHitResult raycast(RaycastContext context) {
 			rayMode = true;
-			dcg rayTraceBlocks = super.a(context);
+			BlockHitResult rayTraceBlocks = super.raycast(context);
 			rayMode = false;
 			return rayTraceBlocks;
 		}
 
 		@Override
-		public PistonHandler d_(BlockPos position) {
+		public BlockState getBlockState(BlockPos position) {
 			if (rayMode && (pos.offset(face.getOpposite(), 3)
 				.equals(position)
 				|| pos.offset(face.getOpposite(), 1)
 					.equals(position)))
-				return BellBlock.z.n();
-			return world.d_(position);
+				return Blocks.BEDROCK.getDefaultState();
+			return world.getBlockState(position);
 		}
 	}
 
-	static boolean shouldActivate(ItemCooldownManager held, GameMode world, BlockPos targetPos) {
-		if (held.b() instanceof BannerItem)
-			if (world.d_(targetPos)
-				.b() == ((BannerItem) held.b()).e())
+	static boolean shouldActivate(ItemStack held, World world, BlockPos targetPos) {
+		if (held.getItem() instanceof BlockItem)
+			if (world.getBlockState(targetPos)
+				.getBlock() == ((BlockItem) held.getItem()).getBlock())
 				return false;
 
-		if (held.b() instanceof GlassBottleItem) {
-			GlassBottleItem bucketItem = (GlassBottleItem) held.b();
-			cut fluid = bucketItem.getFluid();
-			if (fluid != FlowableFluid.FALLING && world.b(targetPos)
-				.a() == fluid)
+		if (held.getItem() instanceof BucketItem) {
+			BucketItem bucketItem = (BucketItem) held.getItem();
+			Fluid fluid = bucketItem.getFluid();
+			if (fluid != Fluids.EMPTY && world.getFluidState(targetPos)
+				.getFluid() == fluid)
 				return false;
 		}
 
 		return true;
 	}
 
-	static void activate(DeployerFakePlayer player, EntityHitResult vec, BlockPos clickedPos, EntityHitResult extensionVector, Mode mode) {
-		Multimap<SpawnRestriction, EntityAttribute> attributeModifiers = player.dC()
-			.a(aqc.a);
-		player.dA()
-			.b(attributeModifiers);
+	static void activate(DeployerFakePlayer player, Vec3d vec, BlockPos clickedPos, Vec3d extensionVector, Mode mode) {
+		Multimap<EntityAttribute, EntityAttributeModifier> attributeModifiers = player.getMainHandStack()
+			.getAttributeModifiers(EquipmentSlot.MAINHAND);
+		player.getAttributes()
+			.addTemporaryModifiers(attributeModifiers);
 		activateInner(player, vec, clickedPos, extensionVector, mode);
-		player.dA()
-			.b(attributeModifiers);
+		player.getAttributes()
+			.addTemporaryModifiers(attributeModifiers);
 	}
 
-	private static void activateInner(DeployerFakePlayer player, EntityHitResult vec, BlockPos clickedPos, EntityHitResult extensionVector,
+	private static void activateInner(DeployerFakePlayer player, Vec3d vec, BlockPos clickedPos, Vec3d extensionVector,
 		Mode mode) {
 
-		EntityHitResult rayOrigin = vec.e(extensionVector.a(3 / 2f + 1 / 64f));
-		EntityHitResult rayTarget = vec.e(extensionVector.a(5 / 2f - 1 / 64f));
-		player.d(rayOrigin.entity, rayOrigin.c, rayOrigin.d);
+		Vec3d rayOrigin = vec.add(extensionVector.multiply(3 / 2f + 1 / 64f));
+		Vec3d rayTarget = vec.add(extensionVector.multiply(5 / 2f - 1 / 64f));
+		player.updatePosition(rayOrigin.x, rayOrigin.y, rayOrigin.z);
 		BlockPos pos = new BlockPos(vec);
-		ItemCooldownManager stack = player.dC();
-		HoeItem item = stack.b();
+		ItemStack stack = player.getMainHandStack();
+		Item item = stack.getItem();
 
 		// Check for entities
 		final ServerWorld world = player.getServerWorld();
-		List<apx> entities = world.a(apx.class, new Timer(clickedPos));
-		ItemScatterer hand = ItemScatterer.RANDOM;
+		List<Entity> entities = world.getNonSpectatingEntities(Entity.class, new Box(clickedPos));
+		Hand hand = Hand.MAIN_HAND;
 		if (!entities.isEmpty()) {
-			apx entity = entities.get(world.t.nextInt(entities.size()));
-			List<PaintingEntity> capturedDrops = new ArrayList<>();
+			Entity entity = entities.get(world.random.nextInt(entities.size()));
+			List<ItemEntity> capturedDrops = new ArrayList<>();
 			boolean success = false;
 			entity.captureDrops(capturedDrops);
 
 			// Use on entity
 			if (mode == Mode.USE) {
-				Difficulty cancelResult = ForgeHooks.onInteractEntity(player, entity, hand);
-				if (cancelResult == Difficulty.FAIL) {
+				ActionResult cancelResult = ForgeHooks.onInteractEntity(player, entity, hand);
+				if (cancelResult == ActionResult.FAIL) {
 					entity.captureDrops(null);
 					return;
 				}
 				if (cancelResult == null) {
-					if (entity.a(player, hand).a())
+					if (entity.interact(player, hand).isAccepted())
 						success = true;
-					else if (entity instanceof SaddledComponent
-						&& stack.a(player, (SaddledComponent) entity, hand).a())
+					else if (entity instanceof LivingEntity
+						&& stack.useOnEntity(player, (LivingEntity) entity, hand).isAccepted())
 						success = true;
 				}
-				if (!success && stack.F() && entity instanceof PlayerAbilities) {
-					PlayerAbilities playerEntity = (PlayerAbilities) entity;
-					if (playerEntity.q(item.t()
-						.d())) {
-						playerEntity.a(world, stack);
-						player.spawnedItemEffects = stack.i();
+				if (!success && stack.isFood() && entity instanceof PlayerEntity) {
+					PlayerEntity playerEntity = (PlayerEntity) entity;
+					if (playerEntity.canConsume(item.getFoodComponent()
+						.isAlwaysEdible())) {
+						playerEntity.eatFood(world, stack);
+						player.spawnedItemEffects = stack.copy();
 						success = true;
 					}
 				}
@@ -167,35 +167,35 @@ public class DeployerHandler {
 
 			// Punch entity
 			if (mode == Mode.PUNCH) {
-				player.eR();
-				player.f(entity);
+				player.resetLastAttackedTicks();
+				player.attack(entity);
 				success = true;
 			}
 
 			entity.captureDrops(null);
-			capturedDrops.forEach(e -> player.bm.a(world, e.g()));
+			capturedDrops.forEach(e -> player.inventory.offerOrDrop(world, e.getStack()));
 			if (success)
 				return;
 		}
 
 		// Shoot ray
-		BlockView rayTraceContext =
-			new BlockView(rayOrigin, rayTarget, a.b, b.a, player);
-		dcg result = world.a(rayTraceContext);
-		if (result.a() != clickedPos)
-			result = new dcg(result.e(), result.b(), clickedPos, result.d());
-		PistonHandler clickedState = world.d_(clickedPos);
-		Direction face = result.b();
+		RaycastContext rayTraceContext =
+			new RaycastContext(rayOrigin, rayTarget, ShapeType.OUTLINE, FluidHandling.NONE, player);
+		BlockHitResult result = world.raycast(rayTraceContext);
+		if (result.getBlockPos() != clickedPos)
+			result = new BlockHitResult(result.getPos(), result.getSide(), clickedPos, result.isInsideBlock());
+		BlockState clickedState = world.getBlockState(clickedPos);
+		Direction face = result.getSide();
 		if (face == null)
-			face = Direction.getFacing(extensionVector.entity, extensionVector.c, extensionVector.d)
+			face = Direction.getFacing(extensionVector.x, extensionVector.y, extensionVector.z)
 				.getOpposite();
 
 		// Left click
 		if (mode == Mode.PUNCH) {
-			if (!world.a(player, clickedPos))
+			if (!world.canPlayerModifyAt(player, clickedPos))
 				return;
-			if (clickedState.j(world, clickedPos)
-				.b()) {
+			if (clickedState.getOutlineShape(world, clickedPos)
+				.isEmpty()) {
 				player.blockBreakingProgress = null;
 				return;
 			}
@@ -205,11 +205,11 @@ public class DeployerHandler {
 			if (BlockHelper.extinguishFire(world, player, clickedPos, face)) // FIXME: is there an equivalent in world, as there was in 1.15?
 				return;
 			if (event.getUseBlock() != DENY)
-				clickedState.a(world, clickedPos, player);
-			if (stack.a())
+				clickedState.onBlockBreakStart(world, clickedPos, player);
+			if (stack.isEmpty())
 				return;
 
-			float progress = clickedState.a(player, world, clickedPos) * 16;
+			float progress = clickedState.calcBlockBreakingDelta(player, world, clickedPos) * 16;
 			float before = 0;
 			Pair<BlockPos, Float> blockBreakingProgress = player.blockBreakingProgress;
 			if (blockBreakingProgress != null)
@@ -218,7 +218,7 @@ public class DeployerHandler {
 
 			if (progress >= 1) {
 				safeTryHarvestBlock(player.interactionManager, clickedPos);
-				world.a(player.X(), clickedPos, -1);
+				world.setBlockBreakingInfo(player.getEntityId(), clickedPos, -1);
 				player.blockBreakingProgress = null;
 				return;
 			}
@@ -228,17 +228,17 @@ public class DeployerHandler {
 			}
 
 			if ((int) (before * 10) != (int) (progress * 10))
-				world.a(player.X(), clickedPos, (int) (progress * 10));
+				world.setBlockBreakingInfo(player.getEntityId(), clickedPos, (int) (progress * 10));
 			player.blockBreakingProgress = Pair.of(clickedPos, progress);
 			return;
 		}
 
 		// Right click
-		bnx itemusecontext = new bnx(player, hand, result);
+		ItemUsageContext itemusecontext = new ItemUsageContext(player, hand, result);
 		Event.Result useBlock = DEFAULT;
 		Event.Result useItem = DEFAULT;
-		if (!clickedState.j(world, clickedPos)
-			.b()) {
+		if (!clickedState.getOutlineShape(world, clickedPos)
+			.isEmpty()) {
 			RightClickBlock event = ForgeHooks.onRightClickBlock(player, hand, clickedPos, face);
 			useBlock = event.getUseBlock();
 			useItem = event.getUseItem();
@@ -246,73 +246,73 @@ public class DeployerHandler {
 
 		// Item has custom active use
 		if (useItem != DENY) {
-			Difficulty actionresult = stack.onItemUseFirst(itemusecontext);
-			if (actionresult != Difficulty.PASS)
+			ActionResult actionresult = stack.onItemUseFirst(itemusecontext);
+			if (actionresult != ActionResult.PASS)
 				return;
 		}
 
-		boolean holdingSomething = !player.dC()
-			.a();
+		boolean holdingSomething = !player.getMainHandStack()
+			.isEmpty();
 		boolean flag1 =
-			!(player.bt() && holdingSomething) || (stack.doesSneakBypassUse(world, clickedPos, player));
+			!(player.isSneaking() && holdingSomething) || (stack.doesSneakBypassUse(world, clickedPos, player));
 
-		if (clickedState.b() instanceof Stainable)
+		if (clickedState.getBlock() instanceof BeehiveBlock)
 			return; // Beehives assume a lot about the usage context. Crashes to side-effects
 
 		// Use on block
-		if (useBlock != DENY && flag1 && clickedState.a(world, player, hand, result) == Difficulty.SUCCESS)
+		if (useBlock != DENY && flag1 && clickedState.onUse(world, player, hand, result) == ActionResult.SUCCESS)
 			return;
-		if (stack.a())
+		if (stack.isEmpty())
 			return;
 		if (useItem == DENY)
 			return;
-		if (item instanceof BannerItem && !clickedState.a(new PotionUtil(itemusecontext)))
+		if (item instanceof BlockItem && !clickedState.canReplace(new ItemPlacementContext(itemusecontext)))
 			return;
 
 		// Reposition fire placement for convenience
-		if (item == AliasedBlockItem.ka) {
-			Direction newFace = result.b();
-			BlockPos newPos = result.a();
-			if (!CoralParentBlock.a(world, clickedPos, newFace))
+		if (item == Items.FLINT_AND_STEEL) {
+			Direction newFace = result.getSide();
+			BlockPos newPos = result.getBlockPos();
+			if (!AbstractFireBlock.method_30032(world, clickedPos, newFace))
 				newFace = Direction.UP;
-			if (clickedState.c() == FluidState.CODEC)
+			if (clickedState.getMaterial() == Material.AIR)
 				newPos = newPos.offset(face.getOpposite());
-			result = new dcg(result.e(), newFace, newPos, result.d());
-			itemusecontext = new bnx(player, hand, result);
+			result = new BlockHitResult(result.getPos(), newFace, newPos, result.isInsideBlock());
+			itemusecontext = new ItemUsageContext(player, hand, result);
 		}
 
 		// 'Inert' item use behaviour & block placement
-		Difficulty onItemUse = stack.a(itemusecontext);
-		if (onItemUse == Difficulty.SUCCESS)
+		ActionResult onItemUse = stack.useOnBlock(itemusecontext);
+		if (onItemUse == ActionResult.SUCCESS)
 			return;
-		if (item == AliasedBlockItem.nq)
+		if (item == Items.ENDER_PEARL)
 			return;
 
-		// buckets kinetic_api their own ray, We use a fake wall to contain the active area
-		GameMode itemUseWorld = world;
-		if (item instanceof GlassBottleItem || item instanceof SandPaperItem)
+		// buckets create their own ray, We use a fake wall to contain the active area
+		World itemUseWorld = world;
+		if (item instanceof BucketItem || item instanceof SandPaperItem)
 			itemUseWorld = new ItemUseWorld(world, face, pos);
 
-		LocalDifficulty<ItemCooldownManager> onItemRightClick = item.a(itemUseWorld, player, hand);
-		ItemCooldownManager resultStack = onItemRightClick.b();
-		if (resultStack != stack || resultStack.E() != stack.E() || resultStack.k() > 0 || resultStack.g() != stack.g()) {
-			player.a(hand, onItemRightClick.b());
+		TypedActionResult<ItemStack> onItemRightClick = item.use(itemUseWorld, player, hand);
+		ItemStack resultStack = onItemRightClick.getValue();
+		if (resultStack != stack || resultStack.getCount() != stack.getCount() || resultStack.getMaxUseTime() > 0 || resultStack.getDamage() != stack.getDamage()) {
+			player.setStackInHand(hand, onItemRightClick.getValue());
 		}
 
-		CompoundTag tag = stack.o();
-		if (tag != null && stack.b() instanceof SandPaperItem && tag.contains("Polishing"))
-			player.spawnedItemEffects = ItemCooldownManager.a(tag.getCompound("Polishing"));
+		CompoundTag tag = stack.getTag();
+		if (tag != null && stack.getItem() instanceof SandPaperItem && tag.contains("Polishing"))
+			player.spawnedItemEffects = ItemStack.fromTag(tag.getCompound("Polishing"));
 
-		if (!player.dX()
-			.a())
-			player.a(hand, stack.a(world, player));
+		if (!player.getActiveItem()
+			.isEmpty())
+			player.setStackInHand(hand, stack.finishUsing(world, player));
 
-		player.eb();
+		player.clearActiveItem();
 	}
 
 	private static boolean safeTryHarvestBlock(ServerPlayerInteractionManager interactionManager, BlockPos clickedPos) {
-		PistonHandler state = interactionManager.world.d_(clickedPos);
-		if (!(state.b() instanceof Stainable))
+		BlockState state = interactionManager.world.getBlockState(clickedPos);
+		if (!(state.getBlock() instanceof BeehiveBlock))
 			return interactionManager.tryBreakBlock(clickedPos);
 		else {
 			harvestBeehive(interactionManager, state, clickedPos);
@@ -320,40 +320,40 @@ public class DeployerHandler {
 		return true;
 	}
 
-	private static void harvestBeehive(ServerPlayerInteractionManager interactionManager, PistonHandler state,
+	private static void harvestBeehive(ServerPlayerInteractionManager interactionManager, BlockState state,
 		BlockPos clickedPos) {
 		// Modified code from PlayerInteractionManager, Block and BeehiveBlock to handle
 		// deployers breaking beehives without crash.
-		ItemCooldownManager itemstack = interactionManager.player.dC();
-		ItemCooldownManager itemstack1 = itemstack.i();
+		ItemStack itemstack = interactionManager.player.getMainHandStack();
+		ItemStack itemstack1 = itemstack.copy();
 
 		boolean flag1 = state.canHarvestBlock(interactionManager.world, clickedPos, interactionManager.player);
-		itemstack.a(interactionManager.world, state, clickedPos, interactionManager.player);
-		if (itemstack.a() && !itemstack1.a())
+		itemstack.postMine(interactionManager.world, state, clickedPos, interactionManager.player);
+		if (itemstack.isEmpty() && !itemstack1.isEmpty())
 			net.minecraftforge.event.ForgeEventFactory.onPlayerDestroyItem(interactionManager.player, itemstack1,
-				ItemScatterer.RANDOM);
+				Hand.MAIN_HAND);
 
 		boolean flag = state.removedByPlayer(interactionManager.world, clickedPos, interactionManager.player, flag1,
-			interactionManager.world.b(clickedPos));
+			interactionManager.world.getFluidState(clickedPos));
 		if (flag)
-			state.b()
-				.a(interactionManager.world, clickedPos, state);
+			state.getBlock()
+				.onBroken(interactionManager.world, clickedPos, state);
 
 		if (flag && flag1) {
-			interactionManager.player.b(StatFormatter.DECIMAL_FORMAT.b(state.b()));
-			interactionManager.player.t(0.005F);
-			BeehiveBlockEntity te = interactionManager.world.c(clickedPos);
-			ItemCooldownManager heldItem = interactionManager.player.dC();
-			BeetrootsBlock.a(state, interactionManager.world, clickedPos, te, interactionManager.player, heldItem);
+			interactionManager.player.incrementStat(Stats.MINED.getOrCreateStat(state.getBlock()));
+			interactionManager.player.addExhaustion(0.005F);
+			BlockEntity te = interactionManager.world.getBlockEntity(clickedPos);
+			ItemStack heldItem = interactionManager.player.getMainHandStack();
+			Block.dropStacks(state, interactionManager.world, clickedPos, te, interactionManager.player, heldItem);
 
-			if (!interactionManager.world.v && te instanceof LockableContainerBlockEntity) {
-				LockableContainerBlockEntity beehivetileentity = (LockableContainerBlockEntity) te;
-				if (EfficiencyEnchantment.a(EnchantmentTarget.u, heldItem) == 0) {
-					interactionManager.world.c(clickedPos, state.b());
+			if (!interactionManager.world.isClient && te instanceof BeehiveBlockEntity) {
+				BeehiveBlockEntity beehivetileentity = (BeehiveBlockEntity) te;
+				if (EnchantmentHelper.getLevel(Enchantments.SILK_TOUCH, heldItem) == 0) {
+					interactionManager.world.updateComparators(clickedPos, state.getBlock());
 				}
 
-				Criteria.BEE_NEST_DESTROYED.a(interactionManager.player,
-					state.b(), heldItem, beehivetileentity.getBeeCount());
+				Criteria.BEE_NEST_DESTROYED.test(interactionManager.player,
+					state.getBlock(), heldItem, beehivetileentity.getBeeCount());
 			}
 		}
 	}

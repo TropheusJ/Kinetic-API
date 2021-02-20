@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing;
+package com.simibubi.create.content.contraptions.components.structureMovement.bearing;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.DirectionalExtenderScrollOptionSlot;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.IControlContraption;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.content.contraptions.components.structureMovement.DirectionalExtenderScrollOptionSlot;
+import com.simibubi.create.content.contraptions.components.structureMovement.IControlContraption;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform;
 import net.minecraft.util.math.Direction.Axis;
 
 public interface IBearingTileEntity extends IControlContraption {
@@ -14,7 +14,7 @@ public interface IBearingTileEntity extends IControlContraption {
 	default ValueBoxTransform getMovementModeSlot() {
 		return new DirectionalExtenderScrollOptionSlot((state, d) -> {
 			Axis axis = d.getAxis();
-			Axis bearingAxis = state.c(BearingBlock.FACING)
+			Axis bearingAxis = state.get(BearingBlock.FACING)
 				.getAxis();
 			return bearingAxis != axis;
 		});

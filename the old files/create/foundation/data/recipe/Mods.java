@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
 import net.minecraft.util.Identifier;
 

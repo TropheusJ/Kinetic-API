@@ -1,17 +1,18 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.terrainzapper;
+package com.simibubi.create.content.curiosities.zapper.terrainzapper;
 
-import afj;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
-import net.minecraft.block.LecternBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.FluidBlock;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 
 public class FlattenTool {
 
@@ -46,13 +47,13 @@ public class FlattenTool {
 						newValue += kernel[iOffset + 2][jOffset + 2] * ref;
 					}
 				}
-				result[i][j] = afj.d(newValue + .5f);
+				result[i][j] = MathHelper.floor(newValue + .5f);
 			}
 		}
 		return result;
 	}
 
-	public static void apply(GameMode world, List<BlockPos> targetPositions, Direction facing) {
+	public static void apply(World world, List<BlockPos> targetPositions, Direction facing) {
 		List<BlockPos> surfaces = new ArrayList<>();
 		Map<Pair<Integer, Integer>, Integer> heightMap = new HashMap<>();
 		int offset = facing.getDirection().offset();
@@ -66,7 +67,7 @@ public class FlattenTool {
 
 		for (BlockPos p : targetPositions) {
 			Pair<Integer, Integer> coords = getCoords(p, facing);
-			PistonHandler belowSurface = world.d_(p);
+			BlockState belowSurface = world.getBlockState(p);
 
 			minCoord1 = Math.min(minCoord1, coords.getKey());
 			minCoord2 = Math.min(minCoord2, coords.getValue());
@@ -80,7 +81,7 @@ public class FlattenTool {
 			}
 
 			p = p.offset(facing);
-			PistonHandler surface = world.d_(p);
+			BlockState surface = world.getBlockState(p);
 
 			if (!TerrainTools.isReplaceable(surface)) {
 				if (!heightMap.containsKey(coords) || heightMap.get(coords).equals(Integer.MIN_VALUE))
@@ -137,12 +138,12 @@ public class FlattenTool {
 				continue;
 
 			// Lower surface
-			PistonHandler blockState = world.d_(p);
+			BlockState blockState = world.getBlockState(p);
 			int timeOut = 1000;
 			while (surfaceCoord > targetCoord) {
 				BlockPos below = p.offset(facing.getOpposite());
-				world.a(below, blockState);
-				world.a(p, blockState.m().g());
+				world.setBlockState(below, blockState);
+				world.setBlockState(p, blockState.getFluidState().getBlockState());
 				p = p.offset(facing.getOpposite());
 				surfaceCoord--;
 				if (timeOut-- <= 0)
@@ -152,9 +153,9 @@ public class FlattenTool {
 			// Raise surface
 			while (surfaceCoord < targetCoord) {
 				BlockPos above = p.offset(facing);
-				if (!(blockState.b() instanceof LecternBlock))
-					world.a(above, blockState);
-				world.a(p, world.d_(p.offset(facing.getOpposite())));
+				if (!(blockState.getBlock() instanceof FluidBlock))
+					world.setBlockState(above, blockState);
+				world.setBlockState(p, world.getBlockState(p.offset(facing.getOpposite())));
 				p = p.offset(facing);
 				surfaceCoord++;
 				if (timeOut-- <= 0)

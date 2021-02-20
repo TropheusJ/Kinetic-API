@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.simple;
+package com.simibubi.create.foundation.tileEntity.behaviour.simple;
 
 import java.util.function.Supplier;
 import net.minecraft.nbt.CompoundTag;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
 
 public class DeferralBehaviour extends TileEntityBehaviour {
 

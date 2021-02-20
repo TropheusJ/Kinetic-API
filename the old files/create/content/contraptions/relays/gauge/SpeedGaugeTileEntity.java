@@ -1,20 +1,21 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.gauge;
+package com.simibubi.create.content.contraptions.relays.gauge;
 
 import java.util.List;
-import net.minecraft.block.entity.BellBlockEntity;
+
+import com.simibubi.create.content.contraptions.base.IRotate.SpeedLevel;
+import com.simibubi.create.content.contraptions.goggles.GogglesItem;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import afj;
-import com.simibubi.kinetic_api.content.contraptions.base.IRotate.SpeedLevel;
-import com.simibubi.kinetic_api.content.contraptions.goggles.GogglesItem;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import net.minecraft.util.math.MathHelper;
 
 public class SpeedGaugeTileEntity extends GaugeTileEntity{
 
-	public SpeedGaugeTileEntity(BellBlockEntity<? extends SpeedGaugeTileEntity> type) {
+	public SpeedGaugeTileEntity(BlockEntityType<? extends SpeedGaugeTileEntity> type) {
 		super(type);
 	}
 
@@ -28,20 +29,20 @@ public class SpeedGaugeTileEntity extends GaugeTileEntity{
 		color = ColorHelper.mixColors(SpeedLevel.of(speed).getColor(), 0xffffff, .25f);
 
 		if (speed == 69)
-			AllTriggers.triggerForNearbyPlayers(AllTriggers.SPEED_READ, d, e, 6,
+			AllTriggers.triggerForNearbyPlayers(AllTriggers.SPEED_READ, world, pos, 6,
 					GogglesItem::canSeeParticles);
 		if (speed == 0) {
 			dialTarget = 0;
 			color = 0x333333;
 		} else if (speed < medium) {
-			dialTarget = afj.g(speed / medium, 0, .45f);
+			dialTarget = MathHelper.lerp(speed / medium, 0, .45f);
 		} else if (speed < fast) {
-			dialTarget = afj.g((speed - medium) / (fast - medium), .45f, .75f);
+			dialTarget = MathHelper.lerp((speed - medium) / (fast - medium), .45f, .75f);
 		} else {
-			dialTarget = afj.g((speed - fast) / (max - fast), .75f, 1.125f);
+			dialTarget = MathHelper.lerp((speed - fast) / (max - fast), .75f, 1.125f);
 		}
 		
-		X_();
+		markDirty();
 	}
 
 	@Override

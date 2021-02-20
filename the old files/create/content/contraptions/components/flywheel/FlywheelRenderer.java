@@ -1,54 +1,55 @@
-package com.simibubi.kinetic_api.content.contraptions.components.flywheel;
+package com.simibubi.create.content.contraptions.components.flywheel;
 
-import static com.simibubi.kinetic_api.content.contraptions.base.HorizontalKineticBlock.HORIZONTAL_FACING;
+import static com.simibubi.create.content.contraptions.base.HorizontalKineticBlock.HORIZONTAL_FACING;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntityRenderer;
-import com.simibubi.kinetic_api.content.contraptions.components.flywheel.FlywheelBlock.ConnectionState;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.RespawnAnchorBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.gl.JsonGlProgram;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.base.KineticTileEntityRenderer;
+import com.simibubi.create.content.contraptions.components.flywheel.FlywheelBlock.ConnectionState;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.util.math.MathHelper;
 
 public class FlywheelRenderer extends KineticTileEntityRenderer {
 
-	public FlywheelRenderer(ebv dispatcher) {
+	public FlywheelRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(KineticTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(KineticTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
 		super.renderSafe(te, partialTicks, ms, buffer, light, overlay);
 
-		PistonHandler blockState = te.p();
+		BlockState blockState = te.getCachedState();
 		FlywheelTileEntity wte = (FlywheelTileEntity) te;
 
-		SuperByteBuffer wheel = AllBlockPartials.FLYWHEEL.renderOnHorizontal(blockState.a(RespawnAnchorBlock.field_26442));
+		SuperByteBuffer wheel = AllBlockPartials.FLYWHEEL.renderOnHorizontal(blockState.rotate(BlockRotation.CLOCKWISE_90));
 		float speed = wte.visualSpeed.get(partialTicks) * 3 / 10f;
 		float angle = wte.angle + speed * partialTicks;
 
-		OverlayVertexConsumer vb = buffer.getBuffer(VertexConsumerProvider.c());
+		VertexConsumer vb = buffer.getBuffer(RenderLayer.getSolid());
 
 		if (FlywheelBlock.isConnected(blockState)) {
 			Direction connection = FlywheelBlock.getConnection(blockState);
-			light = JsonGlProgram.a(te.v(), blockState, te.o()
+			light = WorldRenderer.getLightmapCoordinates(te.getWorld(), blockState, te.getPos()
 				.offset(connection));
 			float rotation =
 				connection.getAxis() == Axis.X ^ connection.getDirection() == AxisDirection.NEGATIVE ? -angle
 					: angle;
-			boolean flip = blockState.c(FlywheelBlock.CONNECTION) == ConnectionState.LEFT;
+			boolean flip = blockState.get(FlywheelBlock.CONNECTION) == ConnectionState.LEFT;
 
 			transformConnector(
 				rotateToFacing(AllBlockPartials.FLYWHEEL_UPPER_ROTATING.renderOn(blockState), connection), true, true,
@@ -67,15 +68,15 @@ public class FlywheelRenderer extends KineticTileEntityRenderer {
 					.renderInto(ms, vb);
 		}
 
-		kineticRotationTransform(wheel, te, blockState.c(HORIZONTAL_FACING)
+		kineticRotationTransform(wheel, te, blockState.get(HORIZONTAL_FACING)
 			.getAxis(), AngleHelper.rad(angle), light);
 		wheel.renderInto(ms, vb);
 	}
 
 	@Override
 	protected SuperByteBuffer getRotatedModel(KineticTileEntity te) {
-		return AllBlockPartials.SHAFT_HALF.renderOnDirectionalSouth(te.p(), te.p()
-			.c(HORIZONTAL_FACING)
+		return AllBlockPartials.SHAFT_HALF.renderOnDirectionalSouth(te.getCachedState(), te.getCachedState()
+			.get(HORIZONTAL_FACING)
 			.getOpposite());
 	}
 
@@ -85,14 +86,14 @@ public class FlywheelRenderer extends KineticTileEntityRenderer {
 		float shift = upper ? 1 / 4f : -1 / 8f;
 		float offset = upper ? 1 / 4f : 1 / 4f;
 		float radians = (float) (angle / 180 * Math.PI);
-		float shifting = afj.a(radians) * shift + offset;
+		float shifting = MathHelper.sin(radians) * shift + offset;
 
 		float maxAngle = upper ? -5 : -15;
 		float minAngle = upper ? -45 : 5;
 		float barAngle = 0;
 
 		if (rotating)
-			barAngle = afj.g((afj.a((float) (radians + Math.PI / 2)) + 1) / 2, minAngle, maxAngle);
+			barAngle = MathHelper.lerp((MathHelper.sin((float) (radians + Math.PI / 2)) + 1) / 2, minAngle, maxAngle);
 
 		float pivotX = (upper ? 8f : 3f) / 16;
 		float pivotY = (upper ? 8f : 2f) / 16;

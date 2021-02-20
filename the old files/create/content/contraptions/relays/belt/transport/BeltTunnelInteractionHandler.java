@@ -1,24 +1,25 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.belt.transport;
+package com.simibubi.create.content.contraptions.relays.belt.transport;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltBlock;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltHelper;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltSlope;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltTileEntity;
-import com.simibubi.kinetic_api.content.logistics.block.belts.tunnel.BeltTunnelBlock;
-import com.simibubi.kinetic_api.content.logistics.block.belts.tunnel.BeltTunnelTileEntity;
-import com.simibubi.kinetic_api.content.logistics.block.belts.tunnel.BrassTunnelBlock;
-import com.simibubi.kinetic_api.content.logistics.block.belts.tunnel.BrassTunnelTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.relays.belt.BeltBlock;
+import com.simibubi.create.content.contraptions.relays.belt.BeltHelper;
+import com.simibubi.create.content.contraptions.relays.belt.BeltSlope;
+import com.simibubi.create.content.contraptions.relays.belt.BeltTileEntity;
+import com.simibubi.create.content.logistics.block.belts.tunnel.BeltTunnelBlock;
+import com.simibubi.create.content.logistics.block.belts.tunnel.BeltTunnelTileEntity;
+import com.simibubi.create.content.logistics.block.belts.tunnel.BrassTunnelBlock;
+import com.simibubi.create.content.logistics.block.belts.tunnel.BrassTunnelTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 public class BeltTunnelInteractionHandler {
@@ -40,8 +41,8 @@ public class BeltTunnelInteractionHandler {
 			return true;
 		}
 
-		GameMode world = beltInventory.belt.v();
-		boolean onServer = !world.v;
+		World world = beltInventory.belt.getWorld();
+		boolean onServer = !world.isClient;
 		boolean removed = false;
 		BeltTunnelTileEntity nextTunnel = getTunnelOnSegement(beltInventory, upcomingSegment);
 		
@@ -52,27 +53,27 @@ public class BeltTunnelInteractionHandler {
 					return true;
 				if (onServer) {
 					brassTunnel.setStackToDistribute(current.stack);
-					current.stack = ItemCooldownManager.tick;
+					current.stack = ItemStack.EMPTY;
 					beltInventory.belt.sendData();
-					beltInventory.belt.X_();
+					beltInventory.belt.markDirty();
 				}
 				removed = true;
 			}
 		} else if (nextTunnel != null) {
-			PistonHandler blockState = nextTunnel.p();
-			if (current.stack.E() > 1 && AllBlocks.ANDESITE_TUNNEL.has(blockState)
+			BlockState blockState = nextTunnel.getCachedState();
+			if (current.stack.getCount() > 1 && AllBlocks.ANDESITE_TUNNEL.has(blockState)
 				&& BeltTunnelBlock.isJunction(blockState)
-				&& movementFacing.getAxis() == blockState.c(BeltTunnelBlock.HORIZONTAL_AXIS)) {
+				&& movementFacing.getAxis() == blockState.get(BeltTunnelBlock.HORIZONTAL_AXIS)) {
 
 				for (Direction d : Iterate.horizontalDirections) {
-					if (d.getAxis() == blockState.c(BeltTunnelBlock.HORIZONTAL_AXIS))
+					if (d.getAxis() == blockState.get(BeltTunnelBlock.HORIZONTAL_AXIS))
 						continue;
 					if (!nextTunnel.flaps.containsKey(d))
 						continue;
-					BlockPos outpos = nextTunnel.o()
+					BlockPos outpos = nextTunnel.getPos()
 						.down()
 						.offset(d);
-					if (!world.p(outpos))
+					if (!world.canSetBlock(outpos))
 						return true;
 					DirectBeltInputBehaviour behaviour =
 						TileEntityBehaviour.get(world, outpos, DirectBeltInputBehaviour.TYPE);
@@ -81,15 +82,15 @@ public class BeltTunnelInteractionHandler {
 					if (!behaviour.canInsertFromSide(d))
 						continue;
 					
-					ItemCooldownManager toinsert = ItemHandlerHelper.copyStackWithSize(current.stack, 1);
-					if (!behaviour.handleInsertion(toinsert, d, false).a())
+					ItemStack toinsert = ItemHandlerHelper.copyStackWithSize(current.stack, 1);
+					if (!behaviour.handleInsertion(toinsert, d, false).isEmpty())
 						return true;
 					if (onServer) 
 						flapTunnel(beltInventory, upcomingSegment, d, false);
 					
-					current.stack.g(1);
+					current.stack.decrement(1);
 					beltInventory.belt.sendData();
-					if (current.stack.E() <= 1)
+					if (current.stack.getCount() <= 1)
 						break;
 				}
 			}
@@ -106,17 +107,17 @@ public class BeltTunnelInteractionHandler {
 		return false;
 	}
 
-	public static boolean stuckAtTunnel(BeltInventory beltInventory, int offset, ItemCooldownManager stack,
+	public static boolean stuckAtTunnel(BeltInventory beltInventory, int offset, ItemStack stack,
 		Direction movementDirection) {
 		BeltTileEntity belt = beltInventory.belt;
 		BlockPos pos = BeltHelper.getPositionForOffset(belt, offset)
 			.up();
-		if (!(belt.v()
-			.d_(pos)
-			.b() instanceof BrassTunnelBlock))
+		if (!(belt.getWorld()
+			.getBlockState(pos)
+			.getBlock() instanceof BrassTunnelBlock))
 			return false;
-		BeehiveBlockEntity te = belt.v()
-			.c(pos);
+		BlockEntity te = belt.getWorld()
+			.getBlockEntity(pos);
 		if (te == null || !(te instanceof BrassTunnelTileEntity))
 			return false;
 		BrassTunnelTileEntity tunnel = (BrassTunnelTileEntity) te;
@@ -132,17 +133,17 @@ public class BeltTunnelInteractionHandler {
 
 	protected static BeltTunnelTileEntity getTunnelOnSegement(BeltInventory beltInventory, int offset) {
 		BeltTileEntity belt = beltInventory.belt;
-		if (belt.p()
-			.c(BeltBlock.SLOPE) != BeltSlope.HORIZONTAL)
+		if (belt.getCachedState()
+			.get(BeltBlock.SLOPE) != BeltSlope.HORIZONTAL)
 			return null;
 		BlockPos pos = BeltHelper.getPositionForOffset(belt, offset)
 			.up();
-		if (!(belt.v()
-			.d_(pos)
-			.b() instanceof BeltTunnelBlock))
+		if (!(belt.getWorld()
+			.getBlockState(pos)
+			.getBlock() instanceof BeltTunnelBlock))
 			return null;
-		BeehiveBlockEntity te = belt.v()
-			.c(pos);
+		BlockEntity te = belt.getWorld()
+			.getBlockEntity(pos);
 		if (te == null || !(te instanceof BeltTunnelTileEntity))
 			return null;
 		return ((BeltTunnelTileEntity) te);

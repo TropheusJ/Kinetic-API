@@ -1,12 +1,14 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter.attribute.astralsorcery;
+package com.simibubi.create.content.logistics.item.filter.attribute.astralsorcery;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.content.logistics.item.filter.ItemAttribute;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import com.simibubi.kinetic_api.content.logistics.item.filter.ItemAttribute;
 
 public class AstralSorceryAttunementAttribute implements ItemAttribute {
     String constellationName;
@@ -16,12 +18,12 @@ public class AstralSorceryAttunementAttribute implements ItemAttribute {
     }
 
     @Override
-    public boolean appliesTo(ItemCooldownManager itemStack) {
+    public boolean appliesTo(ItemStack itemStack) {
         CompoundTag nbt = extractAstralNBT(itemStack);
         String constellation = nbt.contains("constellation") ? nbt.getString("constellation") : nbt.getString("constellationName");
 
         // Special handling for shifting stars
-        Identifier itemResource = itemStack.b().getRegistryName();
+        Identifier itemResource = itemStack.getItem().getRegistryName();
         if(itemResource != null && itemResource.toString().contains("shifting_star_")) {
             constellation = itemResource.toString().replace("shifting_star_", "");
         }
@@ -30,12 +32,12 @@ public class AstralSorceryAttunementAttribute implements ItemAttribute {
     }
 
     @Override
-    public List<ItemAttribute> listAttributesOf(ItemCooldownManager itemStack) {
+    public List<ItemAttribute> listAttributesOf(ItemStack itemStack) {
         CompoundTag nbt = extractAstralNBT(itemStack);
         String constellation = nbt.contains("constellation") ? nbt.getString("constellation") : nbt.getString("constellationName");
 
         // Special handling for shifting stars
-        Identifier itemResource = itemStack.b().getRegistryName();
+        Identifier itemResource = itemStack.getItem().getRegistryName();
         if(itemResource != null && itemResource.toString().contains("shifting_star_")) {
             constellation = itemResource.toString().replace("shifting_star_", "");
         }
@@ -69,7 +71,7 @@ public class AstralSorceryAttunementAttribute implements ItemAttribute {
         return new AstralSorceryAttunementAttribute(nbt.getString("constellation"));
     }
 
-    private CompoundTag extractAstralNBT(ItemCooldownManager stack) {
-        return stack.o() != null ? stack.o().getCompound("astralsorcery") : new CompoundTag();
+    private CompoundTag extractAstralNBT(ItemStack stack) {
+        return stack.getTag() != null ? stack.getTag().getCompound("astralsorcery") : new CompoundTag();
     }
 }

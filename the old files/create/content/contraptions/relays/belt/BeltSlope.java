@@ -1,13 +1,17 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.belt;
+package com.simibubi.create.content.contraptions.relays.belt;
 
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.client.util.SmoothUtil;
+import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.util.StringIdentifiable;
 
-public enum BeltSlope implements SmoothUtil {
+public enum BeltSlope implements StringIdentifiable {
 	HORIZONTAL, UPWARD, DOWNWARD, VERTICAL, SIDEWAYS;
 
 	@Override
-	public String a() {
+	public String asString() {
 		return Lang.asId(name());
+	}
+
+	public boolean isDiagonal() {
+		return this == UPWARD || this == DOWNWARD;
 	}
 }

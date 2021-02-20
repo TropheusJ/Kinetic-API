@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.events;
+package com.simibubi.create.events;
 
-import com.simibubi.kinetic_api.CreateClient;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringHandler;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollValueHandler;
-import net.minecraft.client.options.KeyBinding;
+import com.simibubi.create.CreateClient;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringHandler;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollValueHandler;
+import net.minecraft.client.MinecraftClient;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent.KeyInputEvent;
 import net.minecraftforge.client.event.InputEvent.MouseInputEvent;
@@ -19,7 +19,7 @@ public class InputEvents {
 		int key = event.getKey();
 		boolean pressed = !(event.getAction() == 0);
 
-		if (KeyBinding.B().y != null)
+		if (MinecraftClient.getInstance().currentScreen != null)
 			return;
 
 		CreateClient.schematicHandler.onKeyInput(key, pressed);
@@ -27,7 +27,7 @@ public class InputEvents {
 
 	@SubscribeEvent
 	public static void onMouseScrolled(MouseScrollEvent event) {
-		if (KeyBinding.B().y != null)
+		if (MinecraftClient.getInstance().currentScreen != null)
 			return;
 
 		double delta = event.getScrollDelta();
@@ -40,7 +40,7 @@ public class InputEvents {
 
 	@SubscribeEvent
 	public static void onMouseInput(MouseInputEvent event) {
-		if (KeyBinding.B().y != null)
+		if (MinecraftClient.getInstance().currentScreen != null)
 			return;
 
 		int button = event.getButton();

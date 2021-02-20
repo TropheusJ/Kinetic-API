@@ -1,15 +1,15 @@
-package com.simibubi.kinetic_api.content.curiosities.tools;
+package com.simibubi.create.content.curiosities.tools;
 
 import java.util.function.Supplier;
-import net.minecraft.client.util.NetworkUtils;
-import net.minecraft.item.SuspiciousStewItem;
-import net.minecraft.recipe.FireworkRocketRecipe;
-import com.simibubi.kinetic_api.AllItems;
+import net.minecraft.item.ToolMaterial;
+import net.minecraft.recipe.Ingredient;
+import net.minecraft.util.Lazy;
+import com.simibubi.create.AllItems;
 
-public enum AllToolTiers implements SuspiciousStewItem {
+public enum AllToolTiers implements ToolMaterial {
 
 	RADIANT(4, 1024, 16.0F, 3.5F, 10, () -> {
-		return FireworkRocketRecipe.a(AllItems.REFINED_RADIANCE.get());
+		return Ingredient.ofItems(AllItems.REFINED_RADIANCE.get());
 	}),
 
 	;
@@ -19,39 +19,39 @@ public enum AllToolTiers implements SuspiciousStewItem {
 	private final float efficiency;
 	private final float attackDamage;
 	private final int enchantability;
-	private final NetworkUtils<FireworkRocketRecipe> repairMaterial;
+	private final Lazy<Ingredient> repairMaterial;
 
 	private AllToolTiers(int harvestLevelIn, int maxUsesIn, float efficiencyIn, float attackDamageIn,
-			int enchantabilityIn, Supplier<FireworkRocketRecipe> repairMaterialIn) {
+			int enchantabilityIn, Supplier<Ingredient> repairMaterialIn) {
 		this.harvestLevel = harvestLevelIn;
 		this.maxUses = maxUsesIn;
 		this.efficiency = efficiencyIn;
 		this.attackDamage = attackDamageIn;
 		this.enchantability = enchantabilityIn;
-		this.repairMaterial = new NetworkUtils<>(repairMaterialIn);
+		this.repairMaterial = new Lazy<>(repairMaterialIn);
 	}
 
-	public int a() {
+	public int getDurability() {
 		return this.maxUses;
 	}
 
-	public float b() {
+	public float getMiningSpeedMultiplier() {
 		return this.efficiency;
 	}
 
-	public float c() {
+	public float getAttackDamage() {
 		return this.attackDamage;
 	}
 
-	public int d() {
+	public int getMiningLevel() {
 		return this.harvestLevel;
 	}
 
-	public int e() {
+	public int getEnchantability() {
 		return this.enchantability;
 	}
 
-	public FireworkRocketRecipe f() {
-		return this.repairMaterial.a();
+	public Ingredient getRepairIngredient() {
+		return this.repairMaterial.get();
 	}
 }

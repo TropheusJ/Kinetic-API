@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -8,30 +8,31 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.AllFluids;
-import com.simibubi.kinetic_api.content.contraptions.fluids.actors.FluidDrainingBehaviour.FluidBlockType;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import cqx;
-import cut;
+import com.simibubi.create.AllFluids;
+import com.simibubi.create.content.contraptions.fluids.actors.FluidDrainingBehaviour.FluidBlockType;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.LecternBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.fluid.FlowableFluid;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.FluidBlock;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
 public class FluidDrainingBehaviour extends FluidManipulationBehaviour {
 
-	cut fluid;
+	Fluid fluid;
 
 	// Execution
 	Set<BlockPos> validationSet;
@@ -68,9 +69,9 @@ public class FluidDrainingBehaviour extends FluidManipulationBehaviour {
 		}
 
 		if (affectedArea == null)
-			affectedArea = new cqx(root, root);
+			affectedArea = new BlockBox(root, root);
 
-		GameMode world = getWorld();
+		World world = getWorld();
 		if (!queue.isEmpty() && !isValid) {
 			rebuildContext(root);
 			return false;
@@ -83,21 +84,21 @@ public class FluidDrainingBehaviour extends FluidManipulationBehaviour {
 			// Dont dequeue here, so we can decide not to dequeue a valid entry when
 			// simulating
 			BlockPos currentPos = queue.first().pos;
-			PistonHandler blockState = world.d_(currentPos);
-			PistonHandler emptied = blockState;
-			cut fluid = FlowableFluid.FALLING;
+			BlockState blockState = world.getBlockState(currentPos);
+			BlockState emptied = blockState;
+			Fluid fluid = Fluids.EMPTY;
 
-			if (blockState.b(BambooLeaves.C) && blockState.c(BambooLeaves.C)) {
-				emptied = blockState.a(BambooLeaves.C, Boolean.valueOf(false));
-				fluid = FlowableFluid.c;
-			} else if (blockState.b() instanceof LecternBlock) {
-				LecternBlock flowingFluid = (LecternBlock) blockState.b();
-				emptied = BellBlock.FACING.n();
-				if (blockState.c(LecternBlock.FACING) == 0)
+			if (blockState.contains(Properties.WATERLOGGED) && blockState.get(Properties.WATERLOGGED)) {
+				emptied = blockState.with(Properties.WATERLOGGED, Boolean.valueOf(false));
+				fluid = Fluids.WATER;
+			} else if (blockState.getBlock() instanceof FluidBlock) {
+				FluidBlock flowingFluid = (FluidBlock) blockState.getBlock();
+				emptied = Blocks.AIR.getDefaultState();
+				if (blockState.get(FluidBlock.LEVEL) == 0)
 					fluid = flowingFluid.getFluid();
 				else {
-					affectedArea.c(new cqx(currentPos, currentPos));
-					world.a(currentPos, emptied, 2 | 16);
+					affectedArea.encompass(new BlockBox(currentPos, currentPos));
+					world.setBlockState(currentPos, emptied, 2 | 16);
 					queue.dequeue();
 					if (queue.isEmpty()) {
 						isValid = checkValid(world, rootPos);
@@ -105,19 +106,19 @@ public class FluidDrainingBehaviour extends FluidManipulationBehaviour {
 					}
 					continue;
 				}
-			} else if (blockState.m()
-				.a() != FlowableFluid.FALLING
-				&& blockState.b(world, currentPos, ArrayVoxelShape.a())
-					.b()) {
-				fluid = blockState.m()
-					.a();
-				emptied = BellBlock.FACING.n();
+			} else if (blockState.getFluidState()
+				.getFluid() != Fluids.EMPTY
+				&& blockState.getCollisionShape(world, currentPos, ShapeContext.absent())
+					.isEmpty()) {
+				fluid = blockState.getFluidState()
+					.getFluid();
+				emptied = Blocks.AIR.getDefaultState();
 			}
 
 			if (this.fluid == null)
 				this.fluid = fluid;
 
-			if (!this.fluid.a(fluid)) {
+			if (!this.fluid.matchesType(fluid)) {
 				queue.dequeue();
 				if (queue.isEmpty()) {
 					isValid = checkValid(world, rootPos);
@@ -130,20 +131,20 @@ public class FluidDrainingBehaviour extends FluidManipulationBehaviour {
 				return true;
 
 			playEffect(world, currentPos, fluid, true);
-			AllTriggers.triggerForNearbyPlayers(AllTriggers.HOSE_PULLEY, world, tileEntity.o(), 8);
+			AllTriggers.triggerForNearbyPlayers(AllTriggers.HOSE_PULLEY, world, tileEntity.getPos(), 8);
 
 			if (infinite) {
 				if (FluidHelper.isLava(fluid))
-					AllTriggers.triggerForNearbyPlayers(AllTriggers.INFINITE_LAVA, world, tileEntity.o(), 8);
+					AllTriggers.triggerForNearbyPlayers(AllTriggers.INFINITE_LAVA, world, tileEntity.getPos(), 8);
 				if (FluidHelper.isWater(fluid))
-					AllTriggers.triggerForNearbyPlayers(AllTriggers.INFINITE_WATER, world, tileEntity.o(), 8);
-				if (fluid.a(AllFluids.CHOCOLATE.get()))
-					AllTriggers.triggerForNearbyPlayers(AllTriggers.INFINITE_CHOCOLATE, world, tileEntity.o(), 8);
+					AllTriggers.triggerForNearbyPlayers(AllTriggers.INFINITE_WATER, world, tileEntity.getPos(), 8);
+				if (fluid.matchesType(AllFluids.CHOCOLATE.get()))
+					AllTriggers.triggerForNearbyPlayers(AllTriggers.INFINITE_CHOCOLATE, world, tileEntity.getPos(), 8);
 				return true;
 			}
 
-			world.a(currentPos, emptied, 2 | 16);
-			affectedArea.c(new cqx(currentPos, currentPos));
+			world.setBlockState(currentPos, emptied, 2 | 16);
+			affectedArea.encompass(new BlockBox(currentPos, currentPos));
 
 			queue.dequeue();
 			if (queue.isEmpty()) {
@@ -177,10 +178,10 @@ public class FluidDrainingBehaviour extends FluidManipulationBehaviour {
 		tileEntity.sendData();
 	}
 
-	protected boolean checkValid(GameMode world, BlockPos root) {
+	protected boolean checkValid(World world, BlockPos root) {
 		BlockPos currentPos = root;
-		for (int timeout = 1000; timeout > 0 && !root.equals(tileEntity.o()); timeout--) {
-			FluidBlockType canPullFluidsFrom = canPullFluidsFrom(world.d_(currentPos), currentPos);
+		for (int timeout = 1000; timeout > 0 && !root.equals(tileEntity.getPos()); timeout--) {
+			FluidBlockType canPullFluidsFrom = canPullFluidsFrom(world.getBlockState(currentPos), currentPos);
 			if (canPullFluidsFrom == FluidBlockType.FLOWING) {
 				currentPos = currentPos.up();
 				continue;
@@ -203,14 +204,14 @@ public class FluidDrainingBehaviour extends FluidManipulationBehaviour {
 			frontier.add(new BlockPosEntry(rootPos, 0));
 	}
 
-	protected FluidBlockType canPullFluidsFrom(PistonHandler blockState, BlockPos pos) {
-		if (blockState.b(BambooLeaves.C) && blockState.c(BambooLeaves.C))
+	protected FluidBlockType canPullFluidsFrom(BlockState blockState, BlockPos pos) {
+		if (blockState.contains(Properties.WATERLOGGED) && blockState.get(Properties.WATERLOGGED))
 			return FluidBlockType.SOURCE;
-		if (blockState.b() instanceof LecternBlock)
-			return blockState.c(LecternBlock.FACING) == 0 ? FluidBlockType.SOURCE : FluidBlockType.FLOWING;
-		if (blockState.m()
-			.a() != FlowableFluid.FALLING && blockState.b(getWorld(), pos, ArrayVoxelShape.a())
-				.b())
+		if (blockState.getBlock() instanceof FluidBlock)
+			return blockState.get(FluidBlock.LEVEL) == 0 ? FluidBlockType.SOURCE : FluidBlockType.FLOWING;
+		if (blockState.getFluidState()
+			.getFluid() != Fluids.EMPTY && blockState.getCollisionShape(getWorld(), pos, ShapeContext.absent())
+				.isEmpty())
 			return FluidBlockType.SOURCE;
 		return FluidBlockType.NONE;
 	}
@@ -240,7 +241,7 @@ public class FluidDrainingBehaviour extends FluidManipulationBehaviour {
 	public void rebuildContext(BlockPos root) {
 		reset();
 		rootPos = root;
-		affectedArea = new cqx(rootPos, rootPos);
+		affectedArea = new BlockBox(rootPos, rootPos);
 		if (isValid)
 			frontier.add(new BlockPosEntry(root, 0));
 	}
@@ -259,14 +260,14 @@ public class FluidDrainingBehaviour extends FluidManipulationBehaviour {
 			validationSet.add(e);
 		}, false);
 
-		GameMode world = getWorld();
+		World world = getWorld();
 		int maxBlocks = maxBlocks();
 		if (visited.size() > maxBlocks && canDrainInfinitely(fluid)) {
 			infinite = true;
 			// Find first block with valid fluid
 			while (true) {
 				BlockPos first = queue.first().pos;
-				if (canPullFluidsFrom(world.d_(first), first) != FluidBlockType.SOURCE) {
+				if (canPullFluidsFrom(world.getBlockState(first), first) != FluidBlockType.SOURCE) {
 					queue.dequeue();
 					continue;
 				}

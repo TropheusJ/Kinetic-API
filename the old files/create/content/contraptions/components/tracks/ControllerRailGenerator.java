@@ -1,30 +1,31 @@
-package com.simibubi.kinetic_api.content.contraptions.components.tracks;
+package com.simibubi.create.content.contraptions.components.tracks;
 
-import com.simibubi.kinetic_api.foundation.data.AssetLookup;
-import com.simibubi.kinetic_api.foundation.data.SpecialBlockStateGen;
+import com.simibubi.create.foundation.data.AssetLookup;
+import com.simibubi.create.foundation.data.SpecialBlockStateGen;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.state.property.IntProperty;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.RailShape;
+import net.minecraft.state.property.Property;
 import net.minecraftforge.client.model.generators.ModelFile;
 
 public class ControllerRailGenerator extends SpecialBlockStateGen {
 
 	@Override
-	protected IntProperty<?>[] getIgnoredProperties() {
-		return new IntProperty<?>[] { ControllerRailBlock.POWER };
+	protected Property<?>[] getIgnoredProperties() {
+		return new Property<?>[] { ControllerRailBlock.POWER };
 	}
 
 	@Override
-	protected int getXRotation(PistonHandler state) {
+	protected int getXRotation(BlockState state) {
 		return 0;
 	}
 
 	@Override
-	protected int getYRotation(PistonHandler state) {
-		Instrument shape = state.c(ControllerRailBlock.SHAPE);
+	protected int getYRotation(BlockState state) {
+		RailShape shape = state.get(ControllerRailBlock.SHAPE);
 		boolean backwards = ControllerRailBlock.isStateBackwards(state);
 		int rotation = backwards ? 180 : 0;
 
@@ -42,12 +43,12 @@ public class ControllerRailGenerator extends SpecialBlockStateGen {
 	}
 
 	@Override
-	public <T extends BeetrootsBlock> ModelFile getModel(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov,
-		PistonHandler state) {
-		Instrument shape = state.c(ControllerRailBlock.SHAPE);
+	public <T extends Block> ModelFile getModel(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov,
+		BlockState state) {
+		RailShape shape = state.get(ControllerRailBlock.SHAPE);
 		boolean backwards = ControllerRailBlock.isStateBackwards(state);
 
-		String model = shape.c() ? backwards ? "ascending_south" : "ascending_north" : "north_south";
+		String model = shape.isAscending() ? backwards ? "ascending_south" : "ascending_north" : "north_south";
 		return AssetLookup.partialBaseModel(ctx, prov, model);
 	}
 

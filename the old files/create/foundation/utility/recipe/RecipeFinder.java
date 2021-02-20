@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.utility.recipe;
+package com.simibubi.create.foundation.utility.recipe;
 
 import java.util.Collections;
 import java.util.List;
@@ -7,13 +7,14 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.resource.ReloadableResourceManager;
-import net.minecraft.resource.SynchronousResourceReloadListener;
-import net.minecraft.util.profiler.DummyProfiler;
-import net.minecraft.world.GameMode;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.SinglePreparationResourceReloadListener;
+import net.minecraft.util.profiler.Profiler;
+import net.minecraft.world.World;
 
 /**
  * Utility for searching through a world's recipe collection. Non-dynamic
@@ -25,7 +26,7 @@ import com.google.common.cache.CacheBuilder;
  */
 public class RecipeFinder {
 	
-	private static Cache<Object, List<Ingredient<?>>> cachedSearches = CacheBuilder.newBuilder().build();
+	private static Cache<Object, List<Recipe<?>>> cachedSearches = CacheBuilder.newBuilder().build();
 
 	/**
 	 * Find all IRecipes matching the condition predicate. If this search is made
@@ -37,7 +38,7 @@ public class RecipeFinder {
 	 * @param conditions
 	 * @return A started search to continue with more specific conditions.
 	 */
-	public static List<Ingredient<?>> get(@Nullable Object cacheKey, GameMode world, Predicate<Ingredient<?>> conditions) {
+	public static List<Recipe<?>> get(@Nullable Object cacheKey, World world, Predicate<Recipe<?>> conditions) {
 		if (cacheKey == null)
 			return startSearch(world, conditions);
 
@@ -50,22 +51,22 @@ public class RecipeFinder {
 		return Collections.emptyList();
 	}
 
-	private static List<Ingredient<?>> startSearch(GameMode world, Predicate<? super Ingredient<?>> conditions) {
-		List<Ingredient<?>> list = world.o().b().stream().filter(conditions)
+	private static List<Recipe<?>> startSearch(World world, Predicate<? super Recipe<?>> conditions) {
+		List<Recipe<?>> list = world.getRecipeManager().values().stream().filter(conditions)
 				.collect(Collectors.toList());
 		return list;
 	}
 
 
-	public static final SynchronousResourceReloadListener<Object> LISTENER = new SynchronousResourceReloadListener<Object>() {
+	public static final SinglePreparationResourceReloadListener<Object> LISTENER = new SinglePreparationResourceReloadListener<Object>() {
 		
 		@Override
-		protected Object b(ReloadableResourceManager p_212854_1_, DummyProfiler p_212854_2_) {
+		protected Object prepare(ResourceManager p_212854_1_, Profiler p_212854_2_) {
 			return new Object();
 		}
 		
 		@Override
-		protected void a(Object p_212853_1_, ReloadableResourceManager p_212853_2_, DummyProfiler p_212853_3_) {
+		protected void apply(Object p_212853_1_, ResourceManager p_212853_2_, Profiler p_212853_3_) {
 			cachedSearches.invalidateAll();
 		}
 		

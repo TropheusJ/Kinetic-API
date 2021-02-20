@@ -1,31 +1,35 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing;
+package com.simibubi.create.content.contraptions.components.structureMovement.bearing;
 
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
-import afj;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AbstractContraptionEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.ControlledContraptionEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing.ClockworkBearingTileEntity.ClockHands;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing.ClockworkContraption.HandType;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.ServerSpeedProvider;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
+
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.AbstractContraptionEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.AssemblyException;
+import com.simibubi.create.content.contraptions.components.structureMovement.ControlledContraptionEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.IDisplayAssemblyExceptions;
+import com.simibubi.create.content.contraptions.components.structureMovement.bearing.ClockworkBearingTileEntity.ClockHands;
+import com.simibubi.create.content.contraptions.components.structureMovement.bearing.ClockworkContraption.HandType;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.INamedIconOptions;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.ServerSpeedProvider;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.MathHelper;
 
-public class ClockworkBearingTileEntity extends KineticTileEntity implements IBearingTileEntity {
+public class ClockworkBearingTileEntity extends KineticTileEntity implements IBearingTileEntity, IDisplayAssemblyExceptions {
 
 	protected ControlledContraptionEntity hourHand;
 	protected ControlledContraptionEntity minuteHand;
@@ -36,10 +40,11 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 
 	protected boolean running;
 	protected boolean assembleNextTick;
+	protected AssemblyException lastException;
 
 	protected ScrollOptionBehaviour<ClockHands> operationMode;
 
-	public ClockworkBearingTileEntity(BellBlockEntity<? extends ClockworkBearingTileEntity> type) {
+	public ClockworkBearingTileEntity(BlockEntityType<? extends ClockworkBearingTileEntity> type) {
 		super(type);
 		setLazyTickRate(3);
 	}
@@ -59,15 +64,15 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 
-		if (d.v) {
+		if (world.isClient) {
 			clientMinuteAngleDiff /= 2;
 			clientHourAngleDiff /= 2;
 		}
 
-		if (!d.v && assembleNextTick) {
+		if (!world.isClient && assembleNextTick) {
 			assembleNextTick = false;
 			if (running) {
 				boolean canDisassemble = true;
@@ -76,10 +81,10 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 					.isEmpty())) {
 					if (hourHand != null)
 						hourHand.getContraption()
-							.stop(d);
+							.stop(world);
 					if (minuteHand != null)
 						minuteHand.getContraption()
-							.stop(d);
+							.stop(world);
 					disassemble();
 				}
 				return;
@@ -104,12 +109,17 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 		applyRotations();
 	}
 
+	@Override
+	public AssemblyException getLastAssemblyException() {
+		return lastException;
+	}
+
 	protected void applyRotations() {
-		PistonHandler blockState = p();
+		BlockState blockState = getCachedState();
 		Axis axis = Axis.X;
 		
-		if (blockState.b(BambooLeaves.M))
-			axis = blockState.c(BambooLeaves.M)
+		if (blockState.contains(Properties.FACING))
+			axis = blockState.get(Properties.FACING)
 				.getAxis();
 		
 		if (hourHand != null) {
@@ -125,7 +135,7 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 	@Override
 	public void lazyTick() {
 		super.lazyTick();
-		if (hourHand != null && !d.v)
+		if (hourHand != null && !world.isClient)
 			sendData();
 	}
 
@@ -165,9 +175,9 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 	}
 
 	protected float getHourTarget(boolean cycle24) {
-		int dayTime = (int) (d.T() % 24000);
+		int dayTime = (int) (world.getTimeOfDay() % 24000);
 		int hours = (dayTime / 1000 + 6) % 24;
-		int offset = p().c(ClockworkBearingBlock.FACING)
+		int offset = getCachedState().get(ClockworkBearingBlock.FACING)
 			.getDirection()
 			.offset();
 		float hourTarget = (float) (offset * -360 / (cycle24 ? 24f : 12f) * (hours % (cycle24 ? 24 : 12)));
@@ -175,9 +185,9 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 	}
 
 	protected float getMinuteTarget() {
-		int dayTime = (int) (d.T() % 24000);
+		int dayTime = (int) (world.getTimeOfDay() % 24000);
 		int minutes = (dayTime % 1000) * 60 / 1000;
-		int offset = p().c(ClockworkBearingBlock.FACING)
+		int offset = getCachedState().get(ClockworkBearingBlock.FACING)
 			.getDirection()
 			.offset();
 		float minuteTarget = (float) (offset * -360 / 60f * (minutes));
@@ -186,21 +196,28 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 
 	public float getAngularSpeed() {
 		float speed = -Math.abs(getSpeed() * 3 / 10f);
-		if (d.v)
+		if (world.isClient)
 			speed *= ServerSpeedProvider.get();
 		return speed;
 	}
 
 	public void assemble() {
-		if (!(d.d_(e)
-			.b() instanceof ClockworkBearingBlock))
+		if (!(world.getBlockState(pos)
+			.getBlock() instanceof ClockworkBearingBlock))
 			return;
 
-		Direction direction = p().c(BambooLeaves.M);
+		Direction direction = getCachedState().get(Properties.FACING);
 
 		// Collect Construct
-		Pair<ClockworkContraption, ClockworkContraption> contraption =
-			ClockworkContraption.assembleClockworkAt(d, e, direction);
+		Pair<ClockworkContraption, ClockworkContraption> contraption;
+		try {
+			contraption = ClockworkContraption.assembleClockworkAt(world, pos, direction);
+			lastException = null;
+		} catch (AssemblyException e) {
+			lastException = e;
+			sendData();
+			return;
+		}
 		if (contraption == null)
 			return;
 		if (contraption.getLeft() == null)
@@ -209,25 +226,25 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 			.getBlocks()
 			.isEmpty())
 			return;
-		BlockPos anchor = e.offset(direction);
+		BlockPos anchor = pos.offset(direction);
 
 		contraption.getLeft()
-			.removeBlocksFromWorld(d, BlockPos.ORIGIN);
-		hourHand = ControlledContraptionEntity.create(d, this, contraption.getLeft());
-		hourHand.d(anchor.getX(), anchor.getY(), anchor.getZ());
+			.removeBlocksFromWorld(world, BlockPos.ORIGIN);
+		hourHand = ControlledContraptionEntity.create(world, this, contraption.getLeft());
+		hourHand.updatePosition(anchor.getX(), anchor.getY(), anchor.getZ());
 		hourHand.setRotationAxis(direction.getAxis());
-		d.c(hourHand);
+		world.spawnEntity(hourHand);
 
-		AllTriggers.triggerForNearbyPlayers(AllTriggers.CLOCKWORK_BEARING, d, e, 5);
+		AllTriggers.triggerForNearbyPlayers(AllTriggers.CLOCKWORK_BEARING, world, pos, 5);
 
 		if (contraption.getRight() != null) {
-			anchor = e.offset(direction, contraption.getRight().offset + 1);
+			anchor = pos.offset(direction, contraption.getRight().offset + 1);
 			contraption.getRight()
-				.removeBlocksFromWorld(d, BlockPos.ORIGIN);
-			minuteHand = ControlledContraptionEntity.create(d, this, contraption.getRight());
-			minuteHand.d(anchor.getX(), anchor.getY(), anchor.getZ());
+				.removeBlocksFromWorld(world, BlockPos.ORIGIN);
+			minuteHand = ControlledContraptionEntity.create(world, this, contraption.getRight());
+			minuteHand.updatePosition(anchor.getX(), anchor.getY(), anchor.getZ());
 			minuteHand.setRotationAxis(direction.getAxis());
-			d.c(minuteHand);
+			world.spawnEntity(minuteHand);
 		}
 
 		// Run
@@ -263,17 +280,17 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 			return;
 
 		ClockworkContraption cc = (ClockworkContraption) contraption.getContraption();
-		X_();
-		Direction facing = p().c(BambooLeaves.M);
-		BlockPos anchor = e.offset(facing, cc.offset + 1);
+		markDirty();
+		Direction facing = getCachedState().get(Properties.FACING);
+		BlockPos anchor = pos.offset(facing, cc.offset + 1);
 		if (cc.handType == HandType.HOUR) {
 			this.hourHand = contraption;
-			hourHand.d(anchor.getX(), anchor.getY(), anchor.getZ());
+			hourHand.updatePosition(anchor.getX(), anchor.getY(), anchor.getZ());
 		} else {
 			this.minuteHand = contraption;
-			minuteHand.d(anchor.getX(), anchor.getY(), anchor.getZ());
+			minuteHand.updatePosition(anchor.getX(), anchor.getY(), anchor.getZ());
 		}
-		if (!d.v) {
+		if (!world.isClient) {
 			this.running = true;
 			sendData();
 		}
@@ -284,17 +301,19 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 		compound.putBoolean("Running", running);
 		compound.putFloat("HourAngle", hourAngle);
 		compound.putFloat("MinuteAngle", minuteAngle);
+		AssemblyException.write(compound, lastException);
 		super.write(compound, clientPacket);
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		float hourAngleBefore = hourAngle;
 		float minuteAngleBefore = minuteAngle;
 
 		running = compound.getBoolean("Running");
 		hourAngle = compound.getFloat("HourAngle");
 		minuteAngle = compound.getFloat("MinuteAngle");
+		lastException = AssemblyException.read(compound);
 		super.fromTag(state, compound, clientPacket);
 
 		if (!clientPacket)
@@ -319,27 +338,27 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 
 	@Override
 	public boolean isValid() {
-		return !q();
+		return !isRemoved();
 	}
 
 	@Override
 	public float getInterpolatedAngle(float partialTicks) {
 		if (hourHand == null || hourHand.isStalled())
 			partialTicks = 0;
-		return afj.g(partialTicks, hourAngle, hourAngle + getHourArmSpeed());
+		return MathHelper.lerp(partialTicks, hourAngle, hourAngle + getHourArmSpeed());
 	}
 
 	@Override
 	public void onStall() {
-		if (!d.v)
+		if (!world.isClient)
 			sendData();
 	}
 
 	@Override
-	public void al_() {
-		if (!d.v)
+	public void markRemoved() {
+		if (!world.isClient)
 			disassemble();
-		super.al_();
+		super.markRemoved();
 	}
 
 	@Override
@@ -390,7 +409,11 @@ public class ClockworkBearingTileEntity extends KineticTileEntity implements IBe
 
 	@Override
 	public BlockPos getBlockPosition() {
-		return e;
+		return pos;
 	}
 
+	@Override
+	public boolean shouldRenderAsTE() {
+		return true;
+	}
 }

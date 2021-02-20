@@ -1,19 +1,19 @@
-package com.simibubi.kinetic_api.foundation.gui;
+package com.simibubi.create.foundation.gui;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import dkt;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.utility.ColorHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screen.PresetsScreen;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.BufferVertexConsumer.a;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.MatrixStack.Entry;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -133,37 +133,37 @@ public class AllIcons {
 
 	@Environment(EnvType.CLIENT)
 	public void bind() {
-		KeyBinding.B()
-			.L()
-			.a(ICON_ATLAS);
+		MinecraftClient.getInstance()
+			.getTextureManager()
+			.bindTexture(ICON_ATLAS);
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void draw(BufferVertexConsumer matrixStack, dkt screen, int x, int y) {
+	public void draw(MatrixStack matrixStack, DrawableHelper screen, int x, int y) {
 		bind();
-		screen.b(matrixStack, x, y, iconX, iconY, 16, 16);
+		screen.drawTexture(matrixStack, x, y, iconX, iconY, 16, 16);
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void draw(BufferVertexConsumer matrixStack, int x, int y) {
-		draw(matrixStack, new PresetsScreen(null) {
+	public void draw(MatrixStack matrixStack, int x, int y) {
+		draw(matrixStack, new Screen(null) {
 		}, x, y);
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void draw(BufferVertexConsumer ms, BackgroundRenderer buffer, int color) {
-		OverlayVertexConsumer builder = buffer.getBuffer(VertexConsumerProvider.q(ICON_ATLAS));
+	public void draw(MatrixStack ms, VertexConsumerProvider buffer, int color) {
+		VertexConsumer builder = buffer.getBuffer(RenderLayer.getTextSeeThrough(ICON_ATLAS));
 		float sheetSize = 256;
 		int i = 15 << 20 | 15 << 4;
 		int j = i >> 16 & '\uffff';
 		int k = i & '\uffff';
-		a peek = ms.c();
-		EntityHitResult rgb = ColorHelper.getRGB(color);
+		Entry peek = ms.peek();
+		Vec3d rgb = ColorHelper.getRGB(color);
 
-		EntityHitResult vec4 = new EntityHitResult(1, 1, 0);
-		EntityHitResult vec3 = new EntityHitResult(0, 1, 0);
-		EntityHitResult vec2 = new EntityHitResult(0, 0, 0);
-		EntityHitResult vec1 = new EntityHitResult(1, 0, 0);
+		Vec3d vec4 = new Vec3d(1, 1, 0);
+		Vec3d vec3 = new Vec3d(0, 1, 0);
+		Vec3d vec2 = new Vec3d(0, 0, 0);
+		Vec3d vec1 = new Vec3d(1, 0, 0);
 
 		float u1 = (iconX + 16) / sheetSize;
 		float u2 = iconX / sheetSize;
@@ -177,12 +177,12 @@ public class AllIcons {
 	}
 
 	@Environment(EnvType.CLIENT)
-	private void vertex(a peek, OverlayVertexConsumer builder, int j, int k, EntityHitResult rgb, EntityHitResult vec, float u, float v) {
-		builder.a(peek.a(), (float) vec.entity, (float) vec.c, (float) vec.d)
-			.a((float) rgb.entity, (float) rgb.c, (float) rgb.d, 1)
-			.a(u, v)
-			.b(j, k)
-			.d();
+	private void vertex(Entry peek, VertexConsumer builder, int j, int k, Vec3d rgb, Vec3d vec, float u, float v) {
+		builder.vertex(peek.getModel(), (float) vec.x, (float) vec.y, (float) vec.z)
+			.color((float) rgb.x, (float) rgb.y, (float) rgb.z, 1)
+			.texture(u, v)
+			.light(j, k)
+			.next();
 	}
 
 }

@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.compat.jei.category;
+package com.simibubi.create.compat.jei.category;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,16 +7,16 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.content.contraptions.processing.BasinRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.HeatCondition;
-import com.simibubi.kinetic_api.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
-import com.simibubi.kinetic_api.foundation.fluid.FluidIngredient;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.item.ItemHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.content.contraptions.processing.BasinRecipe;
+import com.simibubi.create.content.contraptions.processing.HeatCondition;
+import com.simibubi.create.content.contraptions.processing.burner.BlazeBurnerBlock.HeatLevel;
+import com.simibubi.create.foundation.fluid.FluidIngredient;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.item.ItemHelper;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.Pair;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayout;
@@ -24,10 +24,10 @@ import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IGuiFluidStackGroup;
 import mezz.jei.api.gui.ingredient.IGuiItemStackGroup;
 import mezz.jei.api.ingredients.IIngredients;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.recipe.FireworkRocketRecipe;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -47,13 +47,13 @@ public class BasinCategory extends CreateRecipeCategory<BasinRecipe> {
 
 	@Override
 	public void setIngredients(BasinRecipe recipe, IIngredients ingredients) {
-		List<FireworkRocketRecipe> itemIngredients = new ArrayList<>(recipe.a());
+		List<Ingredient> itemIngredients = new ArrayList<>(recipe.getPreviewInputs());
 
 		HeatCondition requiredHeat = recipe.getRequiredHeat();
 		if (!requiredHeat.testBlazeBurner(HeatLevel.NONE))
-			itemIngredients.add(FireworkRocketRecipe.a(AllBlocks.BLAZE_BURNER.get()));
+			itemIngredients.add(Ingredient.ofItems(AllBlocks.BLAZE_BURNER.get()));
 		if (!requiredHeat.testBlazeBurner(HeatLevel.KINDLED))
-			itemIngredients.add(FireworkRocketRecipe.a(AllItems.BLAZE_CAKE.get()));
+			itemIngredients.add(Ingredient.ofItems(AllItems.BLAZE_CAKE.get()));
 
 		ingredients.setInputIngredients(itemIngredients);
 		ingredients.setInputLists(VanillaTypes.FLUID, recipe.getFluidIngredients()
@@ -62,7 +62,7 @@ public class BasinCategory extends CreateRecipeCategory<BasinRecipe> {
 			.collect(Collectors.toList()));
 		if (!recipe.getRollableResults()
 			.isEmpty())
-			ingredients.setOutput(VanillaTypes.ITEM, recipe.c());
+			ingredients.setOutput(VanillaTypes.ITEM, recipe.getOutput());
 		if (!recipe.getFluidResults()
 			.isEmpty())
 			ingredients.setOutputs(VanillaTypes.FLUID, recipe.getFluidResults());
@@ -73,8 +73,8 @@ public class BasinCategory extends CreateRecipeCategory<BasinRecipe> {
 		IGuiItemStackGroup itemStacks = recipeLayout.getItemStacks();
 		IGuiFluidStackGroup fluidStacks = recipeLayout.getFluidStacks();
 
-		ItemCooldownManager itemOutput = recipe.getRollableResultsAsItemStacks()
-			.isEmpty() ? ItemCooldownManager.tick
+		ItemStack itemOutput = recipe.getRollableResultsAsItemStacks()
+			.isEmpty() ? ItemStack.EMPTY
 				: recipe.getRollableResultsAsItemStacks()
 					.get(0);
 		FluidStack fluidOutput = recipe.getFluidResults()
@@ -83,7 +83,7 @@ public class BasinCategory extends CreateRecipeCategory<BasinRecipe> {
 					.get(0);
 
 		DefaultedList<FluidIngredient> fluidIngredients = recipe.getFluidIngredients();
-		List<Pair<FireworkRocketRecipe, MutableInt>> ingredients = ItemHelper.condenseIngredients(recipe.a());
+		List<Pair<Ingredient, MutableInt>> ingredients = ItemHelper.condenseIngredients(recipe.getPreviewInputs());
 
 		int size = ingredients.size() + fluidIngredients.size();
 		int xOffset = size < 3 ? (3 - size) * 19 / 2 : 0;
@@ -92,14 +92,14 @@ public class BasinCategory extends CreateRecipeCategory<BasinRecipe> {
 		int i;
 		for (i = 0; i < ingredients.size(); i++) {
 			itemStacks.init(i, true, 16 + xOffset + (i % 3) * 19, 50 - (i / 3) * 19 + yOffset);
-			List<ItemCooldownManager> stacks = new ArrayList<>();
-			Pair<FireworkRocketRecipe, MutableInt> pair = ingredients.get(i);
-			FireworkRocketRecipe ingredient = pair.getFirst();
+			List<ItemStack> stacks = new ArrayList<>();
+			Pair<Ingredient, MutableInt> pair = ingredients.get(i);
+			Ingredient ingredient = pair.getFirst();
 			MutableInt amount = pair.getSecond();
 
-			for (ItemCooldownManager itemStack : ingredient.a()) {
-				ItemCooldownManager stack = itemStack.i();
-				stack.e(amount.getValue());
+			for (ItemStack itemStack : ingredient.getMatchingStacksClient()) {
+				ItemStack stack = itemStack.copy();
+				stack.setCount(amount.getValue());
 				stacks.add(stack);
 			}
 
@@ -115,9 +115,9 @@ public class BasinCategory extends CreateRecipeCategory<BasinRecipe> {
 			fluidStacks.set(j, withImprovedVisibility(stacks));
 		}
 
-		if (!itemOutput.a()) {
+		if (!itemOutput.isEmpty()) {
 			itemStacks.init(i, false, 141, 50 + yOffset);
-			itemStacks.set(i, recipe.c()
+			itemStacks.set(i, recipe.getOutput()
 				.getStack());
 			yOffset -= 19;
 		}
@@ -141,8 +141,8 @@ public class BasinCategory extends CreateRecipeCategory<BasinRecipe> {
 	}
 
 	@Override
-	public void draw(BasinRecipe recipe, BufferVertexConsumer matrixStack, double mouseX, double mouseY) {
-		List<Pair<FireworkRocketRecipe, MutableInt>> actualIngredients = ItemHelper.condenseIngredients(recipe.a());
+	public void draw(BasinRecipe recipe, MatrixStack matrixStack, double mouseX, double mouseY) {
+		List<Pair<Ingredient, MutableInt>> actualIngredients = ItemHelper.condenseIngredients(recipe.getPreviewInputs());
 
 		int size = actualIngredients.size() + recipe.getFluidIngredients()
 			.size();
@@ -165,7 +165,7 @@ public class BasinCategory extends CreateRecipeCategory<BasinRecipe> {
 		
 		AllGuiTextures heatBar = noHeat ? AllGuiTextures.JEI_NO_HEAT_BAR : AllGuiTextures.JEI_HEAT_BAR;
 		heatBar.draw(matrixStack, 4, 80);
-		KeyBinding.B().category.b(matrixStack, Lang.translate(requiredHeat.getTranslationKey()), 9,
+		MinecraftClient.getInstance().textRenderer.draw(matrixStack, Lang.translate(requiredHeat.getTranslationKey()), 9,
 			86, requiredHeat.getColor());
 	}
 

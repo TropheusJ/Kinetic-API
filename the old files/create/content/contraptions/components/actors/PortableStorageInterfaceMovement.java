@@ -1,20 +1,20 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
 import java.util.Optional;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementBehaviour;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.foundation.utility.VecHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -24,15 +24,15 @@ public class PortableStorageInterfaceMovement extends MovementBehaviour {
 	static final String _clientPrevPos_ = "ClientPrevPos";
 
 	@Override
-	public EntityHitResult getActiveAreaOffset(MovementContext context) {
-		return EntityHitResult.b(context.state.c(PortableStorageInterfaceBlock.SHAPE)
-			.getVector()).a(1.85f);
+	public Vec3d getActiveAreaOffset(MovementContext context) {
+		return Vec3d.of(context.state.get(PortableStorageInterfaceBlock.FACING)
+			.getVector()).multiply(1.85f);
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public void renderInContraption(MovementContext context, BufferVertexConsumer ms, BufferVertexConsumer msLocal,
-		BackgroundRenderer buffer) {
+	public void renderInContraption(MovementContext context, MatrixStack ms, MatrixStack msLocal,
+		VertexConsumerProvider buffer) {
 		PortableStorageInterfaceRenderer.renderInContraption(context, ms, msLocal, buffer);
 	}
 
@@ -54,14 +54,14 @@ public class PortableStorageInterfaceMovement extends MovementBehaviour {
 		if (psi == null)
 			return false;
 
-		if ((psi.isTransferring() || psi.isPowered()) && !context.world.v)
+		if ((psi.isTransferring() || psi.isPowered()) && !context.world.isClient)
 			return false;
-		context.data.put(_workingPos_, NbtHelper.fromBlockPos(psi.o()));
-		if (!context.world.v) {
-			EntityHitResult diff = VecHelper.getCenterOf(psi.o())
-				.d(context.position);
-			diff = VecHelper.project(diff, EntityHitResult.b(currentFacing.getVector()));
-			float distance = (float) (diff.f() + 1.85f - 1);
+		context.data.put(_workingPos_, NbtHelper.fromBlockPos(psi.getPos()));
+		if (!context.world.isClient) {
+			Vec3d diff = VecHelper.getCenterOf(psi.getPos())
+				.subtract(context.position);
+			diff = VecHelper.project(diff, Vec3d.of(currentFacing.getVector()));
+			float distance = (float) (diff.length() + 1.85f - 1);
 			psi.startTransferringTo(context.contraption, distance);
 		} else {
 			context.data.put(_clientPrevPos_, NbtHelper.fromBlockPos(pos));
@@ -71,7 +71,7 @@ public class PortableStorageInterfaceMovement extends MovementBehaviour {
 
 	@Override
 	public void tick(MovementContext context) {
-		if (context.world.v) {
+		if (context.world.isClient) {
 			boolean stalled = context.contraption.stalled;
 			if (stalled && !context.data.contains(_workingPos_)) {
 				BlockPos pos = new BlockPos(context.position);
@@ -112,7 +112,7 @@ public class PortableStorageInterfaceMovement extends MovementBehaviour {
 		context.stall = false;
 	}
 
-	private PortableStorageInterfaceTileEntity findStationaryInterface(GameMode world, BlockPos pos, PistonHandler state,
+	private PortableStorageInterfaceTileEntity findStationaryInterface(World world, BlockPos pos, BlockState state,
 		Direction facing) {
 		for (int i = 0; i < 2; i++) {
 			PortableStorageInterfaceTileEntity interfaceAt =
@@ -124,25 +124,25 @@ public class PortableStorageInterfaceMovement extends MovementBehaviour {
 		return null;
 	}
 
-	private PortableStorageInterfaceTileEntity getStationaryInterfaceAt(GameMode world, BlockPos pos, PistonHandler state,
+	private PortableStorageInterfaceTileEntity getStationaryInterfaceAt(World world, BlockPos pos, BlockState state,
 		Direction facing) {
-		BeehiveBlockEntity te = world.c(pos);
+		BlockEntity te = world.getBlockEntity(pos);
 		if (!(te instanceof PortableStorageInterfaceTileEntity))
 			return null;
-		PistonHandler blockState = world.d_(pos);
-		if (blockState.b() != state.b())
+		BlockState blockState = world.getBlockState(pos);
+		if (blockState.getBlock() != state.getBlock())
 			return null;
-		if (blockState.c(PortableStorageInterfaceBlock.SHAPE) != facing.getOpposite())
+		if (blockState.get(PortableStorageInterfaceBlock.FACING) != facing.getOpposite())
 			return null;
 		return (PortableStorageInterfaceTileEntity) te;
 	}
 
 	private Optional<Direction> getCurrentFacingIfValid(MovementContext context) {
-		EntityHitResult directionVec = EntityHitResult.b(context.state.c(PortableStorageInterfaceBlock.SHAPE)
+		Vec3d directionVec = Vec3d.of(context.state.get(PortableStorageInterfaceBlock.FACING)
 			.getVector());
 		directionVec = context.rotation.apply(directionVec);
-		Direction facingFromVector = Direction.getFacing(directionVec.entity, directionVec.c, directionVec.d);
-		if (directionVec.f(EntityHitResult.b(facingFromVector.getVector())) > 1 / 2f)
+		Direction facingFromVector = Direction.getFacing(directionVec.x, directionVec.y, directionVec.z);
+		if (directionVec.distanceTo(Vec3d.of(facingFromVector.getVector())) > 1 / 2f)
 			return Optional.empty();
 		return Optional.of(facingFromVector);
 	}

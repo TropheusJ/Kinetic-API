@@ -1,20 +1,21 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
 import java.util.List;
 
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour.InterfaceProvider;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour.TransportedResult;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour.InterfaceProvider;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 public class ContentObserverTileEntity extends SmartTileEntity {
 
@@ -23,14 +24,14 @@ public class ContentObserverTileEntity extends SmartTileEntity {
 	private InvManipulationBehaviour observedInventory;
 	public int turnOffTicks = 0;
 
-	public ContentObserverTileEntity(BellBlockEntity<? extends ContentObserverTileEntity> type) {
+	public ContentObserverTileEntity(BlockEntityType<? extends ContentObserverTileEntity> type) {
 		super(type);
 		setLazyTickRate(20);
 	}
 
 	@Override
 	public void addBehaviours(List<TileEntityBehaviour> behaviours) {
-		filtering = new FilteringBehaviour(this, new FilteredDetectorFilterSlot()).moveText(new EntityHitResult(0, 5, 0));
+		filtering = new FilteringBehaviour(this, new FilteredDetectorFilterSlot()).moveText(new Vec3d(0, 5, 0));
 		behaviours.add(filtering);
 
 		observedInventory = new InvManipulationBehaviour(this, InterfaceProvider.towardBlockFacing()).bypassSidedness();
@@ -38,24 +39,24 @@ public class ContentObserverTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
-		PistonHandler state = p();
+	public void tick() {
+		super.tick();
+		BlockState state = getCachedState();
 		if (turnOffTicks > 0) {
 			turnOffTicks--;
 			if (turnOffTicks == 0)
-				d.I()
-					.a(e, state.b(), 1);
+				world.getBlockTickScheduler()
+					.schedule(pos, state.getBlock(), 1);
 		}
 
 		if (!isActive())
 			return;
 
-		Direction facing = state.c(ContentObserverBlock.aq);
-		BlockPos targetPos = e.offset(facing);
+		Direction facing = state.get(ContentObserverBlock.FACING);
+		BlockPos targetPos = pos.offset(facing);
 
 		TransportedItemStackHandlerBehaviour behaviour =
-			TileEntityBehaviour.get(d, targetPos, TransportedItemStackHandlerBehaviour.TYPE);
+			TileEntityBehaviour.get(world, targetPos, TransportedItemStackHandlerBehaviour.TYPE);
 		if (behaviour != null) {
 			behaviour.handleCenteredProcessingOnAllItems(.45f, stack -> {
 				if (!filtering.test(stack.stack) || turnOffTicks == 6)
@@ -69,7 +70,7 @@ public class ContentObserverTileEntity extends SmartTileEntity {
 		
 		if (!observedInventory.simulate()
 			.extract()
-			.a()) {
+			.isEmpty()) {
 			activate();
 			return;
 		}
@@ -80,12 +81,12 @@ public class ContentObserverTileEntity extends SmartTileEntity {
 	}
 	
 	public void activate(int ticks) {
-		PistonHandler state = p();
+		BlockState state = getCachedState();
 		turnOffTicks = ticks;
-		if (state.c(ContentObserverBlock.POWERED))
+		if (state.get(ContentObserverBlock.POWERED))
 			return;
-		d.a(e, state.a(ContentObserverBlock.POWERED, true));
-		d.b(e, state.b());
+		world.setBlockState(pos, state.with(ContentObserverBlock.POWERED, true));
+		world.updateNeighborsAlways(pos, state.getBlock());
 	}
 
 	private boolean isActive() {
@@ -99,7 +100,7 @@ public class ContentObserverTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		super.fromTag(state, compound, clientPacket);
 		turnOffTicks = compound.getInt("TurnOff");
 	}

@@ -1,29 +1,29 @@
-package com.simibubi.kinetic_api.foundation.block.connected;
+package com.simibubi.create.foundation.block.connected;
 
-import bqx;
-import elg;
-import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockRenderView;
 import net.minecraftforge.client.model.BakedModelWrapper;
 import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.client.model.data.ModelDataMap;
 import net.minecraftforge.client.model.data.ModelDataMap.Builder;
 
-public abstract class BakedModelWrapperWithData extends BakedModelWrapper<elg> {
+public abstract class BakedModelWrapperWithData extends BakedModelWrapper<BakedModel> {
 
-	public BakedModelWrapperWithData(elg originalModel) {
+	public BakedModelWrapperWithData(BakedModel originalModel) {
 		super(originalModel);
 	}
 
 	@Override
-	public final IModelData getModelData(bqx world, BlockPos pos, PistonHandler state, IModelData tileData) {
+	public final IModelData getModelData(BlockRenderView world, BlockPos pos, BlockState state, IModelData tileData) {
 		Builder builder = new ModelDataMap.Builder();
 		if (originalModel instanceof BakedModelWrapperWithData)
 			((BakedModelWrapperWithData) originalModel).gatherModelData(builder, world, pos, state);
 		return gatherModelData(builder, world, pos, state).build();
 	}
 
-	protected abstract ModelDataMap.Builder gatherModelData(ModelDataMap.Builder builder, bqx world,
-		BlockPos pos, PistonHandler state);
+	protected abstract ModelDataMap.Builder gatherModelData(ModelDataMap.Builder builder, BlockRenderView world,
+		BlockPos pos, BlockState state);
 
 }

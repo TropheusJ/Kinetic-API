@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.advanced.sequencer;
+package com.simibubi.create.content.contraptions.relays.advanced.sequencer;
 
 import java.util.Vector;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
+import com.simibubi.create.foundation.utility.NBTHelper;
 
 public class Instruction {
 

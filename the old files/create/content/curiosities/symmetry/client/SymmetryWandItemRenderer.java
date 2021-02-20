@@ -1,19 +1,19 @@
-package com.simibubi.kinetic_api.content.curiosities.symmetry.client;
+package com.simibubi.create.content.curiosities.symmetry.client;
 
-import afj;
-import com.simibubi.kinetic_api.foundation.block.render.CustomRenderedItemModelRenderer;
-import com.simibubi.kinetic_api.foundation.item.PartialItemModelRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.block.render.CustomRenderedItemModelRenderer;
+import com.simibubi.create.foundation.item.PartialItemModelRenderer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.MathHelper;
 
 public class SymmetryWandItemRenderer extends CustomRenderedItemModelRenderer<SymmetryWandModel> {
 
 	@Override
-	protected void render(ItemCooldownManager stack, SymmetryWandModel model, PartialItemModelRenderer renderer, BufferVertexConsumer ms,
-		BackgroundRenderer buffer, int light, int overlay) {
+	protected void render(ItemStack stack, SymmetryWandModel model, PartialItemModelRenderer renderer, MatrixStack ms,
+		VertexConsumerProvider buffer, int light, int overlay) {
 		float worldTime = AnimationTickHolder.getRenderTick() / 20;
 		int maxLight = 0xF000F0;
 
@@ -21,11 +21,11 @@ public class SymmetryWandItemRenderer extends CustomRenderedItemModelRenderer<Sy
 		renderer.renderSolidGlowing(model.getPartial("core"), maxLight);
 		renderer.renderGlowing(model.getPartial("core_glow"), maxLight);
 
-		float floating = afj.a(worldTime) * .05f;
+		float floating = MathHelper.sin(worldTime) * .05f;
 		float angle = worldTime * -10 % 360;
 		
-		ms.a(0, floating, 0);
-		ms.a(Vector3f.POSITIVE_Y.getDegreesQuaternion(angle));
+		ms.translate(0, floating, 0);
+		ms.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(angle));
 		
 		renderer.renderGlowing(model.getPartial("bits"), maxLight);
 	}

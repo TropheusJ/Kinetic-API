@@ -1,28 +1,29 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.simibubi.kinetic_api.content.contraptions.processing.EmptyingByBasin;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.contraptions.processing.EmptyingByBasin;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.fluid.SmartFluidTankBehaviour;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Pair;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
@@ -38,7 +39,7 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 	protected int processingTicks;
 	Map<Direction, LazyOptional<ItemDrainItemHandler>> itemHandlers;
 
-	public ItemDrainTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public ItemDrainTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		itemHandlers = new IdentityHashMap<>();
 		for (Direction d : Iterate.horizontalDirections) {
@@ -56,15 +57,15 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 			.forbidInsertion());
 	}
 
-	private ItemCooldownManager tryInsertingFromSide(TransportedItemStack transportedStack, Direction side, boolean simulate) {
-		ItemCooldownManager inserted = transportedStack.stack;
-		ItemCooldownManager returned = ItemCooldownManager.tick;
+	private ItemStack tryInsertingFromSide(TransportedItemStack transportedStack, Direction side, boolean simulate) {
+		ItemStack inserted = transportedStack.stack;
+		ItemStack returned = ItemStack.EMPTY;
 
-		if (!getHeldItemStack().a())
+		if (!getHeldItemStack().isEmpty())
 			return inserted;
 		
-		if (inserted.E() > 1 && EmptyingByBasin.canItemBeEmptied(d, inserted)) {
-			returned = ItemHandlerHelper.copyStackWithSize(inserted, inserted.E() - 1);
+		if (inserted.getCount() > 1 && EmptyingByBasin.canItemBeEmptied(world, inserted)) {
+			returned = ItemHandlerHelper.copyStackWithSize(inserted, inserted.getCount() - 1);
 			inserted = ItemHandlerHelper.copyStackWithSize(inserted, 1);
 		}
 		
@@ -77,19 +78,19 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 		transportedStack.prevSideOffset = transportedStack.sideOffset;
 		transportedStack.prevBeltPosition = transportedStack.beltPosition;
 		setHeldItem(transportedStack, side);
-		X_();
+		markDirty();
 		sendData();
 
 		return returned;
 	}
 
-	public ItemCooldownManager getHeldItemStack() {
-		return heldItem == null ? ItemCooldownManager.tick : heldItem.stack;
+	public ItemStack getHeldItemStack() {
+		return heldItem == null ? ItemStack.EMPTY : heldItem.stack;
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		if (heldItem == null) {
 			processingTicks = 0;
 			return;
@@ -98,7 +99,7 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 		if (processingTicks > 0) {
 			heldItem.prevBeltPosition = .5f;
 			boolean wasAtBeginning = processingTicks == FILLING_TIME;
-			if (!d.v || processingTicks < FILLING_TIME)
+			if (!world.isClient || processingTicks < FILLING_TIME)
 				processingTicks--;
 			if (!continueProcessing()) {
 				processingTicks = 0;
@@ -117,15 +118,15 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 		if (heldItem.beltPosition > 1) {
 			heldItem.beltPosition = 1;
 
-			if (d.v)
+			if (world.isClient)
 				return;
 
 			Direction side = heldItem.insertedFrom;
 
-			ItemCooldownManager tryExportingToBeltFunnel = getBehaviour(DirectBeltInputBehaviour.TYPE)
+			ItemStack tryExportingToBeltFunnel = getBehaviour(DirectBeltInputBehaviour.TYPE)
 				.tryExportingToBeltFunnel(heldItem.stack, side.getOpposite());
-			if (tryExportingToBeltFunnel.E() != heldItem.stack.E()) {
-				if (tryExportingToBeltFunnel.a())
+			if (tryExportingToBeltFunnel.getCount() != heldItem.stack.getCount()) {
+				if (tryExportingToBeltFunnel.isEmpty())
 					heldItem = null;
 				else
 					heldItem.stack = tryExportingToBeltFunnel;
@@ -133,26 +134,26 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 				return;
 			}
 
-			BlockPos nextPosition = e.offset(side);
+			BlockPos nextPosition = pos.offset(side);
 			DirectBeltInputBehaviour directBeltInputBehaviour =
-				TileEntityBehaviour.get(d, nextPosition, DirectBeltInputBehaviour.TYPE);
+				TileEntityBehaviour.get(world, nextPosition, DirectBeltInputBehaviour.TYPE);
 			if (directBeltInputBehaviour == null) {
-				if (!BlockHelper.hasBlockSolidSide(d.d_(nextPosition), d, nextPosition,
+				if (!BlockHelper.hasBlockSolidSide(world.getBlockState(nextPosition), world, nextPosition,
 					side.getOpposite())) {
-					ItemCooldownManager ejected = heldItem.stack;
-					EntityHitResult outPos = VecHelper.getCenterOf(e)
-						.e(EntityHitResult.b(side.getVector())
-							.a(.75));
+					ItemStack ejected = heldItem.stack;
+					Vec3d outPos = VecHelper.getCenterOf(pos)
+						.add(Vec3d.of(side.getVector())
+							.multiply(.75));
 					float movementSpeed = itemMovementPerTick();
-					EntityHitResult outMotion = EntityHitResult.b(side.getVector())
-						.a(movementSpeed)
-						.b(0, 1 / 8f, 0);
-					outPos.e(outMotion.d());
-					PaintingEntity entity = new PaintingEntity(d, outPos.entity, outPos.c + 6 / 16f, outPos.d, ejected);
-					entity.f(outMotion);
-					entity.m();
-					entity.w = true;
-					d.c(entity);
+					Vec3d outMotion = Vec3d.of(side.getVector())
+						.multiply(movementSpeed)
+						.add(0, 1 / 8f, 0);
+					outPos.add(outMotion.normalize());
+					ItemEntity entity = new ItemEntity(world, outPos.x, outPos.y + 6 / 16f, outPos.z, ejected);
+					entity.setVelocity(outMotion);
+					entity.setToDefaultPickupDelay();
+					entity.velocityModified = true;
+					world.spawnEntity(entity);
 
 					heldItem = null;
 					notifyUpdate();
@@ -163,17 +164,17 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 			if (!directBeltInputBehaviour.canInsertFromSide(side))
 				return;
 
-			ItemCooldownManager returned = directBeltInputBehaviour.handleInsertion(heldItem.copy(), side, false);
+			ItemStack returned = directBeltInputBehaviour.handleInsertion(heldItem.copy(), side, false);
 
-			if (returned.a()) {
-				if (d.c(nextPosition) instanceof ItemDrainTileEntity)
-					AllTriggers.triggerForNearbyPlayers(AllTriggers.CHAINED_ITEM_DRAIN, d, e, 5);
+			if (returned.isEmpty()) {
+				if (world.getBlockEntity(nextPosition) instanceof ItemDrainTileEntity)
+					AllTriggers.triggerForNearbyPlayers(AllTriggers.CHAINED_ITEM_DRAIN, world, pos, 5);
 				heldItem = null;
 				notifyUpdate();
 				return;
 			}
 
-			if (returned.E() != heldItem.stack.E()) {
+			if (returned.getCount() != heldItem.stack.getCount()) {
 				heldItem.stack = returned;
 				notifyUpdate();
 				return;
@@ -183,10 +184,10 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 		}
 
 		if (heldItem.prevBeltPosition < .5f && heldItem.beltPosition >= .5f) {
-			if (!EmptyingByBasin.canItemBeEmptied(d, heldItem.stack))
+			if (!EmptyingByBasin.canItemBeEmptied(world, heldItem.stack))
 				return;
 			heldItem.beltPosition = .5f;
-			if (d.v)
+			if (world.isClient)
 				return;
 			processingTicks = FILLING_TIME;
 			sendData();
@@ -195,14 +196,14 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 	}
 
 	protected boolean continueProcessing() {
-		if (d.v)
+		if (world.isClient)
 			return true;
 		if (processingTicks < 5)
 			return true;
-		if (!EmptyingByBasin.canItemBeEmptied(d, heldItem.stack))
+		if (!EmptyingByBasin.canItemBeEmptied(world, heldItem.stack))
 			return false;
 
-		Pair<FluidStack, ItemCooldownManager> emptyItem = EmptyingByBasin.emptyItem(d, heldItem.stack, true);
+		Pair<FluidStack, ItemStack> emptyItem = EmptyingByBasin.emptyItem(world, heldItem.stack, true);
 		FluidStack fluidFromItem = emptyItem.getFirst();
 
 		if (processingTicks > 5) {
@@ -217,12 +218,12 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 			return true;
 		}
 
-		emptyItem = EmptyingByBasin.emptyItem(d, heldItem.stack.i(), false);
-		AllTriggers.triggerForNearbyPlayers(AllTriggers.ITEM_DRAIN, d, e, 5);
+		emptyItem = EmptyingByBasin.emptyItem(world, heldItem.stack.copy(), false);
+		AllTriggers.triggerForNearbyPlayers(AllTriggers.ITEM_DRAIN, world, pos, 5);
 
 		// Process finished
-		ItemCooldownManager out = emptyItem.getSecond();
-		if (!out.a())
+		ItemStack out = emptyItem.getSecond();
+		if (!out.isEmpty())
 			heldItem.stack = out;
 		else
 			heldItem = null;
@@ -239,8 +240,8 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	public void al_() {
-		super.al_();
+	public void markRemoved() {
+		super.markRemoved();
 		for (LazyOptional<ItemDrainItemHandler> lazyOptional : itemHandlers.values())
 			lazyOptional.invalidate();
 	}
@@ -259,7 +260,7 @@ public class ItemDrainTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		heldItem = null;
 		processingTicks = compound.getInt("ProcessingTicks");
 		if (compound.contains("HeldItem"))

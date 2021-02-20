@@ -1,65 +1,66 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
-import static com.simibubi.kinetic_api.AllBlocks.ADJUSTABLE_CRATE;
-import static com.simibubi.kinetic_api.AllBlocks.ADJUSTABLE_PULSE_REPEATER;
-import static com.simibubi.kinetic_api.AllBlocks.ADJUSTABLE_REPEATER;
-import static com.simibubi.kinetic_api.AllBlocks.ANDESITE_ENCASED_SHAFT;
-import static com.simibubi.kinetic_api.AllBlocks.BRASS_BELT_FUNNEL;
-import static com.simibubi.kinetic_api.AllBlocks.BRASS_TUNNEL;
-import static com.simibubi.kinetic_api.AllBlocks.CONTENT_OBSERVER;
-import static com.simibubi.kinetic_api.AllBlocks.LINEAR_CHASSIS;
-import static com.simibubi.kinetic_api.AllBlocks.MECHANICAL_DRILL;
-import static com.simibubi.kinetic_api.AllBlocks.MECHANICAL_HARVESTER;
-import static com.simibubi.kinetic_api.AllBlocks.MECHANICAL_PLOUGH;
-import static com.simibubi.kinetic_api.AllBlocks.MECHANICAL_SAW;
-import static com.simibubi.kinetic_api.AllBlocks.PISTON_EXTENSION_POLE;
-import static com.simibubi.kinetic_api.AllBlocks.POWERED_LATCH;
-import static com.simibubi.kinetic_api.AllBlocks.POWERED_TOGGLE_LATCH;
-import static com.simibubi.kinetic_api.AllBlocks.RADIAL_CHASSIS;
-import static com.simibubi.kinetic_api.AllBlocks.REDSTONE_CONTACT;
-import static com.simibubi.kinetic_api.AllBlocks.REDSTONE_LINK;
-import static com.simibubi.kinetic_api.AllBlocks.SECONDARY_LINEAR_CHASSIS;
-import static com.simibubi.kinetic_api.AllBlocks.SPEEDOMETER;
-import static com.simibubi.kinetic_api.AllBlocks.STOCKPILE_SWITCH;
-import static com.simibubi.kinetic_api.AllBlocks.STRESSOMETER;
-import static com.simibubi.kinetic_api.AllItems.ATTRIBUTE_FILTER;
-import static com.simibubi.kinetic_api.AllItems.BLOCKZAPPER;
-import static com.simibubi.kinetic_api.AllItems.CRAFTER_SLOT_COVER;
-import static com.simibubi.kinetic_api.AllItems.CRUSHED_COPPER;
-import static com.simibubi.kinetic_api.AllItems.CRUSHED_GOLD;
-import static com.simibubi.kinetic_api.AllItems.CRUSHED_IRON;
-import static com.simibubi.kinetic_api.AllItems.CRUSHED_ZINC;
-import static com.simibubi.kinetic_api.AllItems.GOLDEN_SHEET;
-import static com.simibubi.kinetic_api.AllItems.LAPIS_SHEET;
-import static com.simibubi.kinetic_api.AllItems.POWDERED_OBSIDIAN;
-import static com.simibubi.kinetic_api.AllItems.SCHEMATIC;
-import static com.simibubi.kinetic_api.AllItems.SCHEMATIC_AND_QUILL;
-import static com.simibubi.kinetic_api.AllItems.WAND_OF_SYMMETRY;
-import static com.simibubi.kinetic_api.AllItems.WHEAT_FLOUR;
-import static com.simibubi.kinetic_api.AllItems.WORLDSHAPER;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.ACACIA_WINDOW;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.ACACIA_WINDOW_PANE;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.BIRCH_WINDOW;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.BIRCH_WINDOW_PANE;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.DARK_OAK_WINDOW;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.DARK_OAK_WINDOW_PANE;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.JUNGLE_WINDOW;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.JUNGLE_WINDOW_PANE;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.OAK_WINDOW;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.OAK_WINDOW_PANE;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.ORNATE_IRON_WINDOW;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.ORNATE_IRON_WINDOW_PANE;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.SPRUCE_WINDOW;
-import static com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks.SPRUCE_WINDOW_PANE;
+import static com.simibubi.create.AllBlocks.ADJUSTABLE_CRATE;
+import static com.simibubi.create.AllBlocks.ADJUSTABLE_PULSE_REPEATER;
+import static com.simibubi.create.AllBlocks.ADJUSTABLE_REPEATER;
+import static com.simibubi.create.AllBlocks.ANDESITE_ENCASED_SHAFT;
+import static com.simibubi.create.AllBlocks.BRASS_BELT_FUNNEL;
+import static com.simibubi.create.AllBlocks.BRASS_TUNNEL;
+import static com.simibubi.create.AllBlocks.CONTENT_OBSERVER;
+import static com.simibubi.create.AllBlocks.LINEAR_CHASSIS;
+import static com.simibubi.create.AllBlocks.MECHANICAL_DRILL;
+import static com.simibubi.create.AllBlocks.MECHANICAL_HARVESTER;
+import static com.simibubi.create.AllBlocks.MECHANICAL_PLOUGH;
+import static com.simibubi.create.AllBlocks.MECHANICAL_SAW;
+import static com.simibubi.create.AllBlocks.PISTON_EXTENSION_POLE;
+import static com.simibubi.create.AllBlocks.POWERED_LATCH;
+import static com.simibubi.create.AllBlocks.POWERED_TOGGLE_LATCH;
+import static com.simibubi.create.AllBlocks.RADIAL_CHASSIS;
+import static com.simibubi.create.AllBlocks.REDSTONE_CONTACT;
+import static com.simibubi.create.AllBlocks.REDSTONE_LINK;
+import static com.simibubi.create.AllBlocks.SECONDARY_LINEAR_CHASSIS;
+import static com.simibubi.create.AllBlocks.SPEEDOMETER;
+import static com.simibubi.create.AllBlocks.STOCKPILE_SWITCH;
+import static com.simibubi.create.AllBlocks.STRESSOMETER;
+import static com.simibubi.create.AllItems.ATTRIBUTE_FILTER;
+import static com.simibubi.create.AllItems.BLOCKZAPPER;
+import static com.simibubi.create.AllItems.CRAFTER_SLOT_COVER;
+import static com.simibubi.create.AllItems.CRUSHED_COPPER;
+import static com.simibubi.create.AllItems.CRUSHED_GOLD;
+import static com.simibubi.create.AllItems.CRUSHED_IRON;
+import static com.simibubi.create.AllItems.CRUSHED_ZINC;
+import static com.simibubi.create.AllItems.GOLDEN_SHEET;
+import static com.simibubi.create.AllItems.LAPIS_SHEET;
+import static com.simibubi.create.AllItems.POWDERED_OBSIDIAN;
+import static com.simibubi.create.AllItems.SCHEMATIC;
+import static com.simibubi.create.AllItems.SCHEMATIC_AND_QUILL;
+import static com.simibubi.create.AllItems.WAND_OF_SYMMETRY;
+import static com.simibubi.create.AllItems.WHEAT_FLOUR;
+import static com.simibubi.create.AllItems.WORLDSHAPER;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.ACACIA_WINDOW;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.ACACIA_WINDOW_PANE;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.BIRCH_WINDOW;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.BIRCH_WINDOW_PANE;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.DARK_OAK_WINDOW;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.DARK_OAK_WINDOW_PANE;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.JUNGLE_WINDOW;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.JUNGLE_WINDOW_PANE;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.OAK_WINDOW;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.OAK_WINDOW_PANE;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.ORNATE_IRON_WINDOW;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.ORNATE_IRON_WINDOW_PANE;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.SPRUCE_WINDOW;
+import static com.simibubi.create.content.palettes.AllPaletteBlocks.SPRUCE_WINDOW_PANE;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.Create;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.item.HoeItem;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.Create;
+
+import net.minecraft.block.Block;
+import net.minecraft.item.Item;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -148,11 +149,11 @@ public class RemapHelper {
 		reMap.put("diorite_layers", Create.asResource("layered_diorite"));
 		reMap.put("oak_glass_pane", OAK_WINDOW_PANE.getId());
 		reMap.put("translation_chassis", LINEAR_CHASSIS.getId());
-//		reMap.put("symmetry_tripleplane", KineticAPI.asResource(""));
+//		reMap.put("symmetry_tripleplane", Create.asResource(""));
 		reMap.put("weathered_limestone_slab", Create.asResource("polished_weathered_limestone_slab"));
 		reMap.put("gabbro_stairs", Create.asResource("polished_gabbro_stairs"));
 		reMap.put("limestone_layers", Create.asResource("layered_limestone"));
-//		reMap.put("symmetry_plane", KineticAPI.asResource(""));
+//		reMap.put("symmetry_plane", Create.asResource(""));
 		reMap.put("translation_chassis_secondary", SECONDARY_LINEAR_CHASSIS.getId());
 		reMap.put("jungle_glass_pane", JUNGLE_WINDOW_PANE.getId());
 		reMap.put("piston_pole", PISTON_EXTENSION_POLE.getId());
@@ -189,14 +190,14 @@ public class RemapHelper {
 	}
 
 	@SubscribeEvent
-	public static void onRemapBlocks(RegistryEvent.MissingMappings<BeetrootsBlock> event) {
+	public static void onRemapBlocks(RegistryEvent.MissingMappings<Block> event) {
 		ModContainer mod = ModList.get().getModContainerById(Create.ID).orElse(null);
 		if (mod == null)
 			return;
 		event.setModContainer(mod);
-		ImmutableList<RegistryEvent.MissingMappings.Mapping<BeetrootsBlock>> mappings = event.getMappings();
+		ImmutableList<RegistryEvent.MissingMappings.Mapping<Block>> mappings = event.getMappings();
 
-		for (RegistryEvent.MissingMappings.Mapping<BeetrootsBlock> mapping : mappings) {
+		for (RegistryEvent.MissingMappings.Mapping<Block> mapping : mappings) {
 			if (reMap.containsKey(mapping.key.getPath())) {
 				try {
 					Create.logger.warn("Remapping block '{}' to '{}'", mapping.key, reMap.get(mapping.key.getPath()));
@@ -209,14 +210,14 @@ public class RemapHelper {
 	}
 
 	@SubscribeEvent
-	public static void onRemapItems(RegistryEvent.MissingMappings<HoeItem> event) {
+	public static void onRemapItems(RegistryEvent.MissingMappings<Item> event) {
 		ModContainer mod = ModList.get().getModContainerById(Create.ID).orElse(null);
 		if (mod == null)
 			return;
 		event.setModContainer(mod);
-		ImmutableList<RegistryEvent.MissingMappings.Mapping<HoeItem>> mappings = event.getMappings();
+		ImmutableList<RegistryEvent.MissingMappings.Mapping<Item>> mappings = event.getMappings();
 
-		for (RegistryEvent.MissingMappings.Mapping<HoeItem> mapping : mappings) {
+		for (RegistryEvent.MissingMappings.Mapping<Item> mapping : mappings) {
 			if (reMap.containsKey(mapping.key.getPath())) {
 				try {
 					Create.logger.warn("Remapping item '{}' to '{}'", mapping.key, reMap.get(mapping.key.getPath()));

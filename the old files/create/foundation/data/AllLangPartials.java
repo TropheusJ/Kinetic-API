@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.data;
+package com.simibubi.create.foundation.data;
 
 public enum AllLangPartials {
 	

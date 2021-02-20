@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.foundation.gui.widgets;
+package com.simibubi.create.foundation.gui.widgets;
 
-import afj;
+import net.minecraft.util.math.MathHelper;
 
 public class InterpolatedValue {
 
@@ -14,7 +14,7 @@ public class InterpolatedValue {
 	}
 	
 	public float get(float partialTicks) {
-		return afj.g(partialTicks, lastValue, value);
+		return MathHelper.lerp(partialTicks, lastValue, value);
 	}
 	
 }

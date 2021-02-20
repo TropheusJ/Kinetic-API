@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.item;
+package com.simibubi.create.foundation.item;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,47 +8,48 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.mutable.MutableInt;
-import afj;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.recipe.FireworkRocketRecipe;
+
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.utility.Pair;
+import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.Ingredient;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 public class ItemHelper {
 
-	public static void dropContents(GameMode world, BlockPos pos, IItemHandler inv) {
+	public static void dropContents(World world, BlockPos pos, IItemHandler inv) {
 		for (int slot = 0; slot < inv.getSlots(); slot++)
-			Inventory.a(world, pos.getX(), pos.getY(), pos.getZ(), inv.getStackInSlot(slot));
+			ItemScatterer.spawn(world, pos.getX(), pos.getY(), pos.getZ(), inv.getStackInSlot(slot));
 	}
 
-	public static List<ItemCooldownManager> multipliedOutput(ItemCooldownManager in, ItemCooldownManager out) {
-		List<ItemCooldownManager> stacks = new ArrayList<>();
-		ItemCooldownManager result = out.i();
-		result.e(in.E() * out.E());
+	public static List<ItemStack> multipliedOutput(ItemStack in, ItemStack out) {
+		List<ItemStack> stacks = new ArrayList<>();
+		ItemStack result = out.copy();
+		result.setCount(in.getCount() * out.getCount());
 
-		while (result.E() > result.c()) {
-			stacks.add(result.a(result.c()));
+		while (result.getCount() > result.getMaxCount()) {
+			stacks.add(result.split(result.getMaxCount()));
 		}
 
 		stacks.add(result);
 		return stacks;
 	}
 
-	public static void addToList(ItemCooldownManager stack, List<ItemCooldownManager> stacks) {
-		for (ItemCooldownManager s : stacks) {
+	public static void addToList(ItemStack stack, List<ItemStack> stacks) {
+		for (ItemStack s : stacks) {
 			if (!ItemHandlerHelper.canItemStacksStack(stack, s))
 				continue;
-			int transferred = Math.min(s.c() - s.E(), stack.E());
-			s.f(transferred);
-			stack.g(transferred);
+			int transferred = Math.min(s.getMaxCount() - s.getCount(), stack.getCount());
+			s.increment(transferred);
+			stack.decrement(transferred);
 		}
-		if (stack.E() > 0)
+		if (stack.getCount() > 0)
 			stacks.add(stack);
 	}
 
@@ -77,9 +78,9 @@ public class ItemHelper {
 				totalSlots--;
 				continue;
 			}
-			ItemCooldownManager itemstack = inv.getStackInSlot(j);
-			if (!itemstack.a()) {
-				f += (float) itemstack.E() / (float) Math.min(slotLimit, itemstack.c());
+			ItemStack itemstack = inv.getStackInSlot(j);
+			if (!itemstack.isEmpty()) {
+				f += (float) itemstack.getCount() / (float) Math.min(slotLimit, itemstack.getMaxCount());
 				++i;
 			}
 		}
@@ -88,16 +89,16 @@ public class ItemHelper {
 			return 0;
 
 		f = f / totalSlots;
-		return afj.d(f * 14.0F) + (i > 0 ? 1 : 0);
+		return MathHelper.floor(f * 14.0F) + (i > 0 ? 1 : 0);
 	}
 
-	public static List<Pair<FireworkRocketRecipe, MutableInt>> condenseIngredients(DefaultedList<FireworkRocketRecipe> recipeIngredients) {
-		List<Pair<FireworkRocketRecipe, MutableInt>> actualIngredients = new ArrayList<>();
-		Ingredients: for (FireworkRocketRecipe igd : recipeIngredients) {
-			for (Pair<FireworkRocketRecipe, MutableInt> pair : actualIngredients) {
-				ItemCooldownManager[] stacks1 = pair.getFirst()
-					.a();
-				ItemCooldownManager[] stacks2 = igd.a();
+	public static List<Pair<Ingredient, MutableInt>> condenseIngredients(DefaultedList<Ingredient> recipeIngredients) {
+		List<Pair<Ingredient, MutableInt>> actualIngredients = new ArrayList<>();
+		Ingredients: for (Ingredient igd : recipeIngredients) {
+			for (Pair<Ingredient, MutableInt> pair : actualIngredients) {
+				ItemStack[] stacks1 = pair.getFirst()
+					.getMatchingStacksClient();
+				ItemStack[] stacks2 = igd.getMatchingStacksClient();
 				if (stacks1.length != stacks2.length)
 					continue;
 				for (int i = 0; i <= stacks1.length; i++) {
@@ -106,7 +107,7 @@ public class ItemHelper {
 							.increment();
 						continue Ingredients;
 					}
-					if (!ItemCooldownManager.b(stacks1[i], stacks2[i]))
+					if (!ItemStack.areEqual(stacks1[i], stacks2[i]))
 						break;
 				}
 			}
@@ -115,12 +116,12 @@ public class ItemHelper {
 		return actualIngredients;
 	}
 
-	public static boolean matchIngredients(FireworkRocketRecipe i1, FireworkRocketRecipe i2) {
-		ItemCooldownManager[] stacks1 = i1.a();
-		ItemCooldownManager[] stacks2 = i2.a();
+	public static boolean matchIngredients(Ingredient i1, Ingredient i2) {
+		ItemStack[] stacks1 = i1.getMatchingStacksClient();
+		ItemStack[] stacks2 = i2.getMatchingStacksClient();
 		if (stacks1.length == stacks2.length) {
 			for (int i = 0; i < stacks1.length; i++)
-				if (!ItemCooldownManager.c(stacks1[i], stacks2[i]))
+				if (!ItemStack.areItemsEqualIgnoreDamage(stacks1[i], stacks2[i]))
 					return false;
 			return true;
 		}
@@ -131,18 +132,18 @@ public class ItemHelper {
 		EXACTLY, UPTO
 	}
 
-	public static ItemCooldownManager extract(IItemHandler inv, Predicate<ItemCooldownManager> test, boolean simulate) {
+	public static ItemStack extract(IItemHandler inv, Predicate<ItemStack> test, boolean simulate) {
 		return extract(inv, test, ExtractionCountMode.UPTO, AllConfigs.SERVER.logistics.defaultExtractionLimit.get(),
 			simulate);
 	}
 
-	public static ItemCooldownManager extract(IItemHandler inv, Predicate<ItemCooldownManager> test, int exactAmount, boolean simulate) {
+	public static ItemStack extract(IItemHandler inv, Predicate<ItemStack> test, int exactAmount, boolean simulate) {
 		return extract(inv, test, ExtractionCountMode.EXACTLY, exactAmount, simulate);
 	}
 
-	public static ItemCooldownManager extract(IItemHandler inv, Predicate<ItemCooldownManager> test, ExtractionCountMode mode, int amount,
+	public static ItemStack extract(IItemHandler inv, Predicate<ItemStack> test, ExtractionCountMode mode, int amount,
 		boolean simulate) {
-		ItemCooldownManager extracting = ItemCooldownManager.tick;
+		ItemStack extracting = ItemStack.EMPTY;
 		boolean amountRequired = mode == ExtractionCountMode.EXACTLY;
 		boolean checkHasEnoughItems = amountRequired;
 		boolean hasEnoughItems = !checkHasEnoughItems;
@@ -150,29 +151,29 @@ public class ItemHelper {
 		int maxExtractionCount = amount;
 
 		Extraction: do {
-			extracting = ItemCooldownManager.tick;
+			extracting = ItemStack.EMPTY;
 
 			for (int slot = 0; slot < inv.getSlots(); slot++) {
-				ItemCooldownManager stack = inv.extractItem(slot, maxExtractionCount - extracting.E(), true);
+				ItemStack stack = inv.extractItem(slot, maxExtractionCount - extracting.getCount(), true);
 
-				if (stack.a())
+				if (stack.isEmpty())
 					continue;
 				if (!test.test(stack))
 					continue;
-				if (!extracting.a() && !ItemHandlerHelper.canItemStacksStack(stack, extracting)) {
+				if (!extracting.isEmpty() && !ItemHandlerHelper.canItemStacksStack(stack, extracting)) {
 					potentialOtherMatch = true;
 					continue;
 				}
 
-				if (extracting.a())
-					extracting = stack.i();
+				if (extracting.isEmpty())
+					extracting = stack.copy();
 				else
-					extracting.f(stack.E());
+					extracting.increment(stack.getCount());
 
 				if (!simulate && hasEnoughItems)
-					inv.extractItem(slot, stack.E(), false);
+					inv.extractItem(slot, stack.getCount(), false);
 
-				if (extracting.E() >= maxExtractionCount) {
+				if (extracting.getCount() >= maxExtractionCount) {
 					if (checkHasEnoughItems) {
 						hasEnoughItems = true;
 						checkHasEnoughItems = false;
@@ -183,8 +184,8 @@ public class ItemHelper {
 				}
 			}
 
-			if (!extracting.a() && !hasEnoughItems && potentialOtherMatch) {
-				ItemCooldownManager blackListed = extracting.i();
+			if (!extracting.isEmpty() && !hasEnoughItems && potentialOtherMatch) {
+				ItemStack blackListed = extracting.copy();
 				test = test.and(i -> !ItemHandlerHelper.canItemStacksStack(i, blackListed));
 				continue;
 			}
@@ -196,21 +197,21 @@ public class ItemHelper {
 
 		} while (true);
 
-		if (amountRequired && extracting.E() < amount)
-			return ItemCooldownManager.tick;
+		if (amountRequired && extracting.getCount() < amount)
+			return ItemStack.EMPTY;
 
 		return extracting;
 	}
 
-	public static ItemCooldownManager extract(IItemHandler inv, Predicate<ItemCooldownManager> test,
-		Function<ItemCooldownManager, Integer> amountFunction, boolean simulate) {
-		ItemCooldownManager extracting = ItemCooldownManager.tick;
+	public static ItemStack extract(IItemHandler inv, Predicate<ItemStack> test,
+		Function<ItemStack, Integer> amountFunction, boolean simulate) {
+		ItemStack extracting = ItemStack.EMPTY;
 		int maxExtractionCount = AllConfigs.SERVER.logistics.defaultExtractionLimit.get();
 
 		for (int slot = 0; slot < inv.getSlots(); slot++) {
-			if (extracting.a()) {
-				ItemCooldownManager stackInSlot = inv.getStackInSlot(slot);
-				if (stackInSlot.a())
+			if (extracting.isEmpty()) {
+				ItemStack stackInSlot = inv.getStackInSlot(slot);
+				if (stackInSlot.isEmpty())
 					continue;
 				int maxExtractionCountForItem = amountFunction.apply(stackInSlot);
 				if (maxExtractionCountForItem == 0)
@@ -218,38 +219,38 @@ public class ItemHelper {
 				maxExtractionCount = Math.min(maxExtractionCount, maxExtractionCountForItem);
 			}
 
-			ItemCooldownManager stack = inv.extractItem(slot, maxExtractionCount - extracting.E(), true);
+			ItemStack stack = inv.extractItem(slot, maxExtractionCount - extracting.getCount(), true);
 
 			if (!test.test(stack))
 				continue;
-			if (!extracting.a() && !ItemHandlerHelper.canItemStacksStack(stack, extracting))
+			if (!extracting.isEmpty() && !ItemHandlerHelper.canItemStacksStack(stack, extracting))
 				continue;
 
-			if (extracting.a())
-				extracting = stack.i();
+			if (extracting.isEmpty())
+				extracting = stack.copy();
 			else
-				extracting.f(stack.E());
+				extracting.increment(stack.getCount());
 
 			if (!simulate)
-				inv.extractItem(slot, stack.E(), false);
-			if (extracting.E() == maxExtractionCount)
+				inv.extractItem(slot, stack.getCount(), false);
+			if (extracting.getCount() == maxExtractionCount)
 				break;
 		}
 
 		return extracting;
 	}
 
-	public static ItemCooldownManager findFirstMatch(IItemHandler inv, Predicate<ItemCooldownManager> test) {
+	public static ItemStack findFirstMatch(IItemHandler inv, Predicate<ItemStack> test) {
 		int slot = findFirstMatchingSlotIndex(inv, test);
 		if (slot == -1)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		else
 			return inv.getStackInSlot(slot);
 	}
 
-	public static int findFirstMatchingSlotIndex(IItemHandler inv, Predicate<ItemCooldownManager> test) {
+	public static int findFirstMatchingSlotIndex(IItemHandler inv, Predicate<ItemStack> test) {
 		for (int slot = 0; slot < inv.getSlots(); slot++) {
-			ItemCooldownManager toTest = inv.getStackInSlot(slot);
+			ItemStack toTest = inv.getStackInSlot(slot);
 			if (test.test(toTest))
 				return slot;
 		}

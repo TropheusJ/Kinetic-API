@@ -1,33 +1,35 @@
-package com.simibubi.kinetic_api.foundation.block.render;
+package com.simibubi.create.foundation.block.render;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import net.minecraft.block.BeetrootsBlock;
+
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.tterrag.registrate.util.nullness.NonNullBiConsumer;
 import com.tterrag.registrate.util.nullness.NonNullFunction;
-import elg;
+
+import net.minecraft.block.Block;
+import net.minecraft.client.render.model.BakedModel;
 
 public class CustomBlockModels {
 
-	private List<Pair<Supplier<? extends BeetrootsBlock>, NonNullFunction<elg, ? extends elg>>> registered;
-	private Map<BeetrootsBlock, NonNullFunction<elg, ? extends elg>> customModels;
+	private List<Pair<Supplier<? extends Block>, NonNullFunction<BakedModel, ? extends BakedModel>>> registered;
+	private Map<Block, NonNullFunction<BakedModel, ? extends BakedModel>> customModels;
 
 	public CustomBlockModels() {
 		registered = new ArrayList<>();
 		customModels = new IdentityHashMap<>();
 	}
 
-	public void register(Supplier<? extends BeetrootsBlock> entry,
-		NonNullFunction<elg, ? extends elg> behaviour) {
+	public void register(Supplier<? extends Block> entry,
+		NonNullFunction<BakedModel, ? extends BakedModel> behaviour) {
 		registered.add(Pair.of(entry, behaviour));
 	}
 
-	public void foreach(NonNullBiConsumer<BeetrootsBlock, NonNullFunction<elg, ? extends elg>> consumer) {
+	public void foreach(NonNullBiConsumer<Block, NonNullFunction<BakedModel, ? extends BakedModel>> consumer) {
 		loadEntriesIfMissing();
 		customModels.forEach(consumer);
 	}
@@ -40,10 +42,10 @@ public class CustomBlockModels {
 	private void loadEntries() {
 		customModels.clear();
 		registered.forEach(p -> {
-			BeetrootsBlock key = p.getKey()
+			Block key = p.getKey()
 				.get();
 			
-			NonNullFunction<elg, ? extends elg> existingModel = customModels.get(key);
+			NonNullFunction<BakedModel, ? extends BakedModel> existingModel = customModels.get(key);
 			if (existingModel != null) {
 				customModels.put(key, p.getValue()
 					.andThen(existingModel));

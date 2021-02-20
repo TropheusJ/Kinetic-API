@@ -1,23 +1,23 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.tank;
+package com.simibubi.create.content.contraptions.fluids.tank;
 
-import afj;
-import com.simibubi.kinetic_api.foundation.fluid.FluidRenderer;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedChasingValue;
-import com.simibubi.kinetic_api.foundation.tileEntity.renderer.SafeTileEntityRenderer;
-import ebv;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.foundation.fluid.FluidRenderer;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedChasingValue;
+import com.simibubi.create.foundation.tileEntity.renderer.SafeTileEntityRenderer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.templates.FluidTank;
 
 public class FluidTankRenderer extends SafeTileEntityRenderer<FluidTankTileEntity> {
 
-	public FluidTankRenderer(ebv dispatcher) {
+	public FluidTankRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(FluidTankTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(FluidTankTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
 		if (!te.isController())
 			return;
@@ -36,7 +36,7 @@ public class FluidTankRenderer extends SafeTileEntityRenderer<FluidTankTileEntit
 		float level = fluidLevel.get(partialTicks);
 		if (level < 1 / (512f * totalHeight))
 			return;
-		float clampedLevel = afj.a(level * totalHeight, 0, totalHeight);
+		float clampedLevel = MathHelper.clamp(level * totalHeight, 0, totalHeight);
 
 		FluidTank tank = te.tankInventory;
 		FluidStack fluidStack = tank.getFluid();
@@ -61,10 +61,10 @@ public class FluidTankRenderer extends SafeTileEntityRenderer<FluidTankTileEntit
 		float zMin = tankHullWidth;
 		float zMax = zMin + te.width - 2 * tankHullWidth;
 
-		ms.a();
-		ms.a(0, clampedLevel - totalHeight, 0);
+		ms.push();
+		ms.translate(0, clampedLevel - totalHeight, 0);
 		FluidRenderer.renderTiledFluidBB(fluidStack, xMin, yMin, zMin, xMax, yMax, zMax, buffer, ms, light, false);
-		ms.b();
+		ms.pop();
 	}
 
 	@Override

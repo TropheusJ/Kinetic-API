@@ -1,34 +1,35 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.foundation.tileEntity.renderer.SafeTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.gl.JsonGlProgram;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.tileEntity.renderer.SafeTileEntityRenderer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.ColorHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.WallMountLocation;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.predicate.block.BlockPredicate;
+import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 
 public class AnalogLeverRenderer extends SafeTileEntityRenderer<AnalogLeverTileEntity> {
 
-	public AnalogLeverRenderer(ebv dispatcher) {
+	public AnalogLeverRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(AnalogLeverTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(AnalogLeverTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
-		PistonHandler leverState = te.p();
-		int lightCoords = JsonGlProgram.a(te.v(), leverState, te.o());
+		BlockState leverState = te.getCachedState();
+		int lightCoords = WorldRenderer.getLightmapCoordinates(te.getWorld(), leverState, te.getPos());
 		float state = te.clientState.get(partialTicks);
 
-		OverlayVertexConsumer vb = buffer.getBuffer(VertexConsumerProvider.c());
+		VertexConsumer vb = buffer.getBuffer(RenderLayer.getSolid());
 
 		// Handle
 		SuperByteBuffer handle = AllBlockPartials.ANALOG_LEVER_HANDLE.renderOn(leverState);
@@ -47,10 +48,10 @@ public class AnalogLeverRenderer extends SafeTileEntityRenderer<AnalogLeverTileE
 			.renderInto(ms, vb);
 	}
 
-	private SuperByteBuffer transform(SuperByteBuffer buffer, PistonHandler leverState) {
-		BlockPredicate face = leverState.c(AnalogLeverBlock.u);
-		float rX = face == BlockPredicate.block ? 0 : face == BlockPredicate.b ? 90 : 180;
-		float rY = AngleHelper.horizontalAngle(leverState.c(AnalogLeverBlock.aq));
+	private SuperByteBuffer transform(SuperByteBuffer buffer, BlockState leverState) {
+		WallMountLocation face = leverState.get(AnalogLeverBlock.FACE);
+		float rX = face == WallMountLocation.FLOOR ? 0 : face == WallMountLocation.WALL ? 90 : 180;
+		float rY = AngleHelper.horizontalAngle(leverState.get(AnalogLeverBlock.FACING));
 		buffer.rotateCentered(Direction.UP, (float) (rY / 180 * Math.PI));
 		buffer.rotateCentered(Direction.EAST, (float) (rX / 180 * Math.PI));
 		return buffer;

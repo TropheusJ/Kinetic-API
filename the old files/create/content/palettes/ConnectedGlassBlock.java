@@ -1,31 +1,31 @@
-package com.simibubi.kinetic_api.content.palettes;
+package com.simibubi.create.content.palettes;
 
-import bqx;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.FrostedIceBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.fluid.EmptyFluid;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.GlassBlock;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public class ConnectedGlassBlock extends FrostedIceBlock {
+public class ConnectedGlassBlock extends GlassBlock {
 
-	public ConnectedGlassBlock(c p_i48392_1_) {
+	public ConnectedGlassBlock(Settings p_i48392_1_) {
 		super(p_i48392_1_);
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public boolean a(PistonHandler state, PistonHandler adjacentBlockState, Direction side) {
-		return adjacentBlockState.b() instanceof ConnectedGlassBlock ? true
-			: super.a(state, adjacentBlockState, side);
+	public boolean isSideInvisible(BlockState state, BlockState adjacentBlockState, Direction side) {
+		return adjacentBlockState.getBlock() instanceof ConnectedGlassBlock ? true
+			: super.isSideInvisible(state, adjacentBlockState, side);
 	}
 
 	@Override
-	public boolean shouldDisplayFluidOverlay(PistonHandler state, bqx world, BlockPos pos, EmptyFluid fluidState) {
+	public boolean shouldDisplayFluidOverlay(BlockState state, BlockRenderView world, BlockPos pos, FluidState fluidState) {
 		return true;
 	}
 }

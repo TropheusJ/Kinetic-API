@@ -1,8 +1,8 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
-import com.simibubi.kinetic_api.content.contraptions.components.actors.PortableFluidInterfaceTileEntity.InterfaceFluidHandler;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.Contraption;
-import net.minecraft.block.entity.BellBlockEntity;
+import com.simibubi.create.content.contraptions.components.actors.PortableFluidInterfaceTileEntity.InterfaceFluidHandler;
+import com.simibubi.create.content.contraptions.components.structureMovement.Contraption;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.math.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
@@ -14,7 +14,7 @@ public class PortableFluidInterfaceTileEntity extends PortableStorageInterfaceTi
 
 	protected LazyOptional<IFluidHandler> capability;
 
-	public PortableFluidInterfaceTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public PortableFluidInterfaceTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 		capability = createEmptyHandler();
 	}

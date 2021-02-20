@@ -1,52 +1,54 @@
-package com.simibubi.kinetic_api.content.contraptions.components.saw;
+package com.simibubi.create.content.contraptions.components.saw;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
-import afj;
+
 import com.google.common.base.Predicate;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.AllTags;
-import com.simibubi.kinetic_api.content.contraptions.components.actors.BlockBreakingKineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingInventory;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.item.ItemHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.TreeCutter;
-import com.simibubi.kinetic_api.foundation.utility.TreeCutter.Tree;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import com.simibubi.kinetic_api.foundation.utility.recipe.RecipeConditions;
-import com.simibubi.kinetic_api.foundation.utility.recipe.RecipeFinder;
-import net.minecraft.block.AirBlock;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.ChainBlock;
-import net.minecraft.block.FluidDrainable;
-import net.minecraft.block.JigsawBlock;
-import net.minecraft.block.PaneBlock;
-import net.minecraft.block.StairsBlock;
-import net.minecraft.block.StonecutterBlock;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.BannerItem;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.AllTags;
+import com.simibubi.create.content.contraptions.components.actors.BlockBreakingKineticTileEntity;
+import com.simibubi.create.content.contraptions.processing.ProcessingInventory;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.item.ItemHelper;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.DirectBeltInputBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.TreeCutter;
+import com.simibubi.create.foundation.utility.TreeCutter.Tree;
+import com.simibubi.create.foundation.utility.VecHelper;
+import com.simibubi.create.foundation.utility.recipe.RecipeConditions;
+import com.simibubi.create.foundation.utility.recipe.RecipeFinder;
+
+import net.minecraft.block.BambooBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.CactusBlock;
+import net.minecraft.block.ChorusPlantBlock;
+import net.minecraft.block.GourdBlock;
+import net.minecraft.block.KelpBlock;
+import net.minecraft.block.KelpPlantBlock;
+import net.minecraft.block.SugarCaneBlock;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.recipe.CuttingRecipe;
-import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.stat.StatHandler;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.StonecuttingRecipe;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.CapabilityItemHandler;
@@ -61,7 +63,7 @@ public class SawTileEntity extends BlockBreakingKineticTileEntity {
 	private LazyOptional<IItemHandler> invProvider = LazyOptional.empty();
 	private FilteringBehaviour filtering;
 
-	public SawTileEntity(BellBlockEntity<? extends SawTileEntity> type) {
+	public SawTileEntity(BlockEntityType<? extends SawTileEntity> type) {
 		super(type);
 		inventory = new ProcessingInventory(this::start);
 		inventory.remainingTime = -1;
@@ -85,17 +87,17 @@ public class SawTileEntity extends BlockBreakingKineticTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		super.fromTag(state, compound, clientPacket);
 		inventory.deserializeNBT(compound.getCompound("Inventory"));
 		recipeIndex = compound.getInt("RecipeIndex");
 	}
 
 	@Override
-	public void aj_() {
+	public void tick() {
 		if (shouldRun() && ticksUntilNextProgress < 0)
 			destroyNextTick();
-		super.aj_();
+		super.tick();
 
 		if (!canProcess())
 			return;
@@ -107,13 +109,13 @@ public class SawTileEntity extends BlockBreakingKineticTileEntity {
 			return;
 		}
 
-		float processingSpeed = afj.a(Math.abs(getSpeed()) / 32, 1, 128);
+		float processingSpeed = MathHelper.clamp(Math.abs(getSpeed()) / 32, 1, 128);
 		inventory.remainingTime -= processingSpeed;
 
 		if (inventory.remainingTime > 0)
 			spawnParticles(inventory.getStackInSlot(0));
 
-		if (d.v)
+		if (world.isClient)
 			return;
 
 		if (inventory.remainingTime < 20 && !inventory.appliedRecipe) {
@@ -123,72 +125,72 @@ public class SawTileEntity extends BlockBreakingKineticTileEntity {
 			return;
 		}
 
-		EntityHitResult itemMovement = getItemMovementVec();
-		Direction itemMovementFacing = Direction.getFacing(itemMovement.entity, itemMovement.c, itemMovement.d);
+		Vec3d itemMovement = getItemMovementVec();
+		Direction itemMovementFacing = Direction.getFacing(itemMovement.x, itemMovement.y, itemMovement.z);
 		if (inventory.remainingTime > 0)
 			return;
 		inventory.remainingTime = 0;
 
 		for (int slot = 0; slot < inventory.getSlots(); slot++) {
-			ItemCooldownManager stack = inventory.getStackInSlot(slot);
-			if (stack.a())
+			ItemStack stack = inventory.getStackInSlot(slot);
+			if (stack.isEmpty())
 				continue;
-			ItemCooldownManager tryExportingToBeltFunnel = getBehaviour(DirectBeltInputBehaviour.TYPE)
+			ItemStack tryExportingToBeltFunnel = getBehaviour(DirectBeltInputBehaviour.TYPE)
 				.tryExportingToBeltFunnel(stack, itemMovementFacing.getOpposite());
-			if (tryExportingToBeltFunnel.E() != stack.E()) {
+			if (tryExportingToBeltFunnel.getCount() != stack.getCount()) {
 				inventory.setStackInSlot(slot, tryExportingToBeltFunnel);
 				notifyUpdate();
 				return;
 			}
 		}
 
-		BlockPos nextPos = e.add(itemMovement.entity, itemMovement.c, itemMovement.d);
-		DirectBeltInputBehaviour behaviour = TileEntityBehaviour.get(d, nextPos, DirectBeltInputBehaviour.TYPE);
+		BlockPos nextPos = pos.add(itemMovement.x, itemMovement.y, itemMovement.z);
+		DirectBeltInputBehaviour behaviour = TileEntityBehaviour.get(world, nextPos, DirectBeltInputBehaviour.TYPE);
 		if (behaviour != null) {
 			boolean changed = false;
 			if (!behaviour.canInsertFromSide(itemMovementFacing))
 				return;
 			for (int slot = 0; slot < inventory.getSlots(); slot++) {
-				ItemCooldownManager stack = inventory.getStackInSlot(slot);
-				if (stack.a())
+				ItemStack stack = inventory.getStackInSlot(slot);
+				if (stack.isEmpty())
 					continue;
-				ItemCooldownManager remainder = behaviour.handleInsertion(stack, itemMovementFacing, false);
+				ItemStack remainder = behaviour.handleInsertion(stack, itemMovementFacing, false);
 				if (remainder.equals(stack, false))
 					continue;
 				inventory.setStackInSlot(slot, remainder);
 				changed = true;
 			}
 			if (changed) {
-				X_();
+				markDirty();
 				sendData();
 			}
 			return;
 		}
 
 		// Eject Items
-		EntityHitResult outPos = VecHelper.getCenterOf(e)
-			.e(itemMovement.a(.5f)
-				.b(0, .5, 0));
-		EntityHitResult outMotion = itemMovement.a(.0625)
-			.b(0, .125, 0);
+		Vec3d outPos = VecHelper.getCenterOf(pos)
+			.add(itemMovement.multiply(.5f)
+				.add(0, .5, 0));
+		Vec3d outMotion = itemMovement.multiply(.0625)
+			.add(0, .125, 0);
 		for (int slot = 0; slot < inventory.getSlots(); slot++) {
-			ItemCooldownManager stack = inventory.getStackInSlot(slot);
-			if (stack.a())
+			ItemStack stack = inventory.getStackInSlot(slot);
+			if (stack.isEmpty())
 				continue;
-			PaintingEntity entityIn = new PaintingEntity(d, outPos.entity, outPos.c, outPos.d, stack);
-			entityIn.f(outMotion);
-			d.c(entityIn);
+			ItemEntity entityIn = new ItemEntity(world, outPos.x, outPos.y, outPos.z, stack);
+			entityIn.setVelocity(outMotion);
+			world.spawnEntity(entityIn);
 		}
 		inventory.clear();
-		d.c(e, p().b());
+		world.updateComparators(pos, getCachedState().getBlock());
 		inventory.remainingTime = -1;
 		sendData();
 	}
 
 	@Override
-	public void al_() {
+	public void markRemoved() {
 		invProvider.invalidate();
-		super.al_();
+		super.markRemoved();
 	}
 
 	@Override
@@ -198,59 +200,59 @@ public class SawTileEntity extends BlockBreakingKineticTileEntity {
 		return super.getCapability(cap, side);
 	}
 
-	protected void spawnParticles(ItemCooldownManager stack) {
-		if (stack == null || stack.a())
+	protected void spawnParticles(ItemStack stack) {
+		if (stack == null || stack.isEmpty())
 			return;
 
 		ParticleEffect particleData = null;
 		float speed = 1;
-		if (stack.b() instanceof BannerItem)
-			particleData = new BlockStateParticleEffect(ParticleTypes.BLOCK, ((BannerItem) stack.b()).e()
-				.n());
+		if (stack.getItem() instanceof BlockItem)
+			particleData = new BlockStateParticleEffect(ParticleTypes.BLOCK, ((BlockItem) stack.getItem()).getBlock()
+				.getDefaultState());
 		else {
 			particleData = new ItemStackParticleEffect(ParticleTypes.ITEM, stack);
 			speed = .125f;
 		}
 
-		Random r = d.t;
-		EntityHitResult vec = getItemMovementVec();
-		EntityHitResult pos = VecHelper.getCenterOf(this.e);
+		Random r = world.random;
+		Vec3d vec = getItemMovementVec();
+		Vec3d pos = VecHelper.getCenterOf(this.pos);
 		float offset = inventory.recipeDuration != 0 ? (float) (inventory.remainingTime) / inventory.recipeDuration : 0;
 		offset -= .5f;
-		d.addParticle(particleData, pos.getX() + -vec.entity * offset, pos.getY() + .45f, pos.getZ() + -vec.d * offset,
-			-vec.entity * speed, r.nextFloat() * speed, -vec.d * speed);
+		world.addParticle(particleData, pos.getX() + -vec.x * offset, pos.getY() + .45f, pos.getZ() + -vec.z * offset,
+			-vec.x * speed, r.nextFloat() * speed, -vec.z * speed);
 	}
 
-	public EntityHitResult getItemMovementVec() {
-		boolean alongX = !p().c(SawBlock.AXIS_ALONG_FIRST_COORDINATE);
+	public Vec3d getItemMovementVec() {
+		boolean alongX = !getCachedState().get(SawBlock.AXIS_ALONG_FIRST_COORDINATE);
 		int offset = getSpeed() < 0 ? -1 : 1;
-		return new EntityHitResult(offset * (alongX ? 1 : 0), 0, offset * (alongX ? 0 : -1));
+		return new Vec3d(offset * (alongX ? 1 : 0), 0, offset * (alongX ? 0 : -1));
 	}
 
 	private void applyRecipe() {
-		List<? extends Ingredient<?>> recipes = getRecipes();
+		List<? extends Recipe<?>> recipes = getRecipes();
 		if (recipes.isEmpty())
 			return;
 		if (recipeIndex >= recipes.size())
 			recipeIndex = 0;
 
-		Ingredient<?> recipe = recipes.get(recipeIndex);
+		Recipe<?> recipe = recipes.get(recipeIndex);
 
 		int rolls = inventory.getStackInSlot(0)
-			.E();
+			.getCount();
 		inventory.clear();
 
-		List<ItemCooldownManager> list = new ArrayList<>();
+		List<ItemStack> list = new ArrayList<>();
 		for (int roll = 0; roll < rolls; roll++) {
-			List<ItemCooldownManager> results = new LinkedList<ItemCooldownManager>();
+			List<ItemStack> results = new LinkedList<ItemStack>();
 			if (recipe instanceof CuttingRecipe)
 				results = ((CuttingRecipe) recipe).rollResults();
-			else if (recipe instanceof CuttingRecipe)
-				results.add(recipe.c()
-					.i());
+			else if (recipe instanceof StonecuttingRecipe)
+				results.add(recipe.getOutput()
+					.copy());
 
 			for (int i = 0; i < results.size(); i++) {
-				ItemCooldownManager stack = results.get(i);
+				ItemStack stack = results.get(i);
 				ItemHelper.addToList(stack, list);
 			}
 		}
@@ -259,42 +261,42 @@ public class SawTileEntity extends BlockBreakingKineticTileEntity {
 
 	}
 
-	private List<? extends Ingredient<?>> getRecipes() {
-		Predicate<Ingredient<?>> types = AllConfigs.SERVER.recipes.allowStonecuttingOnSaw.get()
-			? RecipeConditions.isOfType(Recipe.f, AllRecipeTypes.CUTTING.getType())
+	private List<? extends Recipe<?>> getRecipes() {
+		Predicate<Recipe<?>> types = AllConfigs.SERVER.recipes.allowStonecuttingOnSaw.get()
+			? RecipeConditions.isOfType(RecipeType.STONECUTTING, AllRecipeTypes.CUTTING.getType())
 			: RecipeConditions.isOfType(AllRecipeTypes.CUTTING.getType());
-		List<Ingredient<?>> startedSearch = RecipeFinder.get(cuttingRecipesKey, d, types);
+		List<Recipe<?>> startedSearch = RecipeFinder.get(cuttingRecipesKey, world, types);
 		return startedSearch.stream()
 			.filter(RecipeConditions.outputMatchesFilter(filtering))
 			.filter(RecipeConditions.firstIngredientMatches(inventory.getStackInSlot(0)))
 			.collect(Collectors.toList());
 	}
 
-	public void insertItem(PaintingEntity entity) {
+	public void insertItem(ItemEntity entity) {
 		if (!canProcess())
 			return;
 		if (!inventory.isEmpty())
 			return;
-		if (!entity.aW())
+		if (!entity.isAlive())
 			return;
-		if (d.v)
+		if (world.isClient)
 			return;
 
 		inventory.clear();
-		inventory.insertItem(0, entity.g()
-			.i(), false);
-		entity.ac();
+		inventory.insertItem(0, entity.getStack()
+			.copy(), false);
+		entity.remove();
 	}
 
-	public void start(ItemCooldownManager inserted) {
+	public void start(ItemStack inserted) {
 		if (!canProcess())
 			return;
 		if (inventory.isEmpty())
 			return;
-		if (d.v)
+		if (world.isClient)
 			return;
 
-		List<? extends Ingredient<?>> recipes = getRecipes();
+		List<? extends Recipe<?>> recipes = getRecipes();
 		boolean valid = !recipes.isEmpty();
 		int time = 100;
 
@@ -311,80 +313,85 @@ public class SawTileEntity extends BlockBreakingKineticTileEntity {
 				recipeIndex = 0;
 		}
 
-		Ingredient<?> recipe = recipes.get(recipeIndex);
-		if (recipe instanceof com.simibubi.kinetic_api.content.contraptions.components.saw.CuttingRecipe) {
-			time = ((com.simibubi.kinetic_api.content.contraptions.components.saw.CuttingRecipe) recipe).getProcessingDuration();
+		Recipe<?> recipe = recipes.get(recipeIndex);
+		if (recipe instanceof CuttingRecipe) {
+			time = ((CuttingRecipe) recipe).getProcessingDuration();
 		}
 
-		inventory.remainingTime = time * Math.max(1, (inserted.E() / 5));
+		inventory.remainingTime = time * Math.max(1, (inserted.getCount() / 5));
 		inventory.recipeDuration = inventory.remainingTime;
 		inventory.appliedRecipe = false;
 		sendData();
 	}
 
 	protected boolean canProcess() {
-		return p().c(SawBlock.FACING) == Direction.UP;
+		return getCachedState().get(SawBlock.FACING) == Direction.UP;
 	}
 
 	// Block Breaker
 
 	@Override
 	protected boolean shouldRun() {
-		return p().c(SawBlock.FACING)
+		return getCachedState().get(SawBlock.FACING)
 			.getAxis()
 			.isHorizontal();
 	}
 
 	@Override
 	protected BlockPos getBreakingPos() {
-		return o().offset(p().c(SawBlock.FACING));
+		return getPos().offset(getCachedState().get(SawBlock.FACING));
 	}
 
 	@Override
-	public void onBlockBroken(PistonHandler stateToBreak) {
+	public void onBlockBroken(BlockState stateToBreak) {
 		super.onBlockBroken(stateToBreak);
-		Tree tree = TreeCutter.cutTree(d, breakingPos);
+		Tree tree = TreeCutter.cutTree(world, breakingPos);
 		if (tree != null) {
 			for (BlockPos log : tree.logs)
-				BlockHelper.destroyBlock(d, log, 1 / 2f, stack -> dropItemFromCutTree(log, stack));
+				BlockHelper.destroyBlock(world, log, 1 / 2f, stack -> dropItemFromCutTree(log, stack));
 			for (BlockPos leaf : tree.leaves)
-				BlockHelper.destroyBlock(d, leaf, 1 / 8f, stack -> dropItemFromCutTree(leaf, stack));
+				BlockHelper.destroyBlock(world, leaf, 1 / 8f, stack -> dropItemFromCutTree(leaf, stack));
 		}
 	}
 
-	public void dropItemFromCutTree(BlockPos pos, ItemCooldownManager stack) {
+	public void dropItemFromCutTree(BlockPos pos, ItemStack stack) {
 		float distance = (float) Math.sqrt(pos.getSquaredDistance(breakingPos));
-		EntityHitResult dropPos = VecHelper.getCenterOf(pos);
-		PaintingEntity entity = new PaintingEntity(d, dropPos.entity, dropPos.c, dropPos.d, stack);
-		entity.f(EntityHitResult.b(breakingPos.subtract(this.e)).a(distance / 20f));
-		d.c(entity);
+		Vec3d dropPos = VecHelper.getCenterOf(pos);
+		ItemEntity entity = new ItemEntity(world, dropPos.x, dropPos.y, dropPos.z, stack);
+		entity.setVelocity(Vec3d.of(breakingPos.subtract(this.pos)).multiply(distance / 20f));
+		world.spawnEntity(entity);
 	}
 
 	@Override
-	public boolean canBreak(PistonHandler stateToBreak, float blockHardness) {
+	public boolean canBreak(BlockState stateToBreak, float blockHardness) {
 		boolean sawable = isSawable(stateToBreak);
 		return super.canBreak(stateToBreak, blockHardness) && sawable;
 	}
 
-	public static boolean isSawable(PistonHandler stateToBreak) {
-		if (stateToBreak.a(StatHandler.s) || AllTags.AllBlockTags.SLIMY_LOGS.matches(stateToBreak) || stateToBreak.a(StatHandler.I))
+	public static boolean isSawable(BlockState stateToBreak) {
+		if (stateToBreak.isIn(BlockTags.LOGS) || AllTags.AllBlockTags.SLIMY_LOGS.matches(stateToBreak) || stateToBreak.isIn(BlockTags.LEAVES))
 			return true;
-		BeetrootsBlock block = stateToBreak.b();
-		if (block instanceof AirBlock)
+		Block block = stateToBreak.getBlock();
+		if (block instanceof BambooBlock)
 			return true;
-		if (block instanceof StairsBlock)
+		if (block instanceof GourdBlock)
 			return true;
-		if (block instanceof FluidDrainable)
+		if (block instanceof CactusBlock)
 			return true;
-		if (block instanceof StonecutterBlock)
+		if (block instanceof SugarCaneBlock)
 			return true;
-		if (block instanceof JigsawBlock)
+		if (block instanceof KelpPlantBlock)
 			return true;
-		if (block instanceof PaneBlock)
+		if (block instanceof KelpBlock)
 			return true;
-		if (block instanceof ChainBlock)
+		if (block instanceof ChorusPlantBlock)
 			return true;
 		return false;
+	}
+
+	@Override
+	public boolean shouldRenderAsTE() {
+		return true;
 	}
 
 }

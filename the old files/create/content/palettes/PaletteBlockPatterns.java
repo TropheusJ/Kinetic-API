@@ -1,24 +1,24 @@
-package com.simibubi.kinetic_api.content.palettes;
+package com.simibubi.create.content.palettes;
 
-import static com.simibubi.kinetic_api.content.palettes.PaletteBlockPartial.AllPartials;
-import static com.simibubi.kinetic_api.content.palettes.PaletteBlockPartial.ForPolished;
-import static com.simibubi.kinetic_api.content.palettes.PatternNameType.Prefix;
-import static com.simibubi.kinetic_api.content.palettes.PatternNameType.Suffix;
-import static com.simibubi.kinetic_api.content.palettes.PatternNameType.Wrap;
+import static com.simibubi.create.content.palettes.PaletteBlockPartial.AllPartials;
+import static com.simibubi.create.content.palettes.PaletteBlockPartial.ForPolished;
+import static com.simibubi.create.content.palettes.PatternNameType.Prefix;
+import static com.simibubi.create.content.palettes.PatternNameType.Suffix;
+import static com.simibubi.create.content.palettes.PatternNameType.Wrap;
 
 import java.util.Optional;
 import java.util.function.Function;
 
-import com.simibubi.kinetic_api.AllSpriteShifts;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.palettes.PaletteBlockPatterns.IBlockStateProvider;
-import com.simibubi.kinetic_api.content.palettes.PaletteBlockPatterns.IPatternBlockStateGenerator;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShiftEntry;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShifter.CTType;
-import com.simibubi.kinetic_api.foundation.block.connected.ConnectedTextureBehaviour;
-import com.simibubi.kinetic_api.foundation.block.connected.HorizontalCTBehaviour;
-import com.simibubi.kinetic_api.foundation.data.BlockStateGen;
-import com.simibubi.kinetic_api.foundation.data.ModelGen;
+import com.simibubi.create.AllSpriteShifts;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.palettes.PaletteBlockPatterns.IBlockStateProvider;
+import com.simibubi.create.content.palettes.PaletteBlockPatterns.IPatternBlockStateGenerator;
+import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
+import com.simibubi.create.foundation.block.connected.CTSpriteShifter.CTType;
+import com.simibubi.create.foundation.block.connected.ConnectedTextureBehaviour;
+import com.simibubi.create.foundation.block.connected.HorizontalCTBehaviour;
+import com.simibubi.create.foundation.data.BlockStateGen;
+import com.simibubi.create.foundation.data.ModelGen;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
 import com.tterrag.registrate.providers.RegistrateRecipeProvider;
@@ -27,10 +27,10 @@ import com.tterrag.registrate.util.nullness.NonNullBiConsumer;
 import com.tterrag.registrate.util.nullness.NonNullFunction;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.RepeaterBlock;
-import net.minecraft.block.entity.PistonBlockEntity.c;
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.block.AbstractBlock.Settings;
+import net.minecraft.block.Block;
+import net.minecraft.block.PillarBlock;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.data.server.recipe.ShapedRecipeJsonFactory;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.api.distmarker.Dist;
@@ -47,7 +47,7 @@ public class PaletteBlockPatterns {
 			.addRecipes(v -> (c,
 			p) -> {
 				DataIngredient ingredient = DataIngredient.items(v.getBaseBlock().get());
-				ShapedRecipeJsonFactory.a(c.get(), 4).a('X', ingredient)
+				ShapedRecipeJsonFactory.create(c.get(), 4).input('X', ingredient)
 						.pattern("XX").pattern("XX")
 						.criterion("has_" + p.safeName(ingredient), ingredient.getCritereon(p)).offerTo(p, p.safeId(c.get()));
 				}
@@ -67,14 +67,14 @@ public class PaletteBlockPatterns {
 			.textures("chiseled", "chiseled_top"),
 
 		PILLAR = create("pillar", Suffix).blockStateFactory(p -> p::pillar)
-			.block(RepeaterBlock::new)
+			.block(PillarBlock::new)
 			.textures("pillar", "pillar_end")
-			.addRecipes(v -> (c, p) -> ShapedRecipeJsonFactory.a(c.get(), 2)
-				.a('#', v.getBaseBlock()
+			.addRecipes(v -> (c, p) -> ShapedRecipeJsonFactory.create(c.get(), 2)
+				.input('#', v.getBaseBlock()
 					.get())
 				.pattern("#")
 				.pattern("#")
-				.criterion("has_ingredient", p.a(v.getBaseBlock()
+				.criterion("has_ingredient", p.conditionsFromItem(v.getBaseBlock()
 					.get()))
 				.offerTo(p::accept)),
 
@@ -107,12 +107,12 @@ public class PaletteBlockPatterns {
 	private Optional<Function<PaletteStoneVariants, ConnectedTextureBehaviour>> ctBehaviour;
 
 	private IPatternBlockStateGenerator blockStateGenerator;
-	private NonNullFunction<c, ? extends BeetrootsBlock> blockFactory;
-	private NonNullFunction<PaletteStoneVariants, NonNullBiConsumer<DataGenContext<BeetrootsBlock, ? extends BeetrootsBlock>, RegistrateRecipeProvider>> additionalRecipes;
-	private PaletteBlockPartial<? extends BeetrootsBlock>[] partials;
+	private NonNullFunction<Settings, ? extends Block> blockFactory;
+	private NonNullFunction<PaletteStoneVariants, NonNullBiConsumer<DataGenContext<Block, ? extends Block>, RegistrateRecipeProvider>> additionalRecipes;
+	private PaletteBlockPartial<? extends Block>[] partials;
 
 	@Environment(EnvType.CLIENT)
-	private VertexConsumerProvider renderType;
+	private RenderLayer renderType;
 
 	private static PaletteBlockPatterns create(String name, PatternNameType nameType,
 		PaletteBlockPartial<?>... partials) {
@@ -124,7 +124,7 @@ public class PaletteBlockPatterns {
 		pattern.additionalRecipes = $ -> NonNullBiConsumer.noop();
 		pattern.isTranslucent = false;
 		pattern.hasFoliage = false;
-		pattern.blockFactory = BeetrootsBlock::new;
+		pattern.blockFactory = Block::new;
 		pattern.textures = new String[] { name };
 		pattern.blockStateGenerator = p -> p::cubeAll;
 		return pattern;
@@ -142,11 +142,11 @@ public class PaletteBlockPatterns {
 		return hasFoliage;
 	}
 
-	public NonNullFunction<c, ? extends BeetrootsBlock> getBlockFactory() {
+	public NonNullFunction<Settings, ? extends Block> getBlockFactory() {
 		return blockFactory;
 	}
 
-	public PaletteBlockPartial<? extends BeetrootsBlock>[] getPartials() {
+	public PaletteBlockPartial<? extends Block>[] getPartials() {
 		return partials;
 	}
 
@@ -154,7 +154,7 @@ public class PaletteBlockPatterns {
 		return textures[0];
 	}
 
-	public void addRecipes(PaletteStoneVariants variant, DataGenContext<BeetrootsBlock, ? extends BeetrootsBlock> c,
+	public void addRecipes(PaletteStoneVariants variant, DataGenContext<Block, ? extends Block> c,
 		RegistrateRecipeProvider p) {
 		additionalRecipes.apply(variant)
 			.accept(c, p);
@@ -176,7 +176,7 @@ public class PaletteBlockPatterns {
 		return this;
 	}
 
-	private PaletteBlockPatterns block(NonNullFunction<c, ? extends BeetrootsBlock> blockFactory) {
+	private PaletteBlockPatterns block(NonNullFunction<Settings, ? extends Block> blockFactory) {
 		this.blockFactory = blockFactory;
 		return this;
 	}
@@ -197,7 +197,7 @@ public class PaletteBlockPatterns {
 	}
 
 	private PaletteBlockPatterns addRecipes(
-		NonNullFunction<PaletteStoneVariants, NonNullBiConsumer<DataGenContext<BeetrootsBlock, ? extends BeetrootsBlock>, RegistrateRecipeProvider>> func) {
+		NonNullFunction<PaletteStoneVariants, NonNullBiConsumer<DataGenContext<Block, ? extends Block>, RegistrateRecipeProvider>> func) {
 		this.additionalRecipes = func;
 		return this;
 	}
@@ -284,7 +284,7 @@ public class PaletteBlockPatterns {
 
 	@FunctionalInterface
 	static interface IBlockStateProvider
-		extends NonNullBiConsumer<DataGenContext<BeetrootsBlock, ? extends BeetrootsBlock>, RegistrateBlockstateProvider> {
+		extends NonNullBiConsumer<DataGenContext<Block, ? extends Block>, RegistrateBlockstateProvider> {
 	}
 
 	// Textures with connectability, used by Spriteshifter

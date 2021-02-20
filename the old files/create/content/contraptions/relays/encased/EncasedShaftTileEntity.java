@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import net.minecraft.block.entity.BellBlockEntity;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import net.minecraft.block.entity.BlockEntityType;
 
 public class EncasedShaftTileEntity extends KineticTileEntity {
 
-	public EncasedShaftTileEntity(BellBlockEntity<? extends EncasedShaftTileEntity> type) {
+	public EncasedShaftTileEntity(BlockEntityType<? extends EncasedShaftTileEntity> type) {
 		super(type);
 	}
 	

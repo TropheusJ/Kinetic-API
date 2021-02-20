@@ -1,42 +1,43 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import com.simibubi.kinetic_api.content.contraptions.fluids.actors.FluidFillingBehaviour.SpaceType;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import cqx;
-import cut;
+import com.simibubi.create.content.contraptions.fluids.actors.FluidFillingBehaviour.SpaceType;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.foundation.utility.Iterate;
+
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
-import net.minecraft.block.AbstractRedstoneGateBlock;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.LecternBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.fluid.FlowableFluid;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.DoorBlock;
+import net.minecraft.block.FluidBlock;
+import net.minecraft.block.Material;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.server.world.ServerTickScheduler;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.stat.StatHandler;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.property.Properties;
 import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerEntry;
-import net.minecraft.world.MobSpawnerLogic;
-import net.minecraft.world.chunk.ChunkCache;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.ScheduledTick;
+import net.minecraft.world.TickScheduler;
+import net.minecraft.world.World;
 
 public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 
@@ -57,16 +58,16 @@ public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 	public void tick() {
 		super.tick();
 		if (!infinityCheckFrontier.isEmpty() && rootPos != null) {
-			cut fluid = getWorld().b(rootPos)
-				.a();
-			if (fluid != FlowableFluid.FALLING)
+			Fluid fluid = getWorld().getFluidState(rootPos)
+				.getFluid();
+			if (fluid != Fluids.EMPTY)
 				continueValidation(fluid);
 		}
 		if (revalidateIn > 0)
 			revalidateIn--;
 	}
 
-	protected void continueValidation(cut fluid) {
+	protected void continueValidation(Fluid fluid) {
 		search(fluid, infinityCheckFrontier, infinityCheckVisited,
 			(p, d) -> infinityCheckFrontier.add(new BlockPosEntry(p, d)), true);
 		int maxBlocks = maxBlocks();
@@ -92,12 +93,12 @@ public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 		infinityCheckVisited.clear();
 	}
 
-	public boolean tryDeposit(cut fluid, BlockPos root, boolean simulate) {
+	public boolean tryDeposit(Fluid fluid, BlockPos root, boolean simulate) {
 		if (!Objects.equals(root, rootPos)) {
 			reset();
 			rootPos = root;
 			queue.enqueue(new BlockPosEntry(root, 0));
-			affectedArea = new cqx(rootPos, rootPos);
+			affectedArea = new BlockBox(rootPos, rootPos);
 			return false;
 		}
 
@@ -108,7 +109,7 @@ public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 		}
 
 		if (affectedArea == null)
-			affectedArea = new cqx(root, root);
+			affectedArea = new BlockBox(root, root);
 
 		if (revalidateIn == 0) {
 			visited.clear();
@@ -119,17 +120,17 @@ public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 			softReset(root);
 		}
 
-		GameMode world = getWorld();
+		World world = getWorld();
 		int maxRange = maxRange();
 		int maxRangeSq = maxRange * maxRange;
 		int maxBlocks = maxBlocks();
-		boolean evaporate = world.k()
-			.d() && fluid.a(BlockTags.field_15481);
+		boolean evaporate = world.getDimension()
+			.isUltrawarm() && fluid.isIn(FluidTags.WATER);
 
 		if (infinite || evaporate) {
-			EmptyFluid fluidState = world.b(rootPos);
-			boolean equivalentTo = fluidState.a()
-				.a(fluid);
+			FluidState fluidState = world.getFluidState(rootPos);
+			boolean equivalentTo = fluidState.getFluid()
+				.matchesType(fluid);
 			if (!equivalentTo && !evaporate)
 				return false;
 			if (simulate)
@@ -139,8 +140,8 @@ public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 				int i = root.getX();
 				int j = root.getY();
 				int k = root.getZ();
-				world.a(null, i, j, k, MusicType.ej, SoundEvent.e, 0.5F,
-					2.6F + (world.t.nextFloat() - world.t.nextFloat()) * 0.8F);
+				world.playSound(null, i, j, k, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F,
+					2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F);
 			}
 			return true;
 		}
@@ -173,34 +174,34 @@ public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 				if (!simulate) {
 					playEffect(world, currentPos, fluid, false);
 
-					PistonHandler blockState = world.d_(currentPos);
-					if (blockState.b(BambooLeaves.C) && fluid.a(FlowableFluid.c)) {
-						world.a(currentPos,
-							updatePostWaterlogging(blockState.a(BambooLeaves.C, true)), 2 | 16);
+					BlockState blockState = world.getBlockState(currentPos);
+					if (blockState.contains(Properties.WATERLOGGED) && fluid.matchesType(Fluids.WATER)) {
+						world.setBlockState(currentPos,
+							updatePostWaterlogging(blockState.with(Properties.WATERLOGGED, true)), 2 | 16);
 					} else {
 						replaceBlock(world, currentPos, blockState);
-						world.a(currentPos, FluidHelper.convertToStill(fluid)
-							.h()
-							.g(), 2 | 16);
+						world.setBlockState(currentPos, FluidHelper.convertToStill(fluid)
+							.getDefaultState()
+							.getBlockState(), 2 | 16);
 					}
 
-					ServerTickScheduler<cut> pendingFluidTicks = world.H();
-					if (pendingFluidTicks instanceof ChunkCache) {
-						ChunkCache<cut> serverTickList = (ChunkCache<cut>) pendingFluidTicks;
-						MobSpawnerEntry<cut> removedEntry = null;
-						for (MobSpawnerEntry<cut> nextTickListEntry : serverTickList.chunks) {
-							if (nextTickListEntry.a.equals(currentPos)) {
+					TickScheduler<Fluid> pendingFluidTicks = world.getFluidTickScheduler();
+					if (pendingFluidTicks instanceof ServerTickScheduler) {
+						ServerTickScheduler<Fluid> serverTickList = (ServerTickScheduler<Fluid>) pendingFluidTicks;
+						ScheduledTick<Fluid> removedEntry = null;
+						for (ScheduledTick<Fluid> nextTickListEntry : serverTickList.scheduledTickActions) {
+							if (nextTickListEntry.pos.equals(currentPos)) {
 								removedEntry = nextTickListEntry;
 								break;
 							}
 						}
 						if (removedEntry != null) {
-							serverTickList.chunks.remove(removedEntry);
-							serverTickList.empty.remove(removedEntry);
+							serverTickList.scheduledTickActions.remove(removedEntry);
+							serverTickList.scheduledTickActionsInOrder.remove(removedEntry);
 						}
 					}
 
-					affectedArea.c(new cqx(currentPos, currentPos));
+					affectedArea.encompass(new BlockBox(currentPos, currentPos));
 				}
 			}
 
@@ -227,7 +228,7 @@ public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 		}
 
 		if (!simulate && success)
-			AllTriggers.triggerForNearbyPlayers(AllTriggers.HOSE_PULLEY, world, tileEntity.o(), 8);
+			AllTriggers.triggerForNearbyPlayers(AllTriggers.HOSE_PULLEY, world, tileEntity.getPos(), 8);
 		return success;
 	}
 
@@ -244,43 +245,43 @@ public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 		FILLABLE, FILLED, BLOCKING
 	}
 
-	protected SpaceType getAtPos(GameMode world, BlockPos pos, cut toFill) {
-		PistonHandler blockState = world.d_(pos);
-		EmptyFluid fluidState = blockState.m();
+	protected SpaceType getAtPos(World world, BlockPos pos, Fluid toFill) {
+		BlockState blockState = world.getBlockState(pos);
+		FluidState fluidState = blockState.getFluidState();
 
-		if (blockState.b(BambooLeaves.C))
-			return toFill.a(FlowableFluid.c)
-				? blockState.c(BambooLeaves.C) ? SpaceType.FILLED : SpaceType.FILLABLE
+		if (blockState.contains(Properties.WATERLOGGED))
+			return toFill.matchesType(Fluids.WATER)
+				? blockState.get(Properties.WATERLOGGED) ? SpaceType.FILLED : SpaceType.FILLABLE
 				: SpaceType.BLOCKING;
 
-		if (blockState.b() instanceof LecternBlock)
-			return blockState.c(LecternBlock.FACING) == 0
-				? toFill.a(fluidState.a()) ? SpaceType.FILLED : SpaceType.BLOCKING
+		if (blockState.getBlock() instanceof FluidBlock)
+			return blockState.get(FluidBlock.LEVEL) == 0
+				? toFill.matchesType(fluidState.getFluid()) ? SpaceType.FILLED : SpaceType.BLOCKING
 				: SpaceType.FILLABLE;
 
-		if (fluidState.a() != FlowableFluid.FALLING
-			&& blockState.b(getWorld(), pos, ArrayVoxelShape.a())
-				.b())
-			return toFill.a(fluidState.a()) ? SpaceType.FILLED : SpaceType.BLOCKING;
+		if (fluidState.getFluid() != Fluids.EMPTY
+			&& blockState.getCollisionShape(getWorld(), pos, ShapeContext.absent())
+				.isEmpty())
+			return toFill.matchesType(fluidState.getFluid()) ? SpaceType.FILLED : SpaceType.BLOCKING;
 
 		return canBeReplacedByFluid(world, pos, blockState) ? SpaceType.FILLABLE : SpaceType.BLOCKING;
 	}
 
-	protected void replaceBlock(GameMode world, BlockPos pos, PistonHandler state) {
-		BeehiveBlockEntity tileentity = state.b()
-			.hasTileEntity(state) ? world.c(pos) : null;
-		BeetrootsBlock.a(state, world, pos, tileentity);
+	protected void replaceBlock(World world, BlockPos pos, BlockState state) {
+		BlockEntity tileentity = state.getBlock()
+			.hasTileEntity(state) ? world.getBlockEntity(pos) : null;
+		Block.dropStacks(state, world, pos, tileentity);
 	}
 
 	// From FlowingFluidBlock#isBlocked
-	protected boolean canBeReplacedByFluid(MobSpawnerLogic world, BlockPos pos, PistonHandler state) {
-		BeetrootsBlock block = state.b();
-		if (!(block instanceof AbstractRedstoneGateBlock) && !block.a(StatHandler.af) && block != BellBlock.cg
-			&& block != BellBlock.cH && block != BellBlock.lc) {
-			FluidState material = state.c();
-			if (material != FluidState.c && material != FluidState.b && material != FluidState.f
-				&& material != FluidState.i) {
-				return !material.isEmpty();
+	protected boolean canBeReplacedByFluid(BlockView world, BlockPos pos, BlockState state) {
+		Block block = state.getBlock();
+		if (!(block instanceof DoorBlock) && !block.isIn(BlockTags.SIGNS) && block != Blocks.LADDER
+			&& block != Blocks.SUGAR_CANE && block != Blocks.BUBBLE_COLUMN) {
+			Material material = state.getMaterial();
+			if (material != Material.PORTAL && material != Material.STRUCTURE_VOID && material != Material.UNDERWATER_PLANT
+				&& material != Material.REPLACEABLE_UNDERWATER_PLANT) {
+				return !material.blocksMovement();
 			} else {
 				return false;
 			}
@@ -289,9 +290,9 @@ public class FluidFillingBehaviour extends FluidManipulationBehaviour {
 		}
 	}
 
-	protected PistonHandler updatePostWaterlogging(PistonHandler state) {
-		if (state.b(BambooLeaves.r))
-			state = state.a(BambooLeaves.r, false);
+	protected BlockState updatePostWaterlogging(BlockState state) {
+		if (state.contains(Properties.LIT))
+			state = state.with(Properties.LIT, false);
 		return state;
 	}
 

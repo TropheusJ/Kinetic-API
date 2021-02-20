@@ -1,18 +1,22 @@
-package com.simibubi.kinetic_api.content.contraptions.components.flywheel.engine;
+package com.simibubi.create.content.contraptions.components.flywheel.engine;
 
 import java.util.List;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.components.flywheel.FlywheelBlock;
-import com.simibubi.kinetic_api.content.contraptions.components.flywheel.FlywheelTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.components.flywheel.FlywheelBlock;
+import com.simibubi.create.content.contraptions.components.flywheel.FlywheelTileEntity;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.timer.Timer;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class EngineTileEntity extends SmartTileEntity {
 
@@ -20,7 +24,7 @@ public class EngineTileEntity extends SmartTileEntity {
 	public float appliedSpeed;
 	protected FlywheelTileEntity poweredWheel;
 
-	public EngineTileEntity(BellBlockEntity<?> tileEntityTypeIn) {
+	public EngineTileEntity(BlockEntityType<?> tileEntityTypeIn) {
 		super(tileEntityTypeIn);
 	}
 
@@ -28,57 +32,62 @@ public class EngineTileEntity extends SmartTileEntity {
 	public void addBehaviours(List<TileEntityBehaviour> behaviours) {
 	}
 
+	protected Box cachedBoundingBox;
 	@Override
-	public Timer getRenderBoundingBox() {
-		return super.getRenderBoundingBox().g(1.5f);
+	@Environment(EnvType.CLIENT)
+	public Box getRenderBoundingBox() {
+		if (cachedBoundingBox == null) {
+			cachedBoundingBox = super.getRenderBoundingBox().expand(1.5f);
+		}
+		return cachedBoundingBox;
 	}
 
 	@Override
 	public void lazyTick() {
 		super.lazyTick();
-		if (d.v)
+		if (world.isClient)
 			return;
-		if (poweredWheel != null && poweredWheel.q())
+		if (poweredWheel != null && poweredWheel.isRemoved())
 			poweredWheel = null;
 		if (poweredWheel == null)
 			attachWheel();
 	}
 
 	public void attachWheel() {
-		Direction engineFacing = p().c(EngineBlock.aq);
-		BlockPos wheelPos = e.offset(engineFacing, 2);
-		PistonHandler wheelState = d.d_(wheelPos);
+		Direction engineFacing = getCachedState().get(EngineBlock.FACING);
+		BlockPos wheelPos = pos.offset(engineFacing, 2);
+		BlockState wheelState = world.getBlockState(wheelPos);
 		if (!AllBlocks.FLYWHEEL.has(wheelState))
 			return;
-		Direction wheelFacing = wheelState.c(FlywheelBlock.HORIZONTAL_FACING);
+		Direction wheelFacing = wheelState.get(FlywheelBlock.HORIZONTAL_FACING);
 		if (wheelFacing.getAxis() != engineFacing.rotateYClockwise().getAxis())
 			return;
 		if (FlywheelBlock.isConnected(wheelState)
 				&& FlywheelBlock.getConnection(wheelState) != engineFacing.getOpposite())
 			return;
-		BeehiveBlockEntity te = d.c(wheelPos);
-		if (te.q())
+		BlockEntity te = world.getBlockEntity(wheelPos);
+		if (te.isRemoved())
 			return;
 		if (te instanceof FlywheelTileEntity) {
 			if (!FlywheelBlock.isConnected(wheelState))
-				FlywheelBlock.setConnection(d, te.o(), te.p(), engineFacing.getOpposite());
+				FlywheelBlock.setConnection(world, te.getPos(), te.getCachedState(), engineFacing.getOpposite());
 			poweredWheel = (FlywheelTileEntity) te;
 			refreshWheelSpeed();
 		}
 	}
 
 	public void detachWheel() {
-		if (poweredWheel.q())
+		if (poweredWheel.isRemoved())
 			return;
 		poweredWheel.setRotation(0, 0);
-		FlywheelBlock.setConnection(d, poweredWheel.o(), poweredWheel.p(), null);
+		FlywheelBlock.setConnection(world, poweredWheel.getPos(), poweredWheel.getCachedState(), null);
 	}
 
 	@Override
-	public void al_() {
+	public void markRemoved() {
 		if (poweredWheel != null)
 			detachWheel();
-		super.al_();
+		super.markRemoved();
 	}
 
 	protected void refreshWheelSpeed() {

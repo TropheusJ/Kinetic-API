@@ -1,18 +1,18 @@
-package com.simibubi.kinetic_api.content.contraptions.wrench;
+package com.simibubi.create.content.contraptions.wrench;
 
-import com.simibubi.kinetic_api.foundation.block.render.CustomRenderedItemModel;
-import elg;
-import net.minecraft.client.input.Input;
+import com.simibubi.create.foundation.block.render.CustomRenderedItemModel;
+import net.minecraft.client.render.item.BuiltinModelItemRenderer;
+import net.minecraft.client.render.model.BakedModel;
 
 public class WrenchModel extends CustomRenderedItemModel {
 
-	public WrenchModel(elg template) {
+	public WrenchModel(BakedModel template) {
 		super(template, "wrench");
 		addPartials("gear");
 	}
 
 	@Override
-	public Input createRenderer() {
+	public BuiltinModelItemRenderer createRenderer() {
 		return new WrenchItemRenderer();
 	}
 

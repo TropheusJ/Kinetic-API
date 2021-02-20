@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 public class IntAttached<V> extends Pair<Integer, V> {
 

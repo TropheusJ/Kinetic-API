@@ -1,31 +1,32 @@
-package com.simibubi.kinetic_api.content.schematics.packet;
+package com.simibubi.create.content.schematics.packet;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.content.schematics.item.SchematicItem;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.schematics.SchematicProcessor;
+import com.simibubi.create.content.schematics.item.SchematicItem;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.structure.processor.StructureProcessor;
-import net.minecraft.structure.rule.RuleTest;
+import net.minecraft.structure.Structure;
+import net.minecraft.structure.StructurePlacementData;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
 
 public class SchematicPlacePacket extends SimplePacketBase {
 
-	public ItemCooldownManager stack;
+	public ItemStack stack;
 
-	public SchematicPlacePacket(ItemCooldownManager stack) {
+	public SchematicPlacePacket(ItemStack stack) {
 		this.stack = stack;
 	}
 
 	public SchematicPlacePacket(PacketByteBuf buffer) {
-		stack = buffer.n();
+		stack = buffer.readItemStack();
 	}
 
 	public void write(PacketByteBuf buffer) {
-		buffer.a(stack);
+		buffer.writeItemStack(stack);
 	}
 
 	public void handle(Supplier<Context> context) {
@@ -33,11 +34,13 @@ public class SchematicPlacePacket extends SimplePacketBase {
 			ServerPlayerEntity player = context.get().getSender();
 			if (player == null)
 				return;
-			StructureProcessor t = SchematicItem.loadSchematic(stack);
-			RuleTest settings = SchematicItem.getSettings(stack);
-			settings.a(false);
-			t.a(player.getServerWorld(), NbtHelper.toBlockPos(stack.o().getCompound("Anchor")),
-					settings, player.cX());
+			Structure t = SchematicItem.loadSchematic(stack);
+			StructurePlacementData settings = SchematicItem.getSettings(stack);
+			if (player.isCreativeLevelTwoOp())
+				settings.removeProcessor(SchematicProcessor.INSTANCE); // remove processor
+			settings.setIgnoreEntities(false);
+			t.place(player.getServerWorld(), NbtHelper.toBlockPos(stack.getTag().getCompound("Anchor")),
+					settings, player.getRandom());
 		});
 		context.get().setPacketHandled(true);
 	}

@@ -1,21 +1,22 @@
-package com.simibubi.kinetic_api.foundation.data;
+package com.simibubi.create.foundation.data;
 
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.state.property.IntProperty;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.math.Direction;
 import net.minecraftforge.client.model.generators.ConfiguredModel;
 import net.minecraftforge.client.model.generators.ModelFile;
 
 public abstract class SpecialBlockStateGen {
 
-	protected IntProperty<?>[] getIgnoredProperties() {
-		return new IntProperty<?>[0];
+	protected Property<?>[] getIgnoredProperties() {
+		return new Property<?>[0];
 	}
 	
-	public final <T extends BeetrootsBlock> void generate(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov) {
+	public final <T extends Block> void generate(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov) {
 		prov.getVariantBuilder(ctx.getEntry())
 			.forAllStatesExcept(state -> {
 				return ConfiguredModel.builder()
@@ -32,11 +33,11 @@ public abstract class SpecialBlockStateGen {
 		return (int) direction.asRotation();
 	}
 	
-	protected abstract int getXRotation(PistonHandler state);
+	protected abstract int getXRotation(BlockState state);
 
-	protected abstract int getYRotation(PistonHandler state);
+	protected abstract int getYRotation(BlockState state);
 
-	public abstract <T extends BeetrootsBlock> ModelFile getModel(DataGenContext<BeetrootsBlock, T> ctx,
-		RegistrateBlockstateProvider prov, PistonHandler state);
+	public abstract <T extends Block> ModelFile getModel(DataGenContext<Block, T> ctx,
+		RegistrateBlockstateProvider prov, BlockState state);
 
 }

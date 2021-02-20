@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.advancement;
+package com.simibubi.create.foundation.advancement;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -15,16 +15,16 @@ public class SimpleTrigger extends CriterionTriggerBase<SimpleTrigger.Instance> 
 	}
 
 	@Override
-	public com.simibubi.kinetic_api.foundation.advancement.SimpleTrigger.Instance conditionsFromJson(JsonObject json, AdvancementEntityPredicateDeserializer context) {
-		return new com.simibubi.kinetic_api.foundation.advancement.SimpleTrigger.Instance(getId());
+	public com.simibubi.create.foundation.advancement.SimpleTrigger.Instance conditionsFromJson(JsonObject json, AdvancementEntityPredicateDeserializer context) {
+		return new com.simibubi.create.foundation.advancement.SimpleTrigger.Instance(getId());
 	}
 
 	public void trigger(ServerPlayerEntity player){
 		super.trigger(player, null);
 	}
 	
-	public com.simibubi.kinetic_api.foundation.advancement.SimpleTrigger.Instance instance() {
-		return new com.simibubi.kinetic_api.foundation.advancement.SimpleTrigger.Instance(getId());
+	public com.simibubi.create.foundation.advancement.SimpleTrigger.Instance instance() {
+		return new com.simibubi.create.foundation.advancement.SimpleTrigger.Instance(getId());
 	}
 
 	public static class Instance extends CriterionTriggerBase.Instance {

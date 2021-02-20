@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.foundation.config;
+package com.simibubi.create.foundation.config;
 
-import com.simibubi.kinetic_api.foundation.worldgen.AllWorldFeatures;
+import com.simibubi.create.foundation.worldgen.AllWorldFeatures;
 
 import net.minecraftforge.common.ForgeConfigSpec.Builder;
 
@@ -20,7 +20,7 @@ public class CWorldGen extends ConfigBase {
 	}
 
 	private static class Comments {
-		static String disable = "Prevents all worldgen added by KineticAPI from taking effect";
+		static String disable = "Prevents all worldgen added by Create from taking effect";
 	}
 
 }

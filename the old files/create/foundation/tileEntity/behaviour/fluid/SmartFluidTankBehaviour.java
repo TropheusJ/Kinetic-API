@@ -1,17 +1,17 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.fluid;
+package com.simibubi.create.foundation.tileEntity.behaviour.fluid;
 
 import java.util.function.Consumer;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import com.simibubi.kinetic_api.foundation.fluid.CombinedTankWrapper;
-import com.simibubi.kinetic_api.foundation.fluid.SmartFluidTank;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import com.simibubi.kinetic_api.foundation.utility.LerpedFloat;
-import com.simibubi.kinetic_api.foundation.utility.LerpedFloat.Chaser;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
+import com.simibubi.create.foundation.fluid.CombinedTankWrapper;
+import com.simibubi.create.foundation.fluid.SmartFluidTank;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.foundation.utility.LerpedFloat;
+import com.simibubi.create.foundation.utility.LerpedFloat.Chaser;
+import com.simibubi.create.foundation.utility.NBTHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraftforge.common.util.Constants.NBT;
@@ -87,7 +87,7 @@ public class SmartFluidTankBehaviour extends TileEntityBehaviour {
 	@Override
 	public void initialize() {
 		super.initialize();
-		if (getWorld().v)
+		if (getWorld().isClient)
 			return;
 		foreach(ts -> {
 			ts.fluidLevel.forceNextSync();
@@ -237,10 +237,10 @@ public class SmartFluidTankBehaviour extends TileEntityBehaviour {
 		}
 
 		public void onFluidStackChanged() {
-			if (!tileEntity.n())
+			if (!tileEntity.hasWorld())
 				return;
 			fluidLevel.chase(tank.getFluidAmount() / (float) tank.getCapacity(), .25, Chaser.EXP);
-			if (!getWorld().v)
+			if (!getWorld().isClient)
 				sendDataLazily();
 		}
 

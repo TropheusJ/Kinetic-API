@@ -1,16 +1,17 @@
-package com.simibubi.kinetic_api.compat.jei;
+package com.simibubi.create.compat.jei;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.recipe.FireworkRocketRecipe;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
+
+import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.Ingredient;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.items.wrapper.RecipeWrapper;
 
 /**
@@ -21,10 +22,10 @@ public class ConversionRecipe extends ProcessingRecipe<RecipeWrapper> {
 
 	static int counter = 0;
 
-	public static ConversionRecipe create(ItemCooldownManager from, ItemCooldownManager to) {
+	public static ConversionRecipe create(ItemStack from, ItemStack to) {
 		Identifier recipeId = Create.asResource("conversion_" + counter++);
 		return new ProcessingRecipeBuilder<>(ConversionRecipe::new, recipeId)
-			.withItemIngredients(FireworkRocketRecipe.a(from))
+			.withItemIngredients(Ingredient.ofStacks(from))
 			.withSingleItemOutput(to)
 			.build();
 	}
@@ -34,7 +35,7 @@ public class ConversionRecipe extends ProcessingRecipe<RecipeWrapper> {
 	}
 
 	@Override
-	public boolean matches(RecipeWrapper inv, GameMode worldIn) {
+	public boolean matches(RecipeWrapper inv, World worldIn) {
 		return false;
 	}
 

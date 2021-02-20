@@ -1,12 +1,14 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing;
+package com.simibubi.create.content.contraptions.components.structureMovement.bearing;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AllContraptionTypes;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.Contraption;
+import com.simibubi.create.content.contraptions.components.structureMovement.AssemblyException;
+import com.simibubi.create.content.contraptions.components.structureMovement.Contraption;
+import com.simibubi.create.content.contraptions.components.structureMovement.ContraptionLighter;
+import com.simibubi.create.content.contraptions.components.structureMovement.ContraptionType;
+import com.simibubi.create.content.contraptions.components.structureMovement.NonStationaryLighter;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 public class StabilizedContraption extends Contraption {
 
@@ -19,25 +21,24 @@ public class StabilizedContraption extends Contraption {
 	}
 
 	@Override
-	public boolean assemble(GameMode world, BlockPos pos) {
+	public boolean assemble(World world, BlockPos pos) throws AssemblyException {
 		BlockPos offset = pos.offset(facing);
 		if (!searchMovedStructure(world, offset, null))
 			return false;
 		startMoving(world);
-		expandBoundsAroundAxis(Axis.Y);
 		if (blocks.isEmpty())
 			return false;
 		return true;
 	}
-	
+
 	@Override
 	protected boolean isAnchoringBlockAt(BlockPos pos) {
 		return false;
 	}
 
 	@Override
-	protected AllContraptionTypes getType() {
-		return AllContraptionTypes.STABILIZED;
+	protected ContraptionType getType() {
+		return ContraptionType.STABILIZED;
 	}
 	
 	@Override
@@ -48,13 +49,13 @@ public class StabilizedContraption extends Contraption {
 	}
 
 	@Override
-	public void readNBT(GameMode world, CompoundTag tag, boolean spawnData) {
+	public void readNBT(World world, CompoundTag tag, boolean spawnData) {
 		facing = Direction.byId(tag.getInt("Facing"));
 		super.readNBT(world, tag, spawnData);
 	}
 	
 	@Override
-	protected boolean canAxisBeStabilized(Axis axis) {
+	public boolean canBeStabilized(Direction facing, BlockPos localPos) {
 		return false;
 	}
 	
@@ -62,4 +63,8 @@ public class StabilizedContraption extends Contraption {
 		return facing;
 	}
 
+	@Override
+	public ContraptionLighter<?> makeLighter() {
+		return new NonStationaryLighter<>(this);
+	}
 }

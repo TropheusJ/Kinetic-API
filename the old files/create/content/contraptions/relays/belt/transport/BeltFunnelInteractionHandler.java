@@ -1,19 +1,20 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.belt.transport;
+package com.simibubi.create.content.contraptions.relays.belt.transport;
 
-import afj;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.BeltHelper;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.BeltFunnelBlock;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.BeltFunnelBlock.Shape;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.FunnelTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.contraptions.relays.belt.BeltHelper;
+import com.simibubi.create.content.logistics.block.funnel.BeltFunnelBlock;
+import com.simibubi.create.content.logistics.block.funnel.BeltFunnelBlock.Shape;
+import com.simibubi.create.content.logistics.block.funnel.FunnelTileEntity;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.inventory.InvManipulationBehaviour;
+import com.simibubi.create.foundation.utility.BlockHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 public class BeltFunnelInteractionHandler {
@@ -23,26 +24,26 @@ public class BeltFunnelInteractionHandler {
 		boolean beltMovementPositive = beltInventory.beltMovementPositive;
 		int firstUpcomingSegment = (int) Math.floor(currentItem.beltPosition);
 		int step = beltMovementPositive ? 1 : -1;
-		firstUpcomingSegment = afj.a(firstUpcomingSegment, 0, beltInventory.belt.beltLength - 1);
+		firstUpcomingSegment = MathHelper.clamp(firstUpcomingSegment, 0, beltInventory.belt.beltLength - 1);
 
 		for (int segment = firstUpcomingSegment; beltMovementPositive ? segment <= nextOffset
 			: segment + 1 >= nextOffset; segment += step) {
 			BlockPos funnelPos = BeltHelper.getPositionForOffset(beltInventory.belt, segment)
 				.up();
-			GameMode world = beltInventory.belt.v();
-			PistonHandler funnelState = world.d_(funnelPos);
-			if (!(funnelState.b() instanceof BeltFunnelBlock))
+			World world = beltInventory.belt.getWorld();
+			BlockState funnelState = world.getBlockState(funnelPos);
+			if (!(funnelState.getBlock() instanceof BeltFunnelBlock))
 				continue;
-			Direction funnelFacing = funnelState.c(BeltFunnelBlock.aq);
+			Direction funnelFacing = funnelState.get(BeltFunnelBlock.FACING);
 			Direction movementFacing = beltInventory.belt.getMovementFacing();
 			boolean blocking = funnelFacing == movementFacing.getOpposite();
 			if (funnelFacing == movementFacing)
 				continue;
-			if (funnelState.c(BeltFunnelBlock.SHAPE) == Shape.PUSHING)
+			if (funnelState.get(BeltFunnelBlock.SHAPE) == Shape.PUSHING)
 				continue;
 
 			float funnelEntry = segment + .5f;
-			if (funnelState.c(BeltFunnelBlock.SHAPE) == Shape.EXTENDED)
+			if (funnelState.get(BeltFunnelBlock.SHAPE) == Shape.EXTENDED)
 				funnelEntry += .499f * (beltMovementPositive ? -1 : 1);
 			
 			boolean hasCrossed = nextOffset > funnelEntry && beltMovementPositive
@@ -52,13 +53,13 @@ public class BeltFunnelInteractionHandler {
 			if (blocking)
 				currentItem.beltPosition = funnelEntry;
 
-			if (world.v || funnelState.d(BeltFunnelBlock.POWERED).orElse(false))
+			if (world.isClient || funnelState.method_28500(BeltFunnelBlock.POWERED).orElse(false))
 				if (blocking)
 					return true;
 				else
 					continue;
 
-			BeehiveBlockEntity te = world.c(funnelPos);
+			BlockEntity te = world.getBlockEntity(funnelPos);
 			if (!(te instanceof FunnelTileEntity))
 				return true;
 
@@ -73,26 +74,26 @@ public class BeltFunnelInteractionHandler {
 					continue;
 
 			int amountToExtract = funnelTE.getAmountToExtract();
-			ItemCooldownManager toInsert = currentItem.stack.i();
-			if (amountToExtract > toInsert.E())
+			ItemStack toInsert = currentItem.stack.copy();
+			if (amountToExtract > toInsert.getCount())
 				if (blocking)
 					return true;
 				else
 					continue;
 
 			if (amountToExtract != -1)
-				toInsert.e(amountToExtract);
+				toInsert.setCount(amountToExtract);
 
-			ItemCooldownManager remainder = inserting.insert(toInsert);
+			ItemStack remainder = inserting.insert(toInsert);
 			if (toInsert.equals(remainder, false))
 				if (blocking)
 					return true;
 				else
 					continue;
 
-			int notFilled = currentItem.stack.E() - toInsert.E();
-			if (!remainder.a()) {
-				remainder.f(notFilled);
+			int notFilled = currentItem.stack.getCount() - toInsert.getCount();
+			if (!remainder.isEmpty()) {
+				remainder.increment(notFilled);
 			} else if (notFilled > 0)
 				remainder = ItemHandlerHelper.copyStackWithSize(currentItem.stack, notFilled);
 

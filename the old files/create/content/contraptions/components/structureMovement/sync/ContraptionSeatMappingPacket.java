@@ -1,13 +1,14 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.sync;
+package com.simibubi.create.content.contraptions.components.structureMovement.sync;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
-import apx;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AbstractContraptionEntity;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
-import net.minecraft.client.options.KeyBinding;
+
+import com.simibubi.create.content.contraptions.components.structureMovement.AbstractContraptionEntity;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.Entity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
 
@@ -43,7 +44,7 @@ public class ContraptionSeatMappingPacket extends SimplePacketBase {
 	public void handle(Supplier<Context> context) {
 		context.get()
 			.enqueueWork(() -> {
-				apx entityByID = KeyBinding.B().r.a(entityID);
+				Entity entityByID = MinecraftClient.getInstance().world.getEntityById(entityID);
 				if (!(entityByID instanceof AbstractContraptionEntity))
 					return;
 				AbstractContraptionEntity contraptionEntity = (AbstractContraptionEntity) entityByID;

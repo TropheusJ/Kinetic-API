@@ -1,84 +1,85 @@
-package com.simibubi.kinetic_api.content.curiosities;
+package com.simibubi.create.content.curiosities;
 
-import bnx;
-import com.simibubi.kinetic_api.foundation.utility.worldWrappers.PlacementSimulationServerWorld;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.PillarBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.item.BedItem;
-import net.minecraft.item.HoeItem;
+import com.simibubi.create.foundation.utility.worldWrappers.PlacementSimulationServerWorld;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.SaplingBlock;
+import net.minecraft.item.BoneMealItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Difficulty;
 
-public class TreeFertilizerItem extends HoeItem {
+public class TreeFertilizerItem extends Item {
 
-	public TreeFertilizerItem(a properties) {
+	public TreeFertilizerItem(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public Difficulty a(bnx context) {
-		PistonHandler state = context.p()
-			.d_(context.a());
-		BeetrootsBlock block = state.b();
-		if (block instanceof PillarBlock) {
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		BlockState state = context.getWorld()
+			.getBlockState(context.getBlockPos());
+		Block block = state.getBlock();
+		if (block instanceof SaplingBlock) {
 
-			if (context.p().v) {
-				BedItem.a(context.p(), context.a(), 100);
-				return Difficulty.SUCCESS;
+			if (context.getWorld().isClient) {
+				BoneMealItem.createParticles(context.getWorld(), context.getBlockPos(), 100);
+				return ActionResult.SUCCESS;
 			}
 
-			TreesDreamWorld world = new TreesDreamWorld((ServerWorld) context.p(), context.a());
-			BlockPos saplingPos = context.a();
+			TreesDreamWorld world = new TreesDreamWorld((ServerWorld) context.getWorld(), context.getBlockPos());
+			BlockPos saplingPos = context.getBlockPos();
 
 			for (BlockPos pos : BlockPos.iterate(-1, 0, -1, 1, 0, 1)) {
-				if (context.p()
-					.d_(saplingPos.add(pos))
-					.b() == block)
-					world.a(pos.up(10), state.a(PillarBlock.a, 1));
+				if (context.getWorld()
+					.getBlockState(saplingPos.add(pos))
+					.getBlock() == block)
+					world.setBlockState(pos.up(10), state.with(SaplingBlock.STAGE, 1));
 			}
 
-			((PillarBlock) block).a(world, world.getRandom(), BlockPos.ORIGIN.up(10),
-				state.a(PillarBlock.a, 1));
+			((SaplingBlock) block).grow(world, world.getRandom(), BlockPos.ORIGIN.up(10),
+				state.with(SaplingBlock.STAGE, 1));
 
 			for (BlockPos pos : world.blocksAdded.keySet()) {
 				BlockPos actualPos = pos.add(saplingPos)
 					.down(10);
 
 				// Don't replace Bedrock
-				if (context.p()
-					.d_(actualPos)
-					.h(context.p(), actualPos) == -1)
+				if (context.getWorld()
+					.getBlockState(actualPos)
+					.getHardness(context.getWorld(), actualPos) == -1)
 					continue;
 				// Don't replace solid blocks with leaves
-				if (!world.d_(pos)
-					.g(world, pos)
-					&& !context.p()
-						.d_(actualPos)
-						.k(context.p(), actualPos)
-						.b())
+				if (!world.getBlockState(pos)
+					.isSolidBlock(world, pos)
+					&& !context.getWorld()
+						.getBlockState(actualPos)
+						.getCollisionShape(context.getWorld(), actualPos)
+						.isEmpty())
 					continue;
-				if (world.d_(pos)
-					.b() == BellBlock.NORTH_SOUTH_WALLS_SHAPE
-					|| world.d_(pos)
-						.b() == BellBlock.l)
+				if (world.getBlockState(pos)
+					.getBlock() == Blocks.GRASS_BLOCK
+					|| world.getBlockState(pos)
+						.getBlock() == Blocks.PODZOL)
 					continue;
 
-				context.p()
-					.a(actualPos, world.d_(pos));
+				context.getWorld()
+					.setBlockState(actualPos, world.getBlockState(pos));
 			}
 
-			if (context.n() != null && !context.n()
-				.b_())
-				context.m()
-					.g(1);
-			return Difficulty.SUCCESS;
+			if (context.getPlayer() != null && !context.getPlayer()
+				.isCreative())
+				context.getStack()
+					.decrement(1);
+			return ActionResult.SUCCESS;
 
 		}
 
-		return super.a(context);
+		return super.useOnBlock(context);
 	}
 
 	private class TreesDreamWorld extends PlacementSimulationServerWorld {
@@ -90,10 +91,10 @@ public class TreeFertilizerItem extends HoeItem {
 		}
 
 		@Override
-		public PistonHandler d_(BlockPos pos) {
+		public BlockState getBlockState(BlockPos pos) {
 			if (pos.getY() <= 9)
-				return world.d_(saplingPos.down());
-			return super.d_(pos);
+				return world.getBlockState(saplingPos.down());
+			return super.getBlockState(pos);
 		}
 
 	}

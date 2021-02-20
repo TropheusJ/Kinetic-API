@@ -1,18 +1,20 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.elementary;
+package com.simibubi.create.content.contraptions.relays.elementary;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import bqx;
-import com.simibubi.kinetic_api.foundation.block.render.WrappedBakedModel;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.VirtualEmptyModelData;
-import elg;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.SpriteTexturedVertexConsumer;
+
+import com.simibubi.create.foundation.block.render.WrappedBakedModel;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.VirtualEmptyModelData;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.client.model.data.ModelDataMap;
 import net.minecraftforge.client.model.data.ModelProperty;
@@ -21,12 +23,12 @@ public class BracketedKineticBlockModel extends WrappedBakedModel {
 
 	private static ModelProperty<BracketedModelData> BRACKET_PROPERTY = new ModelProperty<>();
 
-	public BracketedKineticBlockModel(elg template) {
+	public BracketedKineticBlockModel(BakedModel template) {
 		super(template);
 	}
 
 	@Override
-	public IModelData getModelData(bqx world, BlockPos pos, PistonHandler state, IModelData tileData) {
+	public IModelData getModelData(BlockRenderView world, BlockPos pos, BlockState state, IModelData tileData) {
 		if (tileData == VirtualEmptyModelData.INSTANCE)
 			return tileData;
 		BracketedModelData data = new BracketedModelData();
@@ -39,9 +41,9 @@ public class BracketedKineticBlockModel extends WrappedBakedModel {
 	}
 
 	@Override
-	public List<SpriteTexturedVertexConsumer> getQuads(PistonHandler state, Direction side, Random rand, IModelData data) {
+	public List<BakedQuad> getQuads(BlockState state, Direction side, Random rand, IModelData data) {
 		if (data instanceof ModelDataMap) {
-			List<SpriteTexturedVertexConsumer> quads = new ArrayList<>();
+			List<BakedQuad> quads = new ArrayList<>();
 			ModelDataMap modelDataMap = (ModelDataMap) data;
 			if (modelDataMap.hasProperty(BRACKET_PROPERTY)) {
 				quads = new ArrayList<>(quads);
@@ -52,24 +54,24 @@ public class BracketedKineticBlockModel extends WrappedBakedModel {
 		return super.getQuads(state, side, rand, data);
 	}
 
-	private void addQuads(List<SpriteTexturedVertexConsumer> quads, PistonHandler state, Direction side, Random rand, IModelData data,
+	private void addQuads(List<BakedQuad> quads, BlockState state, Direction side, Random rand, IModelData data,
 		BracketedModelData pipeData) {
-		elg bracket = pipeData.getBracket();
+		BakedModel bracket = pipeData.getBracket();
 		if (bracket == null)
 			return;
 		quads.addAll(bracket.getQuads(state, side, rand, data));
 	}
 
 	private class BracketedModelData {
-		elg bracket;
+		BakedModel bracket;
 
-		public void putBracket(PistonHandler state) {
-			this.bracket = KeyBinding.B()
-				.aa()
-				.a(state);
+		public void putBracket(BlockState state) {
+			this.bracket = MinecraftClient.getInstance()
+				.getBlockRenderManager()
+				.getModel(state);
 		}
 
-		public elg getBracket() {
+		public BakedModel getBracket() {
 			return bracket;
 		}
 

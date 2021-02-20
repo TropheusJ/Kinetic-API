@@ -1,13 +1,13 @@
-package com.simibubi.kinetic_api.foundation.networking;
+package com.simibubi.create.foundation.networking;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.foundation.tileEntity.SyncedTileEntity;
-import net.minecraft.block.entity.BeehiveBlockEntity;
+import com.simibubi.create.foundation.tileEntity.SyncedTileEntity;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
 
 public abstract class TileEntityConfigurationPacket<TE extends SyncedTileEntity> extends SimplePacketBase {
@@ -36,15 +36,15 @@ public abstract class TileEntityConfigurationPacket<TE extends SyncedTileEntity>
 			ServerPlayerEntity player = context.get().getSender();
 			if (player == null)
 				return;
-			GameMode world = player.l;
+			World world = player.world;
 
-			if (world == null || !world.p(pos))
+			if (world == null || !world.canSetBlock(pos))
 				return;
-			BeehiveBlockEntity tileEntity = world.c(pos);
+			BlockEntity tileEntity = world.getBlockEntity(pos);
 			if (tileEntity instanceof SyncedTileEntity) {
 				applySettings((TE) tileEntity);
 				((SyncedTileEntity) tileEntity).sendData();
-				tileEntity.X_();
+				tileEntity.markDirty();
 			}
 		});
 		context.get().setPacketHandled(true);

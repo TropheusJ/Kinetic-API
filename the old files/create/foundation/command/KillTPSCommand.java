@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.foundation.command;
+package com.simibubi.create.foundation.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.utility.Lang;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 

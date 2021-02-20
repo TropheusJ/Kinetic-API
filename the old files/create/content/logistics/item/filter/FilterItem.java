@@ -1,37 +1,38 @@
-package com.simibubi.kinetic_api.content.logistics.item.filter;
+package com.simibubi.create.content.logistics.item.filter;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nonnull;
-import bfs;
-import bnx;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllKeys;
-import com.simibubi.kinetic_api.content.contraptions.processing.EmptyingByBasin;
-import com.simibubi.kinetic_api.content.logistics.item.filter.AttributeFilterContainer.WhitelistMode;
-import com.simibubi.kinetic_api.foundation.item.ItemDescription;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllKeys;
+import com.simibubi.create.content.contraptions.processing.EmptyingByBasin;
+import com.simibubi.create.content.logistics.item.filter.AttributeFilterContainer.WhitelistMode;
+import com.simibubi.create.foundation.item.ItemDescription;
+import com.simibubi.create.foundation.utility.Lang;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.FoodComponent;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.ToolItem;
+import net.minecraft.client.item.TooltipContext;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.LocalDifficulty;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.Constants.NBT;
@@ -40,7 +41,7 @@ import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 
-public class FilterItem extends HoeItem implements ActionResult {
+public class FilterItem extends Item implements NamedScreenHandlerFactory {
 
 	private FilterType type;
 
@@ -48,30 +49,30 @@ public class FilterItem extends HoeItem implements ActionResult {
 		REGULAR, ATTRIBUTE;
 	}
 
-	public static FilterItem regular(a properties) {
+	public static FilterItem regular(Settings properties) {
 		return new FilterItem(FilterType.REGULAR, properties);
 	}
 
-	public static FilterItem attribute(a properties) {
+	public static FilterItem attribute(Settings properties) {
 		return new FilterItem(FilterType.ATTRIBUTE, properties);
 	}
 
-	private FilterItem(FilterType type, a properties) {
+	private FilterItem(FilterType type, Settings properties) {
 		super(properties);
 		this.type = type;
 	}
 
 	@Nonnull
 	@Override
-	public Difficulty a(bnx context) {
-		if (context.n() == null)
-			return Difficulty.PASS;
-		return a(context.p(), context.n(), context.o()).getGlobalDifficulty();
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		if (context.getPlayer() == null)
+			return ActionResult.PASS;
+		return use(context.getWorld(), context.getPlayer(), context.getHand()).getResult();
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public void a(ItemCooldownManager stack, GameMode worldIn, List<Text> tooltip, ToolItem flagIn) {
+	public void appendTooltip(ItemStack stack, World worldIn, List<Text> tooltip, TooltipContext flagIn) {
 		if (!AllKeys.shiftDown()) {
 			List<Text> makeSummary = makeSummary(stack);
 			if (makeSummary.isEmpty())
@@ -81,12 +82,12 @@ public class FilterItem extends HoeItem implements ActionResult {
 		}
 	}
 
-	private List<Text> makeSummary(ItemCooldownManager filter) {
+	private List<Text> makeSummary(ItemStack filter) {
 		List<Text> list = new ArrayList<>();
 
 		if (type == FilterType.REGULAR) {
 			ItemStackHandler filterItems = getFilterItems(filter);
-			boolean blacklist = filter.p()
+			boolean blacklist = filter.getOrCreateTag()
 				.getBoolean("Blacklist");
 
 			list.add((blacklist ? Lang.translate("gui.filter.deny_list") : Lang.translate("gui.filter.allow_list")).formatted(Formatting.GOLD));
@@ -97,10 +98,10 @@ public class FilterItem extends HoeItem implements ActionResult {
 					break;
 				}
 
-				ItemCooldownManager filterStack = filterItems.getStackInSlot(i);
-				if (filterStack.a())
+				ItemStack filterStack = filterItems.getStackInSlot(i);
+				if (filterStack.isEmpty())
 					continue;
-				list.add(new LiteralText("- ").append(filterStack.r()).formatted(Formatting.GRAY));
+				list.add(new LiteralText("- ").append(filterStack.getName()).formatted(Formatting.GRAY));
 				count++;
 			}
 
@@ -109,7 +110,7 @@ public class FilterItem extends HoeItem implements ActionResult {
 		}
 
 		if (type == FilterType.ATTRIBUTE) {
-			WhitelistMode whitelistMode = WhitelistMode.values()[filter.p()
+			WhitelistMode whitelistMode = WhitelistMode.values()[filter.getOrCreateTag()
 				.getInt("WhitelistMode")];
 			list.add((whitelistMode == WhitelistMode.WHITELIST_CONJ
 				? Lang.translate("gui.attribute_filter.allow_list_conjunctive")
@@ -118,7 +119,7 @@ public class FilterItem extends HoeItem implements ActionResult {
 					: Lang.translate("gui.attribute_filter.deny_list")).formatted(Formatting.GOLD));
 
 			int count = 0;
-			ListTag attributes = filter.p()
+			ListTag attributes = filter.getOrCreateTag()
 				.getList("MatchedAttributes", NBT.TAG_COMPOUND);
 			for (Tag inbt : attributes) {
 				CompoundTag compound = (CompoundTag) inbt;
@@ -140,22 +141,22 @@ public class FilterItem extends HoeItem implements ActionResult {
 	}
 
 	@Override
-	public LocalDifficulty<ItemCooldownManager> a(GameMode world, PlayerAbilities player, ItemScatterer hand) {
-		ItemCooldownManager heldItem = player.b(hand);
+	public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
+		ItemStack heldItem = player.getStackInHand(hand);
 
-		if (!player.bt() && hand == ItemScatterer.RANDOM) {
-			if (!world.v && player instanceof ServerPlayerEntity)
+		if (!player.isSneaking() && hand == Hand.MAIN_HAND) {
+			if (!world.isClient && player instanceof ServerPlayerEntity)
 				NetworkHooks.openGui((ServerPlayerEntity) player, this, buf -> {
-					buf.a(heldItem);
+					buf.writeItemStack(heldItem);
 				});
-			return LocalDifficulty.a(heldItem);
+			return TypedActionResult.success(heldItem);
 		}
-		return LocalDifficulty.c(heldItem);
+		return TypedActionResult.pass(heldItem);
 	}
 
 	@Override
-	public FoodComponent createMenu(int id, bfs inv, PlayerAbilities player) {
-		ItemCooldownManager heldItem = player.dC();
+	public ScreenHandler createMenu(int id, PlayerInventory inv, PlayerEntity player) {
+		ItemStack heldItem = player.getMainHandStack();
 		if (type == FilterType.REGULAR)
 			return new FilterContainer(id, inv, heldItem);
 		if (type == FilterType.ATTRIBUTE)
@@ -164,45 +165,45 @@ public class FilterItem extends HoeItem implements ActionResult {
 	}
 
 	@Override
-	public Text d() {
-		return new LiteralText(a());
+	public Text getDisplayName() {
+		return new LiteralText(getTranslationKey());
 	}
 
-	public static ItemStackHandler getFilterItems(ItemCooldownManager stack) {
+	public static ItemStackHandler getFilterItems(ItemStack stack) {
 		ItemStackHandler newInv = new ItemStackHandler(18);
-		if (AllItems.FILTER.get() != stack.b())
+		if (AllItems.FILTER.get() != stack.getItem())
 			throw new IllegalArgumentException("Cannot get filter items from non-filter: " + stack);
-		CompoundTag invNBT = stack.a("Items");
+		CompoundTag invNBT = stack.getOrCreateSubTag("Items");
 		if (!invNBT.isEmpty())
 			newInv.deserializeNBT(invNBT);
 		return newInv;
 	}
 
-	public static boolean test(GameMode world, ItemCooldownManager stack, ItemCooldownManager filter) {
+	public static boolean test(World world, ItemStack stack, ItemStack filter) {
 		return test(world, stack, filter, false);
 	}
 
-	public static boolean test(GameMode world, FluidStack stack, ItemCooldownManager filter) {
+	public static boolean test(World world, FluidStack stack, ItemStack filter) {
 		return test(world, stack, filter, true);
 	}
 
-	private static boolean test(GameMode world, ItemCooldownManager stack, ItemCooldownManager filter, boolean matchNBT) {
-		if (filter.a())
+	private static boolean test(World world, ItemStack stack, ItemStack filter, boolean matchNBT) {
+		if (filter.isEmpty())
 			return true;
 
-		if (!(filter.b() instanceof FilterItem))
+		if (!(filter.getItem() instanceof FilterItem))
 			return (matchNBT ? ItemHandlerHelper.canItemStacksStack(filter, stack)
-				: ItemCooldownManager.c(filter, stack));
+				: ItemStack.areItemsEqualIgnoreDamage(filter, stack));
 
-		if (AllItems.FILTER.get() == filter.b()) {
+		if (AllItems.FILTER.get() == filter.getItem()) {
 			ItemStackHandler filterItems = getFilterItems(filter);
-			boolean respectNBT = filter.p()
+			boolean respectNBT = filter.getOrCreateTag()
 				.getBoolean("RespectNBT");
-			boolean blacklist = filter.p()
+			boolean blacklist = filter.getOrCreateTag()
 				.getBoolean("Blacklist");
 			for (int slot = 0; slot < filterItems.getSlots(); slot++) {
-				ItemCooldownManager stackInSlot = filterItems.getStackInSlot(slot);
-				if (stackInSlot.a())
+				ItemStack stackInSlot = filterItems.getStackInSlot(slot);
+				if (stackInSlot.isEmpty())
 					continue;
 				boolean matches = test(world, stack, stackInSlot, respectNBT);
 				if (matches)
@@ -211,10 +212,10 @@ public class FilterItem extends HoeItem implements ActionResult {
 			return blacklist;
 		}
 
-		if (AllItems.ATTRIBUTE_FILTER.get() == filter.b()) {
-			WhitelistMode whitelistMode = WhitelistMode.values()[filter.p()
+		if (AllItems.ATTRIBUTE_FILTER.get() == filter.getItem()) {
+			WhitelistMode whitelistMode = WhitelistMode.values()[filter.getOrCreateTag()
 				.getInt("WhitelistMode")];
-			ListTag attributes = filter.p()
+			ListTag attributes = filter.getOrCreateTag()
 				.getList("MatchedAttributes", NBT.TAG_COMPOUND);
 			for (Tag inbt : attributes) {
 				CompoundTag compound = (CompoundTag) inbt;
@@ -255,13 +256,13 @@ public class FilterItem extends HoeItem implements ActionResult {
 		return false;
 	}
 
-	private static boolean test(GameMode world, FluidStack stack, ItemCooldownManager filter, boolean matchNBT) {
-		if (filter.a())
+	private static boolean test(World world, FluidStack stack, ItemStack filter, boolean matchNBT) {
+		if (filter.isEmpty())
 			return true;
 		if (stack.isEmpty())
 			return false;
 
-		if (!(filter.b() instanceof FilterItem)) {
+		if (!(filter.getItem() instanceof FilterItem)) {
 			if (!EmptyingByBasin.canItemBeEmptied(world, filter))
 				return false;
 			FluidStack fluidInFilter = EmptyingByBasin.emptyItem(world, filter, true)
@@ -270,20 +271,20 @@ public class FilterItem extends HoeItem implements ActionResult {
 				return false;
 			if (!matchNBT)
 				return fluidInFilter.getFluid()
-					.a(stack.getFluid());
+					.matchesType(stack.getFluid());
 			boolean fluidEqual = fluidInFilter.isFluidEqual(stack);
 			return fluidEqual;
 		}
 
-		if (AllItems.FILTER.get() == filter.b()) {
+		if (AllItems.FILTER.get() == filter.getItem()) {
 			ItemStackHandler filterItems = getFilterItems(filter);
-			boolean respectNBT = filter.p()
+			boolean respectNBT = filter.getOrCreateTag()
 				.getBoolean("RespectNBT");
-			boolean blacklist = filter.p()
+			boolean blacklist = filter.getOrCreateTag()
 				.getBoolean("Blacklist");
 			for (int slot = 0; slot < filterItems.getSlots(); slot++) {
-				ItemCooldownManager stackInSlot = filterItems.getStackInSlot(slot);
-				if (stackInSlot.a())
+				ItemStack stackInSlot = filterItems.getStackInSlot(slot);
+				if (stackInSlot.isEmpty())
 					continue;
 				boolean matches = test(world, stack, stackInSlot, respectNBT);
 				if (matches)

@@ -1,77 +1,77 @@
-package com.simibubi.kinetic_api.content.logistics.item;
+package com.simibubi.create.content.logistics.item;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.ToolItem;
+import net.minecraft.client.item.TooltipContext;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventories;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Clearable;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.Constants;
 
-public class CardboardBoxItem extends HoeItem {
+public class CardboardBoxItem extends Item {
 
 	static final int SLOTS = 9;
 	static final List<CardboardBoxItem> ALL_BOXES = new ArrayList<>();
 
-	public CardboardBoxItem(a properties) {
+	public CardboardBoxItem(Settings properties) {
 		super(properties);
 		ALL_BOXES.add(this);
 	}
 
 	@Override
-	public LocalDifficulty<ItemCooldownManager> a(GameMode worldIn, PlayerAbilities playerIn, ItemScatterer handIn) {
-		if (!playerIn.bt())
-			return super.a(worldIn, playerIn, handIn);
+	public TypedActionResult<ItemStack> use(World worldIn, PlayerEntity playerIn, Hand handIn) {
+		if (!playerIn.isSneaking())
+			return super.use(worldIn, playerIn, handIn);
 
-		ItemCooldownManager box = playerIn.b(handIn);
-		for (ItemCooldownManager stack : getContents(box))
-			playerIn.bm.a(worldIn, stack);
+		ItemStack box = playerIn.getStackInHand(handIn);
+		for (ItemStack stack : getContents(box))
+			playerIn.inventory.offerOrDrop(worldIn, stack);
 
-		if (!playerIn.b_()) {
-			box.g(1);
+		if (!playerIn.isCreative()) {
+			box.decrement(1);
 		}
-		return new LocalDifficulty<>(Difficulty.SUCCESS, box);
+		return new TypedActionResult<>(ActionResult.SUCCESS, box);
 	}
 
-	public static ItemCooldownManager containing(List<ItemCooldownManager> stacks) {
-		ItemCooldownManager box = new ItemCooldownManager(randomBox());
+	public static ItemStack containing(List<ItemStack> stacks) {
+		ItemStack box = new ItemStack(randomBox());
 		CompoundTag compound = new CompoundTag();
 
-		DefaultedList<ItemCooldownManager> list = DefaultedList.of();
+		DefaultedList<ItemStack> list = DefaultedList.of();
 		list.addAll(stacks);
-		Clearable.a(compound, list);
+		Inventories.toTag(compound, list);
 
-		box.c(compound);
+		box.setTag(compound);
 		return box;
 	}
 
 	@Override
-	public void a(ChorusFruitItem group, DefaultedList<ItemCooldownManager> items) {
+	public void appendStacks(ItemGroup group, DefaultedList<ItemStack> items) {
 	}
 	
-	public static void addAddress(ItemCooldownManager box, String address) {
-		box.p().putString("Address", address);
+	public static void addAddress(ItemStack box, String address) {
+		box.getOrCreateTag().putString("Address", address);
 	}
 
-	public static boolean matchAddress(ItemCooldownManager box, String other) {
-		String address = box.o().getString("Address");
+	public static boolean matchAddress(ItemStack box, String other) {
+		String address = box.getTag().getString("Address");
 		if (address == null || address.isEmpty())
 			return false;
 		if (address.equals("*"))
@@ -84,9 +84,9 @@ public class CardboardBoxItem extends HoeItem {
 		return false;
 	}
 
-	public static List<ItemCooldownManager> getContents(ItemCooldownManager box) {
-		DefaultedList<ItemCooldownManager> list = DefaultedList.ofSize(SLOTS, ItemCooldownManager.tick);
-		Clearable.b(box.p(), list);
+	public static List<ItemStack> getContents(ItemStack box) {
+		DefaultedList<ItemStack> list = DefaultedList.ofSize(SLOTS, ItemStack.EMPTY);
+		Inventories.fromTag(box.getOrCreateTag(), list);
 		return list;
 	}
 
@@ -96,9 +96,9 @@ public class CardboardBoxItem extends HoeItem {
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public void a(ItemCooldownManager stack, GameMode worldIn, List<Text> tooltip, ToolItem flagIn) {
-		super.a(stack, worldIn, tooltip, flagIn);
-		CompoundTag compoundnbt = stack.p();
+	public void appendTooltip(ItemStack stack, World worldIn, List<Text> tooltip, TooltipContext flagIn) {
+		super.appendTooltip(stack, worldIn, tooltip, flagIn);
+		CompoundTag compoundnbt = stack.getOrCreateTag();
 
 		if (compoundnbt.contains("Address", Constants.NBT.TAG_STRING)) {
 			tooltip.add(new LiteralText("-> " + compoundnbt.getString("Address"))
@@ -111,15 +111,15 @@ public class CardboardBoxItem extends HoeItem {
 		int i = 0;
 		int j = 0;
 
-		for (ItemCooldownManager itemstack : getContents(stack)) {
-			if (itemstack.a())
+		for (ItemStack itemstack : getContents(stack)) {
+			if (itemstack.isEmpty())
 				continue;
 
 			++j;
 			if (i <= 4) {
 				++i;
-				Text itextcomponent = itemstack.r();
-				tooltip.add(itextcomponent.copy().append(" x").append(String.valueOf(itemstack.E()))
+				Text itextcomponent = itemstack.getName();
+				tooltip.add(itextcomponent.copy().append(" x").append(String.valueOf(itemstack.getCount()))
 					.formatted(Formatting.GRAY));
 			}
 		}

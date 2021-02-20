@@ -1,23 +1,24 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt;
+package com.simibubi.create.foundation.tileEntity.behaviour.belt;
 
 import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.BeltFunnelBlock;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.BeltFunnelBlock.Shape;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.FunnelBlock;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.FunnelTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+import com.simibubi.create.content.logistics.block.funnel.BeltFunnelBlock;
+import com.simibubi.create.content.logistics.block.funnel.BeltFunnelBlock.Shape;
+import com.simibubi.create.content.logistics.block.funnel.FunnelBlock;
+import com.simibubi.create.content.logistics.block.funnel.FunnelTileEntity;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
@@ -62,22 +63,22 @@ public class DirectBeltInputBehaviour extends TileEntityBehaviour {
 		return this;
 	}
 
-	private ItemCooldownManager defaultInsertionCallback(TransportedItemStack inserted, Direction side, boolean simulate) {
+	private ItemStack defaultInsertionCallback(TransportedItemStack inserted, Direction side, boolean simulate) {
 		LazyOptional<IItemHandler> lazy = tileEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, side);
 		if (!lazy.isPresent())
 			return inserted.stack;
-		return ItemHandlerHelper.insertItemStacked(lazy.orElse(null), inserted.stack.i(), simulate);
+		return ItemHandlerHelper.insertItemStacked(lazy.orElse(null), inserted.stack.copy(), simulate);
 	}
 
 	public boolean canInsertFromSide(Direction side) {
 		return canInsert.test(side);
 	}
 
-	public ItemCooldownManager handleInsertion(ItemCooldownManager stack, Direction side, boolean simulate) {
+	public ItemStack handleInsertion(ItemStack stack, Direction side, boolean simulate) {
 		return handleInsertion(new TransportedItemStack(stack), side, simulate);
 	}
 
-	public ItemCooldownManager handleInsertion(TransportedItemStack stack, Direction side, boolean simulate) {
+	public ItemStack handleInsertion(TransportedItemStack stack, Direction side, boolean simulate) {
 		return tryInsert.apply(stack, side, simulate);
 	}
 
@@ -88,7 +89,7 @@ public class DirectBeltInputBehaviour extends TileEntityBehaviour {
 
 	@FunctionalInterface
 	public interface InsertionCallback {
-		public ItemCooldownManager apply(TransportedItemStack stack, Direction side, boolean simulate);
+		public ItemStack apply(TransportedItemStack stack, Direction side, boolean simulate);
 	}
 
 	@FunctionalInterface
@@ -96,22 +97,22 @@ public class DirectBeltInputBehaviour extends TileEntityBehaviour {
 		public boolean test(Direction side);
 	}
 
-	public ItemCooldownManager tryExportingToBeltFunnel(ItemCooldownManager stack, @Nullable Direction side) {
-		BlockPos funnelPos = tileEntity.o()
+	public ItemStack tryExportingToBeltFunnel(ItemStack stack, @Nullable Direction side) {
+		BlockPos funnelPos = tileEntity.getPos()
 			.up();
-		GameMode world = getWorld();
-		PistonHandler funnelState = world.d_(funnelPos);
-		if (!(funnelState.b() instanceof BeltFunnelBlock))
+		World world = getWorld();
+		BlockState funnelState = world.getBlockState(funnelPos);
+		if (!(funnelState.getBlock() instanceof BeltFunnelBlock))
 			return stack;
-		if (funnelState.c(BeltFunnelBlock.SHAPE) != Shape.PULLING)
+		if (funnelState.get(BeltFunnelBlock.SHAPE) != Shape.PULLING)
 			return stack;
 		if (side != null && FunnelBlock.getFunnelFacing(funnelState) != side)
 			return stack;
-		BeehiveBlockEntity te = world.c(funnelPos);
+		BlockEntity te = world.getBlockEntity(funnelPos);
 		if (!(te instanceof FunnelTileEntity))
 			return stack;
-		ItemCooldownManager insert = FunnelBlock.tryInsert(world, funnelPos, stack, false);
-		if (insert.E() != stack.E())
+		ItemStack insert = FunnelBlock.tryInsert(world, funnelPos, stack, false);
+		if (insert.getCount() != stack.getCount())
 			((FunnelTileEntity) te).flap(true);
 		return insert;
 	}

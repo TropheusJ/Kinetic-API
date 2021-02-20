@@ -1,17 +1,17 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train;
+package com.simibubi.create.content.contraptions.components.structureMovement.train;
 
-import apx;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.capability.CapabilityMinecartController;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.train.capability.MinecartController;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.content.contraptions.components.structureMovement.train.capability.CapabilityMinecartController;
+import com.simibubi.create.content.contraptions.components.structureMovement.train.capability.MinecartController;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.HoeItem;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.LazyOptional;
@@ -23,19 +23,19 @@ import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
-public class MinecartCouplingItem extends HoeItem {
+public class MinecartCouplingItem extends Item {
 
-	public MinecartCouplingItem(a p_i48487_1_) {
+	public MinecartCouplingItem(Settings p_i48487_1_) {
 		super(p_i48487_1_);
 	}
 
 	@SubscribeEvent(priority = EventPriority.HIGH)
 	public static void handleInteractionWithMinecart(PlayerInteractEvent.EntityInteract event) {
-		apx interacted = event.getTarget();
-		if (!(interacted instanceof ScheduleBuilder))
+		Entity interacted = event.getTarget();
+		if (!(interacted instanceof AbstractMinecartEntity))
 			return;
-		ScheduleBuilder minecart = (ScheduleBuilder) interacted;
-		PlayerAbilities player = event.getPlayer();
+		AbstractMinecartEntity minecart = (AbstractMinecartEntity) interacted;
+		PlayerEntity player = event.getPlayer();
 		if (player == null)
 			return;
 		LazyOptional<MinecartController> capability =
@@ -44,7 +44,7 @@ public class MinecartCouplingItem extends HoeItem {
 			return;
 		MinecartController controller = capability.orElse(null);
 
-		ItemCooldownManager heldItem = player.b(event.getHand());
+		ItemStack heldItem = player.getStackInHand(event.getHand());
 		if (AllItems.MINECART_COUPLING.isIn(heldItem)) {
 			if (!onCouplingInteractOnMinecart(event, minecart, player, controller))
 				return;
@@ -55,41 +55,41 @@ public class MinecartCouplingItem extends HoeItem {
 			return;
 
 		event.setCanceled(true);
-		event.setCancellationResult(Difficulty.SUCCESS);
+		event.setCancellationResult(ActionResult.SUCCESS);
 	}
 
 	protected static boolean onCouplingInteractOnMinecart(PlayerInteractEvent.EntityInteract event,
-		ScheduleBuilder minecart, PlayerAbilities player, MinecartController controller) {
-		GameMode world = event.getWorld();
+		AbstractMinecartEntity minecart, PlayerEntity player, MinecartController controller) {
+		World world = event.getWorld();
 		if (controller.isFullyCoupled()) {
-			if (!world.v)
+			if (!world.isClient)
 				CouplingHandler.status(player, "two_couplings_max");
 			return true;
 		}
-		if (world != null && world.v)
-			DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> cartClicked(player, minecart));
+		if (world != null && world.isClient)
+			DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> cartClicked(player, minecart));
 		return true;
 	}
 
-	private static boolean onWrenchInteractOnMinecart(EntityInteract event, ScheduleBuilder minecart,
-		PlayerAbilities player, MinecartController controller) {
+	private static boolean onWrenchInteractOnMinecart(EntityInteract event, AbstractMinecartEntity minecart,
+		PlayerEntity player, MinecartController controller) {
 		int couplings = (controller.isConnectedToCoupling() ? 1 : 0) + (controller.isLeadingCoupling() ? 1 : 0);
 		if (couplings == 0)
 			return false;
-		if (event.getWorld().v)
+		if (event.getWorld().isClient)
 			return true;
 
 		CouplingHandler.status(player, "removed");
 		controller.decouple();
-		if (!player.b_())
-			player.bm.a(event.getWorld(),
-				new ItemCooldownManager(AllItems.MINECART_COUPLING.get(), couplings));
+		if (!player.isCreative())
+			player.inventory.offerOrDrop(event.getWorld(),
+				new ItemStack(AllItems.MINECART_COUPLING.get(), couplings));
 		return true;
 	}
 
 	@Environment(EnvType.CLIENT)
-	private static void cartClicked(PlayerAbilities player, ScheduleBuilder interacted) {
-		CouplingHandlerClient.onCartClicked(player, (ScheduleBuilder) interacted);
+	private static void cartClicked(PlayerEntity player, AbstractMinecartEntity interacted) {
+		CouplingHandlerClient.onCartClicked(player, (AbstractMinecartEntity) interacted);
 	}
 
 }

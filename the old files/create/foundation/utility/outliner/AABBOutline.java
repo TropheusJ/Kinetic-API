@@ -1,47 +1,47 @@
-package com.simibubi.kinetic_api.foundation.utility.outliner;
+package com.simibubi.create.foundation.utility.outliner;
 
-import com.simibubi.kinetic_api.foundation.renderState.RenderTypes;
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
+import com.simibubi.create.foundation.renderState.RenderTypes;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Vec3d;
 
 public class AABBOutline extends Outline {
 
-	protected Timer bb;
+	protected Box bb;
 
-	public AABBOutline(Timer bb) {
+	public AABBOutline(Box bb) {
 		this.setBounds(bb);
 	}
 
 	@Override
-	public void render(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
+	public void render(MatrixStack ms, SuperRenderTypeBuffer buffer) {
 		renderBB(ms, buffer, bb);
 	}
 
-	public void renderBB(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer, Timer bb) {
-		EntityHitResult projectedView = KeyBinding.B().boundKey.k()
-			.b();
-		boolean noCull = bb.d(projectedView);
-		bb = bb.g(noCull ? -1 / 128d : 1 / 128d);
+	public void renderBB(MatrixStack ms, SuperRenderTypeBuffer buffer, Box bb) {
+		Vec3d projectedView = MinecraftClient.getInstance().gameRenderer.getCamera()
+			.getPos();
+		boolean noCull = bb.contains(projectedView);
+		bb = bb.expand(noCull ? -1 / 128d : 1 / 128d);
 		noCull |= params.disableCull;
 
-		EntityHitResult xyz = new EntityHitResult(bb.LOGGER, bb.callback, bb.events);
-		EntityHitResult Xyz = new EntityHitResult(bb.eventCounter, bb.callback, bb.events);
-		EntityHitResult xYz = new EntityHitResult(bb.LOGGER, bb.eventsByName, bb.events);
-		EntityHitResult XYz = new EntityHitResult(bb.eventCounter, bb.eventsByName, bb.events);
-		EntityHitResult xyZ = new EntityHitResult(bb.LOGGER, bb.callback, bb.f);
-		EntityHitResult XyZ = new EntityHitResult(bb.eventCounter, bb.callback, bb.f);
-		EntityHitResult xYZ = new EntityHitResult(bb.LOGGER, bb.eventsByName, bb.f);
-		EntityHitResult XYZ = new EntityHitResult(bb.eventCounter, bb.eventsByName, bb.f);
+		Vec3d xyz = new Vec3d(bb.minX, bb.minY, bb.minZ);
+		Vec3d Xyz = new Vec3d(bb.maxX, bb.minY, bb.minZ);
+		Vec3d xYz = new Vec3d(bb.minX, bb.maxY, bb.minZ);
+		Vec3d XYz = new Vec3d(bb.maxX, bb.maxY, bb.minZ);
+		Vec3d xyZ = new Vec3d(bb.minX, bb.minY, bb.maxZ);
+		Vec3d XyZ = new Vec3d(bb.maxX, bb.minY, bb.maxZ);
+		Vec3d xYZ = new Vec3d(bb.minX, bb.maxY, bb.maxZ);
+		Vec3d XYZ = new Vec3d(bb.maxX, bb.maxY, bb.maxZ);
 
-		EntityHitResult start = xyz;
+		Vec3d start = xyz;
 		renderAACuboidLine(ms, buffer, start, Xyz);
 		renderAACuboidLine(ms, buffer, start, xYz);
 		renderAACuboidLine(ms, buffer, start, xyZ);
@@ -70,8 +70,8 @@ public class AABBOutline extends Outline {
 
 	}
 
-	protected void renderFace(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer, Direction direction, EntityHitResult p1, EntityHitResult p2,
-		EntityHitResult p3, EntityHitResult p4, boolean noCull) {
+	protected void renderFace(MatrixStack ms, SuperRenderTypeBuffer buffer, Direction direction, Vec3d p1, Vec3d p2,
+		Vec3d p3, Vec3d p4, boolean noCull) {
 		if (!params.faceTexture.isPresent())
 			return;
 
@@ -81,19 +81,19 @@ public class AABBOutline extends Outline {
 		params.alpha =
 			(direction == params.getHighlightedFace() && params.hightlightedFaceTexture.isPresent()) ? 1 : 0.5f;
 
-		VertexConsumerProvider translucentType = RenderTypes.getOutlineTranslucent(faceTexture, !noCull);
-		OverlayVertexConsumer builder = buffer.getLateBuffer(translucentType);
+		RenderLayer translucentType = RenderTypes.getOutlineTranslucent(faceTexture, !noCull);
+		VertexConsumer builder = buffer.getLateBuffer(translucentType);
 
 		Axis axis = direction.getAxis();
-		EntityHitResult uDiff = p2.d(p1);
-		EntityHitResult vDiff = p4.d(p1);
-		float maxU = (float) Math.abs(axis == Axis.X ? uDiff.d : uDiff.entity);
-		float maxV = (float) Math.abs(axis == Axis.Y ? vDiff.d : vDiff.c);
+		Vec3d uDiff = p2.subtract(p1);
+		Vec3d vDiff = p4.subtract(p1);
+		float maxU = (float) Math.abs(axis == Axis.X ? uDiff.z : uDiff.x);
+		float maxV = (float) Math.abs(axis == Axis.Y ? vDiff.z : vDiff.y);
 		putQuadUV(ms, builder, p1, p2, p3, p4, 0, 0, maxU, maxV, Direction.UP);
 		params.alpha = alphaBefore;
 	}
 
-	public void setBounds(Timer bb) {
+	public void setBounds(Box bb) {
 		this.bb = bb;
 	}
 

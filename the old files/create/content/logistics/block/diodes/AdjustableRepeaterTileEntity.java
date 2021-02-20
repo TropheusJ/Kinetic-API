@@ -1,19 +1,21 @@
-package com.simibubi.kinetic_api.content.logistics.block.diodes;
+package com.simibubi.create.content.logistics.block.diodes;
 
-import static com.simibubi.kinetic_api.content.logistics.block.diodes.AdjustableRepeaterBlock.POWERING;
-import static net.minecraft.block.DaylightDetectorBlock.SHAPE;
+import static com.simibubi.create.content.logistics.block.diodes.AdjustableRepeaterBlock.POWERING;
+import static net.minecraft.block.RedstoneDiodeBlock.POWERED;
 
-import afj;
 import java.util.List;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour.StepContext;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.Text;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour.StepContext;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import net.minecraft.util.math.MathHelper;
 
 public class AdjustableRepeaterTileEntity extends SmartTileEntity {
 
@@ -21,7 +23,7 @@ public class AdjustableRepeaterTileEntity extends SmartTileEntity {
 	public boolean charging;
 	ScrollValueBehaviour maxState;
 
-	public AdjustableRepeaterTileEntity(BellBlockEntity<?> type) {
+	public AdjustableRepeaterTileEntity(BlockEntityType<?> type) {
 		super(type);
 	}
 
@@ -38,12 +40,12 @@ public class AdjustableRepeaterTileEntity extends SmartTileEntity {
 	}
 	
 	private void onMaxDelayChanged(int newMax) {
-		state = afj.a(state, 0, newMax);
+		state = MathHelper.clamp(state, 0, newMax);
 		sendData();
 	}
 
 	@Override
-	protected void fromTag(PistonHandler blockState, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState blockState, CompoundTag compound, boolean clientPacket) {
 		state = compound.getInt("State");
 		charging = compound.getBoolean("Charging");
 		super.fromTag(blockState, compound, clientPacket);
@@ -85,10 +87,10 @@ public class AdjustableRepeaterTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
-		boolean powered = p().c(SHAPE);
-		boolean powering = p().c(POWERING);
+	public void tick() {
+		super.tick();
+		boolean powered = getCachedState().get(POWERED);
+		boolean powering = getCachedState().get(POWERING);
 		boolean atMax = state >= maxState.getValue();
 		boolean atMin = state <= 0;
 		updateState(powered, powering, atMax, atMin);
@@ -99,16 +101,16 @@ public class AdjustableRepeaterTileEntity extends SmartTileEntity {
 			charging = true;
 
 		if (charging && atMax) {
-			if (!powering && !d.v)
-				d.a(e, p().a(POWERING, true));
+			if (!powering && !world.isClient)
+				world.setBlockState(pos, getCachedState().with(POWERING, true));
 			if (!powered)
 				charging = false;
 			return;
 		}
 
 		if (!charging && atMin) {
-			if (powering && !d.v)
-				d.a(e, p().a(POWERING, false));
+			if (powering && !world.isClient)
+				world.setBlockState(pos, getCachedState().with(POWERING, false));
 			return;
 		}
 

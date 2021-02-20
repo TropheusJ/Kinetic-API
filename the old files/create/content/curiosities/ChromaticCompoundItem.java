@@ -1,97 +1,100 @@
-package com.simibubi.kinetic_api.content.curiosities;
+package com.simibubi.create.content.curiosities;
 
 import java.util.List;
 import java.util.Random;
-import afj;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.config.CRecipes;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.entity.BannerPattern;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.HoeItem;
+
+import com.simibubi.create.AllItems;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.config.CRecipes;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BeaconBlockEntity;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.BlockView.b;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.gen.decorator.Decoratable;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.RaycastContext.FluidHandling;
+import net.minecraft.world.RaycastContext.ShapeType;
+import net.minecraft.world.World;
 
-public class ChromaticCompoundItem extends HoeItem {
+public class ChromaticCompoundItem extends Item {
 
-	public ChromaticCompoundItem(a properties) {
+	public ChromaticCompoundItem(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public boolean n() {
+	public boolean shouldSyncTagToClient() {
 		return true;
 	}
 
 	@Override
-	public double getDurabilityForDisplay(ItemCooldownManager stack) {
-		int light = stack.p()
+	public double getDurabilityForDisplay(ItemStack stack) {
+		int light = stack.getOrCreateTag()
 			.getInt("CollectingLight");
 		return 1 - light / (float) AllConfigs.SERVER.recipes.lightSourceCountForRefinedRadiance.get();
 	}
 
 	@Override
-	public boolean showDurabilityBar(ItemCooldownManager stack) {
-		int light = stack.p()
+	public boolean showDurabilityBar(ItemStack stack) {
+		int light = stack.getOrCreateTag()
 			.getInt("CollectingLight");
 		return light > 0;
 	}
 
 	@Override
-	public int getRGBDurabilityForDisplay(ItemCooldownManager stack) {
+	public int getRGBDurabilityForDisplay(ItemStack stack) {
 		return ColorHelper.mixColors(0x413c69, 0xFFFFFF, (float) (1 - getDurabilityForDisplay(stack)));
 	}
 
 	@Override
-	public int getItemStackLimit(ItemCooldownManager stack) {
+	public int getItemStackLimit(ItemStack stack) {
 		return showDurabilityBar(stack) ? 1 : 16;
 	}
 
 	@Override
-	public boolean onEntityItemUpdate(ItemCooldownManager stack, PaintingEntity entity) {
-		double y = entity.cD();
-		double yMotion = entity.cB().c;
-		GameMode world = entity.l;
+	public boolean onEntityItemUpdate(ItemStack stack, ItemEntity entity) {
+		double y = entity.getY();
+		double yMotion = entity.getVelocity().y;
+		World world = entity.world;
 		CompoundTag data = entity.getPersistentData();
-		CompoundTag itemData = entity.g()
-			.p();
+		CompoundTag itemData = entity.getStack()
+			.getOrCreateTag();
 
-		EntityHitResult positionVec = entity.cz();
+		Vec3d positionVec = entity.getPos();
 		CRecipes config = AllConfigs.SERVER.recipes;
-		if (world.v) {
+		if (world.isClient) {
 			int light = itemData.getInt("CollectingLight");
-			if (h.nextInt(config.lightSourceCountForRefinedRadiance.get() + 20) < light) {
-				EntityHitResult start = VecHelper.offsetRandomly(positionVec, h, 3);
-				EntityHitResult motion = positionVec.d(start)
-					.d()
-					.a(.2f);
-				world.addParticle(ParticleTypes.END_ROD, start.entity, start.c, start.d, motion.entity, motion.c, motion.d);
+			if (RANDOM.nextInt(config.lightSourceCountForRefinedRadiance.get() + 20) < light) {
+				Vec3d start = VecHelper.offsetRandomly(positionVec, RANDOM, 3);
+				Vec3d motion = positionVec.subtract(start)
+					.normalize()
+					.multiply(.2f);
+				world.addParticle(ParticleTypes.END_ROD, start.x, start.y, start.z, motion.x, motion.y, motion.z);
 			}
 			return false;
 		}
 
 		// Convert to Shadow steel if in void
 		if (y < 0 && y - yMotion < -10 && config.enableShadowSteelRecipe.get()) {
-			ItemCooldownManager newStack = AllItems.SHADOW_STEEL.asStack();
-			newStack.e(stack.E());
+			ItemStack newStack = AllItems.SHADOW_STEEL.asStack();
+			newStack.setCount(stack.getCount());
 			data.putBoolean("FromVoid", true);
-			entity.b(newStack);
+			entity.setStack(newStack);
 		}
 
 		if (!config.enableRefinedRadianceRecipe.get())
@@ -99,97 +102,97 @@ public class ChromaticCompoundItem extends HoeItem {
 
 		// Convert to Refined Radiance if eaten enough light sources
 		if (itemData.getInt("CollectingLight") >= config.lightSourceCountForRefinedRadiance.get()) {
-			ItemCooldownManager newStack = AllItems.REFINED_RADIANCE.asStack();
-			PaintingEntity newEntity = new PaintingEntity(world, entity.cC(), entity.cD(), entity.cG(), newStack);
-			newEntity.f(entity.cB());
+			ItemStack newStack = AllItems.REFINED_RADIANCE.asStack();
+			ItemEntity newEntity = new ItemEntity(world, entity.getX(), entity.getY(), entity.getZ(), newStack);
+			newEntity.setVelocity(entity.getVelocity());
 			newEntity.getPersistentData()
 				.putBoolean("FromLight", true);
 			itemData.remove("CollectingLight");
-			world.c(newEntity);
+			world.spawnEntity(newEntity);
 
-			stack.a(1);
-			entity.b(stack);
-			if (stack.a())
-				entity.ac();
+			stack.split(1);
+			entity.setStack(stack);
+			if (stack.isEmpty())
+				entity.remove();
 			return false;
 		}
 
 		// Is inside beacon beam?
 		boolean isOverBeacon = false;
-		int entityX = afj.c(entity.cC());
-		int entityZ = afj.c(entity.cG());
-		int localWorldHeight = world.a(Decoratable.a.b, entityX, entityZ);
+		int entityX = MathHelper.floor(entity.getX());
+		int entityZ = MathHelper.floor(entity.getZ());
+		int localWorldHeight = world.getTopY(Heightmap.Type.WORLD_SURFACE, entityX, entityZ);
 
 		BlockPos.Mutable testPos = new BlockPos.Mutable(
 				entityX,
-				Math.min(afj.c(entity.cD()), localWorldHeight),
+				Math.min(MathHelper.floor(entity.getY()), localWorldHeight),
 				entityZ);
 
 		while (testPos.getY() > 0) {
 			testPos.move(Direction.DOWN);
-			PistonHandler state = world.d_(testPos);
-			if (state.b(world, testPos) >= 15 && state.b() != BellBlock.z)
+			BlockState state = world.getBlockState(testPos);
+			if (state.getOpacity(world, testPos) >= 15 && state.getBlock() != Blocks.BEDROCK)
 				break;
-			if (state.b() == BellBlock.es) {
-				BeehiveBlockEntity te = world.c(testPos);
+			if (state.getBlock() == Blocks.BEACON) {
+				BlockEntity te = world.getBlockEntity(testPos);
 
-				if (!(te instanceof BannerPattern)) break;
+				if (!(te instanceof BeaconBlockEntity)) break;
 
-				BannerPattern bte = (BannerPattern) te;
+				BeaconBlockEntity bte = (BeaconBlockEntity) te;
 
-				if (bte.h() != 0 && !bte.field_11806.isEmpty()) isOverBeacon = true;
+				if (bte.getLevel() != 0 && !bte.beamSegments.isEmpty()) isOverBeacon = true;
 
 				break;
 			}
 		}
 
 		if (isOverBeacon) {
-			ItemCooldownManager newStack = AllItems.REFINED_RADIANCE.asStack();
-			newStack.e(stack.E());
+			ItemStack newStack = AllItems.REFINED_RADIANCE.asStack();
+			newStack.setCount(stack.getCount());
 			data.putBoolean("FromLight", true);
-			entity.b(newStack);
+			entity.setStack(newStack);
 
 			List<ServerPlayerEntity> players =
-				world.a(ServerPlayerEntity.class, new Timer(entity.cA()).g(8));
+				world.getNonSpectatingEntities(ServerPlayerEntity.class, new Box(entity.getBlockPos()).expand(8));
 			players.forEach(AllTriggers.ABSORBED_LIGHT::trigger);
 
 			return false;
 		}
 
 		// Find a light source and eat it.
-		Random r = world.t;
+		Random r = world.random;
 		int range = 3;
 		float rate = 1 / 2f;
 		if (r.nextFloat() > rate)
 			return false;
 
 		BlockPos randomOffset = new BlockPos(VecHelper.offsetRandomly(positionVec, r, range));
-		PistonHandler state = world.d_(randomOffset);
+		BlockState state = world.getBlockState(randomOffset);
 		if (state.getLightValue(world, randomOffset) == 0)
 			return false;
-		if (state.h(world, randomOffset) == -1)
+		if (state.getHardness(world, randomOffset) == -1)
 			return false;
-		if (state.b() == BellBlock.es)
-			return false;
-
-		BlockView context = new BlockView(positionVec, VecHelper.getCenterOf(randomOffset),
-			net.minecraft.world.BlockView.a.a, b.a, entity);
-		if (!randomOffset.equals(world.a(context)
-			.a()))
+		if (state.getBlock() == Blocks.BEACON)
 			return false;
 
-		world.b(randomOffset, false);
+		RaycastContext context = new RaycastContext(positionVec, VecHelper.getCenterOf(randomOffset),
+			ShapeType.COLLIDER, FluidHandling.NONE, entity);
+		if (!randomOffset.equals(world.raycast(context)
+			.getBlockPos()))
+			return false;
 
-		ItemCooldownManager newStack = stack.a(1);
-		newStack.p()
+		world.breakBlock(randomOffset, false);
+
+		ItemStack newStack = stack.split(1);
+		newStack.getOrCreateTag()
 			.putInt("CollectingLight", itemData.getInt("CollectingLight") + 1);
-		PaintingEntity newEntity = new PaintingEntity(world, entity.cC(), entity.cD(), entity.cG(), newStack);
-		newEntity.f(entity.cB());
-		newEntity.m();
-		world.c(newEntity);
+		ItemEntity newEntity = new ItemEntity(world, entity.getX(), entity.getY(), entity.getZ(), newStack);
+		newEntity.setVelocity(entity.getVelocity());
+		newEntity.setToDefaultPickupDelay();
+		world.spawnEntity(newEntity);
 		entity.lifespan = 6000;
-		if (stack.a())
-			entity.ac();
+		if (stack.isEmpty())
+			entity.remove();
 
 		return false;
 	}

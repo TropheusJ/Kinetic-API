@@ -1,18 +1,18 @@
-package com.simibubi.kinetic_api.content.schematics.client.tools;
+package com.simibubi.create.content.schematics.client.tools;
 
-import afj;
-import com.simibubi.kinetic_api.AllKeys;
-import com.simibubi.kinetic_api.content.schematics.client.SchematicTransformation;
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.outliner.AABBOutline;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.AllKeys;
+import com.simibubi.create.content.schematics.client.SchematicTransformation;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+import com.simibubi.create.foundation.utility.outliner.AABBOutline;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class DeployTool extends PlacementToolBase {
 
@@ -26,39 +26,38 @@ public class DeployTool extends PlacementToolBase {
 	public void updateSelection() {
 		if (schematicHandler.isActive() && selectionRange == -1) {
 			selectionRange = (int) (schematicHandler.getBounds()
-				.f()
-				.f() / 2);
-			selectionRange = afj.a(selectionRange, 1, 100);
+				.getCenter()
+				.length() / 2);
+			selectionRange = MathHelper.clamp(selectionRange, 1, 100);
 		}
 		selectIgnoreBlocks = AllKeys.ACTIVATE_TOOL.isPressed();
 		super.updateSelection();
 	}
 
 	@Override
-	public void renderTool(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
+	public void renderTool(MatrixStack ms, SuperRenderTypeBuffer buffer) {
 		super.renderTool(ms, buffer);
 
 		if (selectedPos == null)
 			return;
 
-		ms.a();
-		float pt = KeyBinding.B()
-			.ai();
-		double x = afj.d(pt, lastChasingSelectedPos.entity, chasingSelectedPos.entity);
-		double y = afj.d(pt, lastChasingSelectedPos.c, chasingSelectedPos.c);
-		double z = afj.d(pt, lastChasingSelectedPos.d, chasingSelectedPos.d);
+		ms.push();
+		float pt = AnimationTickHolder.getPartialTicks();
+		double x = MathHelper.lerp(pt, lastChasingSelectedPos.x, chasingSelectedPos.x);
+		double y = MathHelper.lerp(pt, lastChasingSelectedPos.y, chasingSelectedPos.y);
+		double z = MathHelper.lerp(pt, lastChasingSelectedPos.z, chasingSelectedPos.z);
 
 		SchematicTransformation transformation = schematicHandler.getTransformation();
-		Timer bounds = schematicHandler.getBounds();
-		EntityHitResult center = bounds.f();
-		EntityHitResult rotationOffset = transformation.getRotationOffset(true);
-		int centerX = (int) center.entity;
-		int centerZ = (int) center.d;
-		double xOrigin = bounds.b() / 2f;
-		double zOrigin = bounds.d() / 2f;
-		EntityHitResult origin = new EntityHitResult(xOrigin, 0, zOrigin);
+		Box bounds = schematicHandler.getBounds();
+		Vec3d center = bounds.getCenter();
+		Vec3d rotationOffset = transformation.getRotationOffset(true);
+		int centerX = (int) center.x;
+		int centerZ = (int) center.z;
+		double xOrigin = bounds.getXLength() / 2f;
+		double zOrigin = bounds.getZLength() / 2f;
+		Vec3d origin = new Vec3d(xOrigin, 0, zOrigin);
 
-		ms.a(x - centerX, y, z - centerZ);
+		ms.translate(x - centerX, y, z - centerZ);
 		MatrixStacker.of(ms)
 			.translate(origin)
 			.translate(rotationOffset)
@@ -70,7 +69,7 @@ public class DeployTool extends PlacementToolBase {
 		outline.render(ms, buffer);
 		outline.getParams()
 			.clearTextures();
-		ms.b();
+		ms.pop();
 	}
 
 	@Override
@@ -78,7 +77,7 @@ public class DeployTool extends PlacementToolBase {
 		if (!selectIgnoreBlocks)
 			return super.handleMouseWheel(delta);
 		selectionRange += delta;
-		selectionRange = afj.a(selectionRange, 1, 100);
+		selectionRange = MathHelper.clamp(selectionRange, 1, 100);
 		return true;
 	}
 
@@ -86,15 +85,15 @@ public class DeployTool extends PlacementToolBase {
 	public boolean handleRightClick() {
 		if (selectedPos == null)
 			return super.handleRightClick();
-		EntityHitResult center = schematicHandler.getBounds()
-			.f();
-		BlockPos target = selectedPos.add(-((int) center.entity), 0, -((int) center.d));
+		Vec3d center = schematicHandler.getBounds()
+			.getCenter();
+		BlockPos target = selectedPos.add(-((int) center.x), 0, -((int) center.z));
 
-		ItemCooldownManager item = schematicHandler.getActiveSchematicItem();
+		ItemStack item = schematicHandler.getActiveSchematicItem();
 		if (item != null) {
-			item.o()
+			item.getTag()
 				.putBoolean("Deployed", true);
-			item.o()
+			item.getTag()
 				.put("Anchor", NbtHelper.fromBlockPos(target));
 		}
 

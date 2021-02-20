@@ -1,62 +1,68 @@
-package com.simibubi.kinetic_api.content.logistics.block.chute;
+package com.simibubi.create.content.logistics.block.chute;
 
 import java.util.HashMap;
 import java.util.Map;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.content.logistics.block.chute.ChuteBlock.Shape;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.content.logistics.block.chute.ChuteBlock.Shape;
-import dco;
-import ddb;
 
 public class ChuteShapes {
 
-	static Map<PistonHandler, VoxelShapes> cache = new HashMap<>();
-	static Map<PistonHandler, VoxelShapes> collisionCache = new HashMap<>();
+	static Map<BlockState, VoxelShape> cache = new HashMap<>();
+	static Map<BlockState, VoxelShape> collisionCache = new HashMap<>();
 
-	public static final VoxelShapes INTERSECTION_MASK = BeetrootsBlock.a(0, -16, 0, 16, 16, 16);
-	public static final VoxelShapes COLLISION_MASK = BeetrootsBlock.a(0, 0, 0, 16, 24, 16);
+	public static final VoxelShape INTERSECTION_MASK = Block.createCuboidShape(0, -16, 0, 16, 16, 16);
+	public static final VoxelShape COLLISION_MASK = Block.createCuboidShape(0, 0, 0, 16, 24, 16);
 
-	public static VoxelShapes createShape(PistonHandler state) {
-		Direction direction = state.c(ChuteBlock.FACING);
-		Shape shape = state.c(ChuteBlock.SHAPE);
+	public static VoxelShape createShape(BlockState state) {
+		if (AllBlocks.SMART_CHUTE.has(state))
+			return AllShapes.SMART_CHUTE;
+		
+		Direction direction = state.get(ChuteBlock.FACING);
+		Shape shape = state.get(ChuteBlock.SHAPE);
 
 		boolean intersection = shape == Shape.INTERSECTION;
 		if (direction == Direction.DOWN)
-			return intersection ? ddb.b() : AllShapes.CHUTE;
+			return intersection ? VoxelShapes.fullCube() : AllShapes.CHUTE;
 
-		VoxelShapes combineWith = intersection ? ddb.b() : ddb.a();
-		VoxelShapes result = ddb.a(combineWith, AllShapes.CHUTE_SLOPE.get(direction));
+		VoxelShape combineWith = intersection ? VoxelShapes.fullCube() : VoxelShapes.empty();
+		VoxelShape result = VoxelShapes.union(combineWith, AllShapes.CHUTE_SLOPE.get(direction));
 		if (intersection)
-			result = ddb.b(INTERSECTION_MASK, result, dco.i);
+			result = VoxelShapes.combine(INTERSECTION_MASK, result, BooleanBiFunction.AND);
 		return result;
 	}
 
-	public static VoxelShapes getShape(PistonHandler state) {
+	public static VoxelShape getShape(BlockState state) {
 		if (cache.containsKey(state))
 			return cache.get(state);
-		VoxelShapes createdShape = createShape(state);
+		VoxelShape createdShape = createShape(state);
 		cache.put(state, createdShape);
 		return createdShape;
 	}
 
-	public static VoxelShapes getCollisionShape(PistonHandler state) {
+	public static VoxelShape getCollisionShape(BlockState state) {
 		if (collisionCache.containsKey(state))
 			return collisionCache.get(state);
-		VoxelShapes createdShape = ddb.b(COLLISION_MASK, getShape(state), dco.i);
+		VoxelShape createdShape = VoxelShapes.combine(COLLISION_MASK, getShape(state), BooleanBiFunction.AND);
 		collisionCache.put(state, createdShape);
 		return createdShape;
 	}
 
-	public static final VoxelShapes PANEL = BeetrootsBlock.a(1, -15, 0, 15, 4, 1);
+	public static final VoxelShape PANEL = Block.createCuboidShape(1, -15, 0, 15, 4, 1);
 
-	public static VoxelShapes createSlope() {
-		VoxelShapes shape = ddb.a();
+	public static VoxelShape createSlope() {
+		VoxelShape shape = VoxelShapes.empty();
 		for (int i = 0; i < 16; i++) {
 			float offset = i / 16f;
-			shape = ddb.a(shape, PANEL.a(0, offset, offset), dco.o);
+			shape = VoxelShapes.combineAndSimplify(shape, PANEL.offset(0, offset, offset), BooleanBiFunction.OR);
 		}
 		return shape;
 	}

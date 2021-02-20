@@ -1,70 +1,72 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.mounted;
+package com.simibubi.create.content.contraptions.components.structureMovement.mounted;
 
 import javax.annotation.Nonnull;
-import bnx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BlockWithEntity;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.BannerItem;
-import net.minecraft.sound.SoundEvent;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.AbstractRailBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.RailShape;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
-public class CartAssemblerBlockItem extends BannerItem {
+public class CartAssemblerBlockItem extends BlockItem {
 
-	public CartAssemblerBlockItem(BeetrootsBlock block, a properties) {
+	public CartAssemblerBlockItem(Block block, Settings properties) {
 		super(block, properties);
 	}
 
 	@Override
 	@Nonnull
-	public Difficulty a(bnx context) {
+	public ActionResult useOnBlock(ItemUsageContext context) {
 		if (tryPlaceAssembler(context)) {
-			context.p().a(null, context.a(), MusicType.oP, SoundEvent.e, 1, 1);
-			return Difficulty.SUCCESS;
+			context.getWorld().playSound(null, context.getBlockPos(), SoundEvents.BLOCK_STONE_PLACE, SoundCategory.BLOCKS, 1, 1);
+			return ActionResult.SUCCESS;
 		}
-		return super.a(context);
+		return super.useOnBlock(context);
 	}
 
-	public boolean tryPlaceAssembler(bnx context) {
-		BlockPos pos = context.a();
-		GameMode world = context.p();
-		PistonHandler state = world.d_(pos);
-		BeetrootsBlock block = state.b();
-		PlayerAbilities player = context.n();
+	public boolean tryPlaceAssembler(ItemUsageContext context) {
+		BlockPos pos = context.getBlockPos();
+		World world = context.getWorld();
+		BlockState state = world.getBlockState(pos);
+		Block block = state.getBlock();
+		PlayerEntity player = context.getPlayer();
 
 		if (player == null)
 			return false;
-		if (!(block instanceof BlockWithEntity)) {
+		if (!(block instanceof AbstractRailBlock)) {
 			Lang.sendStatus(player, "block.cart_assembler.invalid");
 			return false;
 		}
 
-		Instrument shape = state.c(((BlockWithEntity) block).d());
-		if (shape != Instrument.EAST_WEST && shape != Instrument.NORTH_SOUTH)
+		RailShape shape = state.get(((AbstractRailBlock) block).getShapeProperty());
+		if (shape != RailShape.EAST_WEST && shape != RailShape.NORTH_SOUTH)
 			return false;
 
-		PistonHandler newState = AllBlocks.CART_ASSEMBLER.getDefaultState()
-			.a(CartAssemblerBlock.RAIL_SHAPE, shape);
+		BlockState newState = AllBlocks.CART_ASSEMBLER.getDefaultState()
+			.with(CartAssemblerBlock.RAIL_SHAPE, shape);
 		CartAssembleRailType newType = null;
 		for (CartAssembleRailType type : CartAssembleRailType.values())
 			if (type.matches.test(state))
 				newType = type;
 		if (newType == null)
 			return false;
-		if (world.v)
+		if (world.isClient)
 			return true;
 
-		newState = newState.a(CartAssemblerBlock.RAIL_TYPE, newType);
-		world.a(pos, newState);
-		if (!player.b_())
-			context.m().g(1);
+		newState = newState.with(CartAssemblerBlock.RAIL_TYPE, newType);
+		world.setBlockState(pos, newState);
+		if (!player.isCreative())
+			context.getStack().decrement(1);
 		return true;
 	}
 }

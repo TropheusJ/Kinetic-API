@@ -1,15 +1,16 @@
-package com.simibubi.kinetic_api.compat.jei.category;
+package com.simibubi.create.compat.jei.category;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.compat.jei.category.MixingCategory.MixingType;
-import com.simibubi.kinetic_api.compat.jei.category.animations.AnimatedBlazeBurner;
-import com.simibubi.kinetic_api.compat.jei.category.animations.AnimatedMixer;
-import com.simibubi.kinetic_api.content.contraptions.processing.BasinRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.HeatCondition;
-import net.minecraft.block.BellBlock;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.world.GameRules;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.compat.jei.category.MixingCategory.MixingType;
+import com.simibubi.create.compat.jei.category.animations.AnimatedBlazeBurner;
+import com.simibubi.create.compat.jei.category.animations.AnimatedMixer;
+import com.simibubi.create.content.contraptions.processing.BasinRecipe;
+import com.simibubi.create.content.contraptions.processing.HeatCondition;
+
+import net.minecraft.block.Blocks;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.item.Items;
 
 public class MixingCategory extends BasinCategory {
 
@@ -22,7 +23,7 @@ public class MixingCategory extends BasinCategory {
 	}
 
 	public static MixingCategory autoShapeless() {
-		return new MixingCategory(MixingType.AUTO_SHAPELESS, AliasedBlockItem.cB, 85);
+		return new MixingCategory(MixingType.AUTO_SHAPELESS, Items.CRAFTING_TABLE, 85);
 	}
 
 	public static MixingCategory standard() {
@@ -30,17 +31,17 @@ public class MixingCategory extends BasinCategory {
 	}
 
 	public static MixingCategory autoBrewing() {
-		return new MixingCategory(MixingType.AUTO_BREWING, BellBlock.ea, 103);
+		return new MixingCategory(MixingType.AUTO_BREWING, Blocks.BREWING_STAND, 103);
 	}
 
-	protected MixingCategory(MixingType type, GameRules secondaryItem, int height) {
+	protected MixingCategory(MixingType type, ItemConvertible secondaryItem, int height) {
 		super(type != MixingType.AUTO_SHAPELESS, doubleItemIcon(AllBlocks.MECHANICAL_MIXER.get(), secondaryItem),
 			emptyBackground(177, height));
 		this.type = type;
 	}
 
 	@Override
-	public void draw(BasinRecipe recipe, BufferVertexConsumer matrixStack, double mouseX, double mouseY) {
+	public void draw(BasinRecipe recipe, MatrixStack matrixStack, double mouseX, double mouseY) {
 		super.draw(recipe, matrixStack, mouseX, mouseY);
 		HeatCondition requiredHeat = recipe.getRequiredHeat();
 		if (requiredHeat != HeatCondition.NONE)

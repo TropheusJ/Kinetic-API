@@ -1,12 +1,14 @@
-package com.simibubi.kinetic_api.content.contraptions.components.fan;
+package com.simibubi.create.content.contraptions.components.fan;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import net.minecraft.world.GameMode;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
-import com.simibubi.kinetic_api.content.logistics.InWorldProcessing;
-import com.simibubi.kinetic_api.content.logistics.InWorldProcessing.SplashingInv;
+
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingRecipeBuilder.ProcessingRecipeParams;
+import com.simibubi.create.content.logistics.InWorldProcessing;
+import com.simibubi.create.content.logistics.InWorldProcessing.SplashingInv;
+
+import net.minecraft.world.World;
 
 @ParametersAreNonnullByDefault
 public class SplashingRecipe extends ProcessingRecipe<InWorldProcessing.SplashingInv> {
@@ -16,11 +18,11 @@ public class SplashingRecipe extends ProcessingRecipe<InWorldProcessing.Splashin
 	}
 
 	@Override
-	public boolean matches(SplashingInv inv, GameMode worldIn) {
-		if (inv.c())
+	public boolean matches(SplashingInv inv, World worldIn) {
+		if (inv.isEmpty())
 			return false;
 		return ingredients.get(0)
-			.a(inv.a(0));
+			.test(inv.getStack(0));
 	}
 
 	@Override

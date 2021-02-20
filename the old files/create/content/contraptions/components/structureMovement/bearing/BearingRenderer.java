@@ -1,34 +1,34 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing;
+package com.simibubi.create.content.contraptions.components.structureMovement.bearing;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.content.contraptions.base.KineticTileEntityRenderer;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.Direction;
 
 public class BearingRenderer extends KineticTileEntityRenderer {
 
-	public BearingRenderer(ebv dispatcher) {
+	public BearingRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(KineticTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(KineticTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
 		super.renderSafe(te, partialTicks, ms, buffer, light, overlay);
 
 		IBearingTileEntity bearingTe = (IBearingTileEntity) te;
-		final Direction facing = te.p()
-			.c(BambooLeaves.M);
+		final Direction facing = te.getCachedState()
+			.get(Properties.FACING);
 		AllBlockPartials top =
 			bearingTe.isWoodenTop() ? AllBlockPartials.BEARING_TOP_WOODEN : AllBlockPartials.BEARING_TOP;
-		SuperByteBuffer superBuffer = top.renderOn(te.p());
+		SuperByteBuffer superBuffer = top.renderOn(te.getCachedState());
 
 		float interpolatedAngle = bearingTe.getInterpolatedAngle(partialTicks - 1);
 		kineticRotationTransform(superBuffer, te, facing.getAxis(), (float) (interpolatedAngle / 180 * Math.PI), light);
@@ -38,13 +38,13 @@ public class BearingRenderer extends KineticTileEntityRenderer {
 			superBuffer.rotateCentered(Direction.UP,
 				AngleHelper.rad(AngleHelper.horizontalAngle(facing.getOpposite())));
 		superBuffer.rotateCentered(Direction.EAST, AngleHelper.rad(-90 - AngleHelper.verticalAngle(facing)));
-		superBuffer.renderInto(ms, buffer.getBuffer(VertexConsumerProvider.c()));
+		superBuffer.renderInto(ms, buffer.getBuffer(RenderLayer.getSolid()));
 	}
 
 	@Override
 	protected SuperByteBuffer getRotatedModel(KineticTileEntity te) {
-		return AllBlockPartials.SHAFT_HALF.renderOnDirectionalSouth(te.p(), te.p()
-			.c(BearingBlock.FACING)
+		return AllBlockPartials.SHAFT_HALF.renderOnDirectionalSouth(te.getCachedState(), te.getCachedState()
+			.get(BearingBlock.FACING)
 			.getOpposite());
 	}
 

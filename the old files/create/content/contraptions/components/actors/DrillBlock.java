@@ -1,86 +1,87 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import afj;
-import apx;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalKineticBlock;
-import com.simibubi.kinetic_api.foundation.block.ITE;
+
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.DirectionalKineticBlock;
+import com.simibubi.create.foundation.block.ITE;
 
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.damage.DamageRecord;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.fluid.LavaFluid;
-import net.minecraft.item.ItemConvertible;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.piston.PistonBehavior;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
 public class DrillBlock extends DirectionalKineticBlock implements ITE<DrillTileEntity> {
-	public static DamageRecord damageSourceDrill = new DamageRecord("kinetic_api.mechanical_drill").l();
+	public static DamageSource damageSourceDrill = new DamageSource("create.mechanical_drill").setBypassesArmor();
 
-	public DrillBlock(c properties) {
+	public DrillBlock(Settings properties) {
 		super(properties);
 	}
 	
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, apx entityIn) {
-		if (entityIn instanceof PaintingEntity)
+	public void onEntityCollision(BlockState state, World worldIn, BlockPos pos, Entity entityIn) {
+		if (entityIn instanceof ItemEntity)
 			return;
-		if (!new Timer(pos).h(.1f).c(entityIn.cb()))
+		if (!new Box(pos).contract(.1f).intersects(entityIn.getBoundingBox()))
 			return;
 		withTileEntityDo(worldIn, pos, te -> {
 			if (te.getSpeed() == 0)
 				return;
-			entityIn.a(damageSourceDrill, (float) getDamage(te.getSpeed()));
+			entityIn.damage(damageSourceDrill, (float) getDamage(te.getSpeed()));
 		});
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.DRILL.create();
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
-		return AllShapes.CASING_12PX.get(state.c(FACING));
+	public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
+		return AllShapes.CASING_12PX.get(state.get(FACING));
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, BeetrootsBlock blockIn, BlockPos fromPos,
+	public void neighborUpdate(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos,
 			boolean isMoving) {
 		withTileEntityDo(worldIn, pos, DrillTileEntity::destroyNextTick);
 	}
 
 	@Override
-	public Axis getRotationAxis(PistonHandler state) {
-		return state.c(FACING).getAxis();
+	public Axis getRotationAxis(BlockState state) {
+		return state.get(FACING).getAxis();
 	}
 
 	@Override
-	public boolean hasShaftTowards(ItemConvertible world, BlockPos pos, PistonHandler state, Direction face) {
-		return face == state.c(FACING).getOpposite();
+	public boolean hasShaftTowards(WorldView world, BlockPos pos, BlockState state, Direction face) {
+		return face == state.get(FACING).getOpposite();
 	}
 
 	@Override
-	public LavaFluid f(PistonHandler state) {
-		return LavaFluid.a;
+	public PistonBehavior getPistonBehavior(BlockState state) {
+		return PistonBehavior.NORMAL;
 	}
 
 	@Override
@@ -93,6 +94,6 @@ public class DrillBlock extends DirectionalKineticBlock implements ITE<DrillTile
 		double sub1 = Math.min(speedAbs / 16, 2);
 		double sub2 = Math.min(speedAbs / 32, 4);
 		double sub3 = Math.min(speedAbs / 64, 4);
-		return afj.a(sub1 + sub2 + sub3, 1, 10);
+		return MathHelper.clamp(sub1 + sub2 + sub3, 1, 10);
 	}
 }

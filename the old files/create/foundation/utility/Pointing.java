@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
-import net.minecraft.client.util.SmoothUtil;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
 
-public enum Pointing implements SmoothUtil {
+public enum Pointing implements StringIdentifiable {
 	UP(0), LEFT(270), DOWN(180), RIGHT(90);
 
 	private int xRotation;
@@ -15,7 +15,7 @@ public enum Pointing implements SmoothUtil {
 	}
 
 	@Override
-	public String a() {
+	public String asString() {
 		return Lang.asId(name());
 	}
 

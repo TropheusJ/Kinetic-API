@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.config;
+package com.simibubi.create.foundation.config;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,20 +1,20 @@
-package com.simibubi.kinetic_api.compat.jei.category.animations;
+package com.simibubi.create.compat.jei.category.animations;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+import net.minecraft.client.util.math.MatrixStack;
 
 public class AnimatedCrafter extends AnimatedKinetics {
 
 	@Override
-	public void draw(BufferVertexConsumer matrixStack, int xOffset, int yOffset) {
-		matrixStack.a();
-		matrixStack.a(xOffset, yOffset, 0);
+	public void draw(MatrixStack matrixStack, int xOffset, int yOffset) {
+		matrixStack.push();
+		matrixStack.translate(xOffset, yOffset, 0);
 		AllGuiTextures.JEI_SHADOW.draw(matrixStack, -16, 13);
 
-		matrixStack.a(3, 16, 0);
+		matrixStack.translate(3, 16, 0);
 		MatrixStacker.of(matrixStack)
 			.rotateX(-12.5f)
 			.rotateY(-22.5f);
@@ -30,7 +30,7 @@ public class AnimatedCrafter extends AnimatedKinetics {
 			.scale(scale)
 			.render(matrixStack);
 
-		matrixStack.b();
+		matrixStack.pop();
 	}
 
 }

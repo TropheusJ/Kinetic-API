@@ -1,44 +1,46 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.BiPredicate;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.Direction;
-import com.simibubi.kinetic_api.foundation.block.connected.CTSpriteShiftEntry;
 
 public class CasingConnectivity {
 
-	private Map<BeetrootsBlock, Entry> entries;
+	private Map<Block, Entry> entries;
 
 	public CasingConnectivity() {
 		entries = new IdentityHashMap<>();
 	}
 
-	public Entry get(PistonHandler blockState) {
-		return entries.get(blockState.b());
+	public Entry get(BlockState blockState) {
+		return entries.get(blockState.getBlock());
 	}
 
-	public void makeCasing(BeetrootsBlock block, CTSpriteShiftEntry casing) {
+	public void makeCasing(Block block, CTSpriteShiftEntry casing) {
 		new Entry(block, casing, (s, f) -> true).register();
 	}
 
-	public void make(BeetrootsBlock block, CTSpriteShiftEntry casing) {
+	public void make(Block block, CTSpriteShiftEntry casing) {
 		new Entry(block, casing, (s, f) -> true).register();
 	}
 
-	public void make(BeetrootsBlock block, CTSpriteShiftEntry casing, BiPredicate<PistonHandler, Direction> predicate) {
+	public void make(Block block, CTSpriteShiftEntry casing, BiPredicate<BlockState, Direction> predicate) {
 		new Entry(block, casing, predicate).register();
 	}
 
 	public class Entry {
 
-		private BeetrootsBlock block;
+		private Block block;
 		private CTSpriteShiftEntry casing;
-		private BiPredicate<PistonHandler, Direction> predicate;
+		private BiPredicate<BlockState, Direction> predicate;
 
-		private Entry(BeetrootsBlock block, CTSpriteShiftEntry casing, BiPredicate<PistonHandler, Direction> predicate) {
+		private Entry(Block block, CTSpriteShiftEntry casing, BiPredicate<BlockState, Direction> predicate) {
 			this.block = block;
 			this.casing = casing;
 			this.predicate = predicate;
@@ -48,7 +50,7 @@ public class CasingConnectivity {
 			return casing;
 		}
 
-		public boolean isSideValid(PistonHandler state, Direction face) {
+		public boolean isSideValid(BlockState state, Direction face) {
 			return predicate.test(state, face);
 		}
 

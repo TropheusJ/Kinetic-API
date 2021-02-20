@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
 import java.util.UUID;
 
@@ -8,7 +8,7 @@ import net.minecraftforge.common.util.FakePlayer;
 
 public class PloughBlock extends AttachedActorBlock {
 	
-	public PloughBlock(c p_i48377_1_) {
+	public PloughBlock(Settings p_i48377_1_) {
 		super(p_i48377_1_);
 	}
 	

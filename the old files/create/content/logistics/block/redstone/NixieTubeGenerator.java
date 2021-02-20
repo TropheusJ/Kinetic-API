@@ -1,28 +1,29 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
-import com.simibubi.kinetic_api.foundation.data.AssetLookup;
-import com.simibubi.kinetic_api.foundation.data.SpecialBlockStateGen;
+import com.simibubi.create.foundation.data.AssetLookup;
+import com.simibubi.create.foundation.data.SpecialBlockStateGen;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraftforge.client.model.generators.ModelFile;
 
 public class NixieTubeGenerator extends SpecialBlockStateGen {
 
 	@Override
-	protected int getXRotation(PistonHandler state) {
-		return state.c(NixieTubeBlock.CEILING) ? 180 : 0;
+	protected int getXRotation(BlockState state) {
+		return state.get(NixieTubeBlock.CEILING) ? 180 : 0;
 	}
 
 	@Override
-	protected int getYRotation(PistonHandler state) {
-		return horizontalAngle(state.c(NixieTubeBlock.aq));
+	protected int getYRotation(BlockState state) {
+		return horizontalAngle(state.get(NixieTubeBlock.FACING));
 	}
 
 	@Override
-	public <T extends BeetrootsBlock> ModelFile getModel(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov,
-		PistonHandler state) {
+	public <T extends Block> ModelFile getModel(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov,
+		BlockState state) {
 		return AssetLookup.partialBaseModel(ctx, prov);
 	}
 

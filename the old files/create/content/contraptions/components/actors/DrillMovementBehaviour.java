@@ -1,16 +1,18 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.content.contraptions.components.structureMovement.render.RenderedContraption;
+import com.simibubi.create.foundation.render.backend.FastRenderDispatcher;
+import com.simibubi.create.foundation.utility.VecHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.damage.DamageRecord;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -18,32 +20,43 @@ public class DrillMovementBehaviour extends BlockBreakingMovementBehaviour {
 
 	@Override
 	public boolean isActive(MovementContext context) {
-		return !VecHelper.isVecPointingTowards(context.relativeMotion, context.state.c(DrillBlock.FACING)
+		return !VecHelper.isVecPointingTowards(context.relativeMotion, context.state.get(DrillBlock.FACING)
 			.getOpposite());
 	}
 
 	@Override
-	public EntityHitResult getActiveAreaOffset(MovementContext context) {
-		return EntityHitResult.b(context.state.c(DrillBlock.FACING)
-			.getVector()).a(.65f);
+	public Vec3d getActiveAreaOffset(MovementContext context) {
+		return Vec3d.of(context.state.get(DrillBlock.FACING)
+			.getVector()).multiply(.65f);
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public void renderInContraption(MovementContext context, BufferVertexConsumer ms, BufferVertexConsumer msLocal,
-		BackgroundRenderer buffer) {
-		DrillRenderer.renderInContraption(context, ms, msLocal, buffer);
+	public void renderInContraption(MovementContext context, MatrixStack ms, MatrixStack msLocal,
+		VertexConsumerProvider buffer) {
+		if (!FastRenderDispatcher.available())
+			DrillRenderer.renderInContraption(context, ms, msLocal, buffer);
 	}
 
 	@Override
-	protected DamageRecord getDamageSource() {
+	public boolean hasSpecialInstancedRendering() {
+		return true;
+	}
+
+	@Override
+	public void addInstance(RenderedContraption contraption, MovementContext context) {
+		DrillInstance.addInstanceForContraption(contraption, context);
+	}
+
+	@Override
+	protected DamageSource getDamageSource() {
 		return DrillBlock.damageSourceDrill;
 	}
 
 	@Override
-	public boolean canBreak(GameMode world, BlockPos breakingPos, PistonHandler state) {
-		return super.canBreak(world, breakingPos, state) && !state.k(world, breakingPos)
-			.b();
+	public boolean canBreak(World world, BlockPos breakingPos, BlockState state) {
+		return super.canBreak(world, breakingPos, state) && !state.getCollisionShape(world, breakingPos)
+			.isEmpty();
 	}
 
 }

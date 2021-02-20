@@ -1,9 +1,11 @@
-package com.simibubi.kinetic_api.content;
+package com.simibubi.create.content;
 
 import java.util.EnumSet;
-import net.minecraft.entity.player.ItemCooldownManager;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.item.CreateItemGroupBase;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.item.CreateItemGroupBase;
+
+import net.minecraft.item.ItemStack;
 
 public class CreateItemGroup extends CreateItemGroupBase {
 
@@ -17,7 +19,7 @@ public class CreateItemGroup extends CreateItemGroupBase {
 	}
 
 	@Override
-	public ItemCooldownManager e() {
+	public ItemStack createIcon() {
 		return AllBlocks.COGWHEEL.asStack();
 	}
 

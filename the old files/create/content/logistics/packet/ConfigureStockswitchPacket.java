@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.content.logistics.packet;
+package com.simibubi.create.content.logistics.packet;
 
-import com.simibubi.kinetic_api.content.logistics.block.redstone.StockpileSwitchTileEntity;
-import com.simibubi.kinetic_api.foundation.networking.TileEntityConfigurationPacket;
+import com.simibubi.create.content.logistics.block.redstone.StockpileSwitchTileEntity;
+import com.simibubi.create.foundation.networking.TileEntityConfigurationPacket;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
 

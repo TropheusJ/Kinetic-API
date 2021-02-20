@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.content.schematics;
+package com.simibubi.create.content.schematics;
 
-import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.block.BlockState;
 
 public interface ISpecialBlockItemRequirement {
 
-	default ItemRequirement getRequiredItems(PistonHandler state) {
+	default ItemRequirement getRequiredItems(BlockState state) {
 		return ItemRequirement.INVALID;
 	}
 	

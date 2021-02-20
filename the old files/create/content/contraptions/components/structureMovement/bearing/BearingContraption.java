@@ -1,17 +1,22 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing;
+package com.simibubi.create.content.contraptions.components.structureMovement.bearing;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.simibubi.kinetic_api.AllTags.AllBlockTags;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AllContraptionTypes;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.Contraption;
-import net.minecraft.block.entity.BeehiveBlockEntity;
+import com.simibubi.create.AllTags.AllBlockTags;
+import com.simibubi.create.content.contraptions.components.structureMovement.AssemblyException;
+import com.simibubi.create.content.contraptions.components.structureMovement.Contraption;
+import com.simibubi.create.content.contraptions.components.structureMovement.ContraptionLighter;
+import com.simibubi.create.content.contraptions.components.structureMovement.ContraptionType;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.structure.processor.StructureProcessor.c;
+import net.minecraft.structure.Structure.StructureBlockInfo;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class BearingContraption extends Contraption {
 
@@ -28,7 +33,7 @@ public class BearingContraption extends Contraption {
 	}
 
 	@Override
-	public boolean assemble(GameMode world, BlockPos pos) {
+	public boolean assemble(World world, BlockPos pos) throws AssemblyException {
 		BlockPos offset = pos.offset(facing);
 		if (!searchMovedStructure(world, offset, null))
 			return false;
@@ -42,8 +47,8 @@ public class BearingContraption extends Contraption {
 	}
 
 	@Override
-	protected AllContraptionTypes getType() {
-		return AllContraptionTypes.BEARING;
+	protected ContraptionType getType() {
+		return ContraptionType.BEARING;
 	}
 
 	@Override
@@ -52,9 +57,9 @@ public class BearingContraption extends Contraption {
 	}
 
 	@Override
-	public void addBlock(BlockPos pos, Pair<c, BeehiveBlockEntity> capture) {
+	public void addBlock(BlockPos pos, Pair<StructureBlockInfo, BlockEntity> capture) {
 		BlockPos localPos = pos.subtract(anchor);
-		if (!getBlocks().containsKey(localPos) && AllBlockTags.WINDMILL_SAILS.matches(capture.getKey().b))
+		if (!getBlocks().containsKey(localPos) && AllBlockTags.WINDMILL_SAILS.matches(capture.getKey().state))
 			sailBlocks++;
 		super.addBlock(pos, capture);
 	}
@@ -68,7 +73,7 @@ public class BearingContraption extends Contraption {
 	}
 
 	@Override
-	public void readNBT(GameMode world, CompoundTag tag, boolean spawnData) {
+	public void readNBT(World world, CompoundTag tag, boolean spawnData) {
 		sailBlocks = tag.getInt("Sails");
 		facing = Direction.byId(tag.getInt("Facing"));
 		super.readNBT(world, tag, spawnData);
@@ -83,8 +88,15 @@ public class BearingContraption extends Contraption {
 	}
 
 	@Override
-	protected boolean canAxisBeStabilized(Axis axis) {
-		return axis == facing.getAxis();
+	public boolean canBeStabilized(Direction facing, BlockPos localPos) {
+		if (facing.getOpposite() == this.facing && BlockPos.ORIGIN.equals(localPos))
+			return false;
+		return facing.getAxis() == this.facing.getAxis();
 	}
 
+	@Environment(EnvType.CLIENT)
+	@Override
+	public ContraptionLighter<?> makeLighter() {
+		return new BearingLighter(this);
+	}
 }

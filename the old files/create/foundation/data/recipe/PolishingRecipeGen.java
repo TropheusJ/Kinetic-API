@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllRecipeTypes;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllRecipeTypes;
 
 import net.minecraft.data.DataGenerator;
 

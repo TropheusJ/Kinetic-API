@@ -1,43 +1,43 @@
-package com.simibubi.kinetic_api.foundation.data.recipe;
+package com.simibubi.create.foundation.data.recipe;
 
-import com.simibubi.kinetic_api.AllFluids;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.palettes.AllPaletteBlocks;
-import com.simibubi.kinetic_api.foundation.data.recipe.CreateRecipeProvider.GeneratedRecipe;
-import net.minecraft.block.BellBlock;
+import com.simibubi.create.AllFluids;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.palettes.AllPaletteBlocks;
+import com.simibubi.create.foundation.data.recipe.CreateRecipeProvider.GeneratedRecipe;
+import net.minecraft.block.Blocks;
 import net.minecraft.data.DataGenerator;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.item.AliasedBlockItem;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.Items;
 import net.minecraftforge.common.Tags;
 
 public class CompactingRecipeGen extends ProcessingRecipeGen {
 
 	GeneratedRecipe
 
-	GRANITE = create("granite_from_flint", b -> b.require(AliasedBlockItem.lw)
-		.require(AliasedBlockItem.lw)
-		.require(FlowableFluid.field_15901, 100)
-		.require(AliasedBlockItem.F)
-		.output(BellBlock.POWERED, 1)),
+	GRANITE = create("granite_from_flint", b -> b.require(Items.FLINT)
+		.require(Items.FLINT)
+		.require(Fluids.LAVA, 100)
+		.require(Items.RED_SAND)
+		.output(Blocks.GRANITE, 1)),
 
 		CHOCOLATE = create("chocolate", b -> b.require(AllFluids.CHOCOLATE.get(), 250)
 			.output(AllItems.BAR_OF_CHOCOLATE.get(), 1)),
 
-		DIORITE = create("diorite_from_flint", b -> b.require(AliasedBlockItem.lw)
-			.require(AliasedBlockItem.lw)
-			.require(FlowableFluid.field_15901, 100)
+		DIORITE = create("diorite_from_flint", b -> b.require(Items.FLINT)
+			.require(Items.FLINT)
+			.require(Fluids.LAVA, 100)
 			.require(AllPaletteBlocks.LIMESAND.get())
-			.output(BellBlock.EAST_WEST_SHAPE, 1)),
+			.output(Blocks.DIORITE, 1)),
 
-		ANDESITE = create("andesite_from_flint", b -> b.require(AliasedBlockItem.lw)
-			.require(AliasedBlockItem.lw)
-			.require(FlowableFluid.field_15901, 100)
-			.require(AliasedBlockItem.G)
-			.output(BellBlock.BELL_LIP_SHAPE, 1)),
+		ANDESITE = create("andesite_from_flint", b -> b.require(Items.FLINT)
+			.require(Items.FLINT)
+			.require(Fluids.LAVA, 100)
+			.require(Items.GRAVEL)
+			.output(Blocks.ANDESITE, 1)),
 
 		BLAZE_CAKE = create("blaze_cake", b -> b.require(Tags.Items.EGGS)
-			.require(AliasedBlockItem.mM)
+			.require(Items.SUGAR)
 			.require(AllItems.CINDER_FLOUR.get())
 			.output(AllItems.BLAZE_CAKE_BASE.get(), 1))
 

@@ -1,10 +1,11 @@
-package com.simibubi.kinetic_api.foundation.utility.recipe;
+package com.simibubi.create.foundation.utility.recipe;
 
 import com.google.common.base.Predicate;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.recipe.Ingredient;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Recipe;
+import net.minecraft.recipe.RecipeType;
 
 /**
  * Commonly used Predicates for searching through recipe collections.
@@ -14,24 +15,24 @@ import net.minecraft.recipe.Recipe;
  */
 public class RecipeConditions {
 
-	public static Predicate<Ingredient<?>> isOfType(Recipe<?> type, Recipe<?>... otherTypes) {
+	public static Predicate<Recipe<?>> isOfType(RecipeType<?> type, RecipeType<?>... otherTypes) {
 		return recipe -> {
-			Recipe<?> recipeType = recipe.g();
+			RecipeType<?> recipeType = recipe.getType();
 			if (recipeType == type)
 				return true;
-			for (Recipe<?> other : otherTypes)
+			for (RecipeType<?> other : otherTypes)
 				if (recipeType == other)
 					return true;
 			return false;
 		};
 	}
 
-	public static Predicate<Ingredient<?>> firstIngredientMatches(ItemCooldownManager stack) {
-		return r -> !r.a().isEmpty() && r.a().get(0).a(stack);
+	public static Predicate<Recipe<?>> firstIngredientMatches(ItemStack stack) {
+		return r -> !r.getPreviewInputs().isEmpty() && r.getPreviewInputs().get(0).test(stack);
 	}
 
-	public static Predicate<Ingredient<?>> outputMatchesFilter(FilteringBehaviour filtering) {
-		return r -> filtering.test(r.c());
+	public static Predicate<Recipe<?>> outputMatchesFilter(FilteringBehaviour filtering) {
+		return r -> filtering.test(r.getOutput());
 
 	}
 

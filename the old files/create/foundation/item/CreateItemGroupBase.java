@@ -1,29 +1,29 @@
-package com.simibubi.kinetic_api.foundation.item;
+package com.simibubi.create.foundation.item;
 
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.stream.Collectors;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.AllSections;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.AllSections;
 import com.tterrag.registrate.util.entry.RegistryEntry;
-import elg;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.entity.HorseEntityRenderer;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.BannerItem;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.HoeItem;
+import net.minecraft.block.Block;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public abstract class CreateItemGroupBase extends ChorusFruitItem {
+public abstract class CreateItemGroupBase extends ItemGroup {
 
 	public CreateItemGroupBase(String id) {
 		super(getGroupCountSafe(), Create.ID + "." + id);
@@ -31,52 +31,52 @@ public abstract class CreateItemGroupBase extends ChorusFruitItem {
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public void a(DefaultedList<ItemCooldownManager> items) {
+	public void appendStacks(DefaultedList<ItemStack> items) {
 		addItems(items, true);
 		addBlocks(items);
 		addItems(items, false);
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void addBlocks(DefaultedList<ItemCooldownManager> items) {
-		for (RegistryEntry<? extends BeetrootsBlock> entry : getBlocks()) {
-			BeetrootsBlock def = entry.get();
-			HoeItem item = def.h();
-			if (item != AliasedBlockItem.a)
-				def.a(this, items);
+	public void addBlocks(DefaultedList<ItemStack> items) {
+		for (RegistryEntry<? extends Block> entry : getBlocks()) {
+			Block def = entry.get();
+			Item item = def.asItem();
+			if (item != Items.AIR)
+				def.addStacksForDisplay(this, items);
 		}
 	}
 	
 	@Environment(EnvType.CLIENT)
-	public void addItems(DefaultedList<ItemCooldownManager> items, boolean specialItems) {
-		KeyBinding mc = KeyBinding.B();
-		HorseEntityRenderer itemRenderer = mc.ac();
-		DragonHeadEntityModel world = mc.r;
+	public void addItems(DefaultedList<ItemStack> items, boolean specialItems) {
+		MinecraftClient mc = MinecraftClient.getInstance();
+		ItemRenderer itemRenderer = mc.getItemRenderer();
+		ClientWorld world = mc.world;
 		
-		for (RegistryEntry<? extends HoeItem> entry : getItems()) {
-			HoeItem item = entry.get();
-			if (item instanceof BannerItem)
+		for (RegistryEntry<? extends Item> entry : getItems()) {
+			Item item = entry.get();
+			if (item instanceof BlockItem)
 				continue;
-			ItemCooldownManager stack = new ItemCooldownManager(item);
-			elg model = itemRenderer.a(stack, world, null);
-			if ((model.b() && AllSections.of(stack) != AllSections.CURIOSITIES) != specialItems)
+			ItemStack stack = new ItemStack(item);
+			BakedModel model = itemRenderer.getHeldItemModel(stack, world, null);
+			if ((model.hasDepth() && AllSections.of(stack) != AllSections.CURIOSITIES) != specialItems)
 				continue;
-			item.a(this, items);
+			item.appendStacks(this, items);
 		}
 	}
 
-	protected Collection<RegistryEntry<BeetrootsBlock>> getBlocks() {
+	protected Collection<RegistryEntry<Block>> getBlocks() {
 		return getSections().stream()
 			.flatMap(s -> Create.registrate()
-				.getAll(s, BeetrootsBlock.class)
+				.getAll(s, Block.class)
 				.stream())
 			.collect(Collectors.toList());
 	}
 
-	protected Collection<RegistryEntry<HoeItem>> getItems() {
+	protected Collection<RegistryEntry<Item>> getItems() {
 		return getSections().stream()
 			.flatMap(s -> Create.registrate()
-				.getAll(s, HoeItem.class)
+				.getAll(s, Item.class)
 				.stream())
 			.collect(Collectors.toList());
 	}

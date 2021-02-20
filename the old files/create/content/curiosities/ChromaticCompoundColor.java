@@ -1,27 +1,27 @@
-package com.simibubi.kinetic_api.content.curiosities;
+package com.simibubi.create.content.curiosities;
 
-import afj;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
-import com.simibubi.kinetic_api.foundation.utility.ColorHelper;
-import net.minecraft.client.color.block.BlockColors;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.ColorHelper;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.color.item.ItemColorProvider;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.MathHelper;
 
-public class ChromaticCompoundColor implements BlockColors {
+public class ChromaticCompoundColor implements ItemColorProvider {
 	
 	@Override
-	public int getColor(ItemCooldownManager stack, int layer) {
-		KeyBinding mc = KeyBinding.B();
-		float pt = mc.ai();
-		float progress = (float) ((mc.s.h(pt)) / 180 * Math.PI) + (AnimationTickHolder.getRenderTick() / 10f);
+	public int getColor(ItemStack stack, int layer) {
+		MinecraftClient mc = MinecraftClient.getInstance();
+		float pt = AnimationTickHolder.getPartialTicks();
+		float progress = (float) ((mc.player.getYaw(pt)) / 180 * Math.PI) + (AnimationTickHolder.getRenderTick() / 10f);
 		if (layer == 0)
-			return ColorHelper.mixColors(0x6e5773, 0x6B3074, ((float) afj.a(progress) + 1) / 2);
+			return ColorHelper.mixColors(0x6e5773, 0x6B3074, ((float) MathHelper.sin(progress) + 1) / 2);
 		if (layer == 1)
 			return ColorHelper.mixColors(0xd45d79, 0x6e5773,
-				((float) afj.a((float) (progress + Math.PI)) + 1) / 2);
+				((float) MathHelper.sin((float) (progress + Math.PI)) + 1) / 2);
 		if (layer == 2)
 			return ColorHelper.mixColors(0xea9085, 0xd45d79,
-				((float) afj.a((float) (progress * 1.5f + Math.PI)) + 1) / 2);
+				((float) MathHelper.sin((float) (progress * 1.5f + Math.PI)) + 1) / 2);
 		return 0;
 	}
 }

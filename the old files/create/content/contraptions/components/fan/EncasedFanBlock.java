@@ -1,101 +1,109 @@
-package com.simibubi.kinetic_api.content.contraptions.components.fan;
+package com.simibubi.create.content.contraptions.components.fan;
 
-import bnx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalKineticBlock;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import com.simibubi.kinetic_api.foundation.utility.worldWrappers.WrappedWorld;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.DirectionalKineticBlock;
+import com.simibubi.create.content.logistics.block.chute.AbstractChuteBlock;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.utility.worldWrappers.WrappedWorld;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
+import net.minecraft.world.WorldView;
 
 public class EncasedFanBlock extends DirectionalKineticBlock implements ITE<EncasedFanTileEntity> {
 
-	public EncasedFanBlock(c properties) {
+	public EncasedFanBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.ENCASED_FAN.create();
 	}
 
 	@Override
-	public void b(PistonHandler state, GameMode worldIn, BlockPos pos, PistonHandler oldState, boolean isMoving) {
+	public void onBlockAdded(BlockState state, World worldIn, BlockPos pos, BlockState oldState, boolean isMoving) {
+		super.onBlockAdded(state, worldIn, pos, oldState, isMoving);
 		blockUpdate(state, worldIn, pos);
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode world, BlockPos pos, PistonHandler p_196243_4_, boolean p_196243_5_) {
-		if (state.hasTileEntity() && (state.b() != p_196243_4_.b() || !p_196243_4_.hasTileEntity())) {
+	public void prepare(BlockState stateIn, WorldAccess worldIn, BlockPos pos, int flags, int count) {
+		super.prepare(stateIn, worldIn, pos, flags, count);
+		blockUpdate(stateIn, worldIn, pos);
+	}
+
+	@Override
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState p_196243_4_, boolean p_196243_5_) {
+		if (state.hasTileEntity() && (state.getBlock() != p_196243_4_.getBlock() || !p_196243_4_.hasTileEntity())) {
 			withTileEntityDo(world, pos, EncasedFanTileEntity::updateChute);
-			world.o(pos);
+			world.removeBlockEntity(pos);
 		}
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode worldIn, BlockPos pos, BeetrootsBlock blockIn, BlockPos fromPos,
+	public void neighborUpdate(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos,
 		boolean isMoving) {
 		blockUpdate(state, worldIn, pos);
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
-		GameMode world = context.p();
-		BlockPos pos = context.a();
-		Direction face = context.j();
+	public BlockState getPlacementState(ItemPlacementContext context) {
+		World world = context.getWorld();
+		BlockPos pos = context.getBlockPos();
+		Direction face = context.getSide();
 
-		PistonHandler placedOn = world.d_(pos.offset(face.getOpposite()));
-		PistonHandler placedOnOpposite = world.d_(pos.offset(face));
-		if (AllBlocks.CHUTE.has(placedOn))
-			return n().a(FACING, face.getOpposite());
-		if (AllBlocks.CHUTE.has(placedOnOpposite))
-			return n().a(FACING, face);
+		BlockState placedOn = world.getBlockState(pos.offset(face.getOpposite()));
+		BlockState placedOnOpposite = world.getBlockState(pos.offset(face));
+		if (AbstractChuteBlock.isChute(placedOn))
+			return getDefaultState().with(FACING, face.getOpposite());
+		if (AbstractChuteBlock.isChute(placedOnOpposite))
+			return getDefaultState().with(FACING, face);
 
 		Direction preferredFacing = getPreferredFacing(context);
 		if (preferredFacing == null)
-			preferredFacing = context.d();
-		return n().a(FACING, context.n() != null && context.n()
-			.bt() ? preferredFacing : preferredFacing.getOpposite());
+			preferredFacing = context.getPlayerLookDirection();
+		return getDefaultState().with(FACING, context.getPlayer() != null && context.getPlayer()
+			.isSneaking() ? preferredFacing : preferredFacing.getOpposite());
 	}
 
-	protected void blockUpdate(PistonHandler state, GameMode worldIn, BlockPos pos) {
+	protected void blockUpdate(BlockState state, WorldAccess worldIn, BlockPos pos) {
 		if (worldIn instanceof WrappedWorld)
 			return;
 		notifyFanTile(worldIn, pos);
-		if (worldIn.v)
+		if (worldIn.isClient())
 			return;
-		withTileEntityDo(worldIn, pos, te -> te.updateGenerator(state.c(FACING)));
+		withTileEntityDo(worldIn, pos, te -> te.queueGeneratorUpdate());
 	}
 
-	protected void notifyFanTile(GrassColors world, BlockPos pos) {
+	protected void notifyFanTile(WorldAccess world, BlockPos pos) {
 		withTileEntityDo(world, pos, EncasedFanTileEntity::blockInFrontChanged);
 	}
 
 	@Override
-	public PistonHandler updateAfterWrenched(PistonHandler newState, bnx context) {
-		blockUpdate(newState, context.p(), context.a());
+	public BlockState updateAfterWrenched(BlockState newState, ItemUsageContext context) {
+		blockUpdate(newState, context.getWorld(), context.getBlockPos());
 		return newState;
 	}
 
 	@Override
-	public Axis getRotationAxis(PistonHandler state) {
-		return state.c(FACING)
+	public Axis getRotationAxis(BlockState state) {
+		return state.get(FACING)
 			.getAxis();
 	}
 
 	@Override
-	public boolean hasShaftTowards(ItemConvertible world, BlockPos pos, PistonHandler state, Direction face) {
-		return face == state.c(FACING)
+	public boolean hasShaftTowards(WorldView world, BlockPos pos, BlockState state, Direction face) {
+		return face == state.get(FACING)
 			.getOpposite();
 	}
 

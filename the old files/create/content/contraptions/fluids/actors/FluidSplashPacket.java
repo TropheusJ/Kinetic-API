@@ -1,13 +1,13 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidFX;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
-import net.minecraft.client.options.KeyBinding;
+import com.simibubi.create.content.contraptions.fluids.FluidFX;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.DistExecutor;
@@ -35,9 +35,9 @@ public class FluidSplashPacket extends SimplePacketBase {
 
 	public void handle(Supplier<Context> ctx) {
 		ctx.get()
-			.enqueueWork(() -> DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
-				if (KeyBinding.B().s.cz()
-					.f(new EntityHitResult(pos.getX(), pos.getY(), pos.getZ())) > 100)
+			.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+				if (MinecraftClient.getInstance().player.getPos()
+					.distanceTo(new Vec3d(pos.getX(), pos.getY(), pos.getZ())) > 100)
 					return;
 				FluidFX.splash(pos, fluid);
 			}));

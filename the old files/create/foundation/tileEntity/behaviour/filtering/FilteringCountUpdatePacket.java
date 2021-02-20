@@ -1,7 +1,7 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering;
+package com.simibubi.create.foundation.tileEntity.behaviour.filtering;
 
-import com.simibubi.kinetic_api.foundation.networking.TileEntityConfigurationPacket;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.networking.TileEntityConfigurationPacket;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.math.BlockPos;
 
@@ -35,7 +35,7 @@ public class FilteringCountUpdatePacket extends TileEntityConfigurationPacket<Sm
 			return;
 		behaviour.forceClientState = true;
 		behaviour.count = amount;
-		te.X_();
+		te.markDirty();
 		te.sendData();
 	}
 

@@ -1,18 +1,18 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.terrainzapper;
+package com.simibubi.create.content.curiosities.zapper.terrainzapper;
 
 import java.util.List;
 import java.util.Vector;
-import com.simibubi.kinetic_api.content.curiosities.zapper.ZapperScreen;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.widgets.IconButton;
-import com.simibubi.kinetic_api.foundation.gui.widgets.Label;
-import com.simibubi.kinetic_api.foundation.gui.widgets.ScrollInput;
-import com.simibubi.kinetic_api.foundation.gui.widgets.SelectionScrollInput;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.curiosities.zapper.ZapperScreen;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.widgets.IconButton;
+import com.simibubi.create.foundation.gui.widgets.Label;
+import com.simibubi.create.foundation.gui.widgets.ScrollInput;
+import com.simibubi.create.foundation.gui.widgets.SelectionScrollInput;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.NBTHelper;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.text.LiteralText;
@@ -37,16 +37,16 @@ public class WorldshaperScreen extends ZapperScreen {
 	private int j;
 	private CompoundTag nbt;
 
-	public WorldshaperScreen(ItemCooldownManager zapper, boolean offhand) {
+	public WorldshaperScreen(ItemStack zapper, boolean offhand) {
 		super(AllGuiTextures.TERRAINZAPPER, zapper, offhand);
 		fontColor = 0x767676;
-		d = Lang.translate("gui.terrainzapper.title");
-		nbt = zapper.p();
+		title = Lang.translate("gui.terrainzapper.title");
+		nbt = zapper.getOrCreateTag();
 	}
 
 	@Override
-	protected void b() {
-		super.b();
+	protected void init() {
+		super.init();
 
 		i = guiLeft - 20;
 		j = guiTop;
@@ -75,7 +75,7 @@ public class WorldshaperScreen extends ZapperScreen {
 
 		if (nbt.contains("Tool"))
 			toolButtons.get(NBTHelper.readEnum(nbt, "Tool", TerrainTools.class)
-				.ordinal()).o = false;
+				.ordinal()).active = false;
 		widgets.addAll(toolButtons);
 
 		placementButtons = new Vector<>(3);
@@ -89,7 +89,7 @@ public class WorldshaperScreen extends ZapperScreen {
 
 		if (nbt.contains("Placement"))
 			placementButtons.get(NBTHelper.readEnum(nbt, "Placement", PlacementOptions.class)
-				.ordinal()).o = false;
+				.ordinal()).active = false;
 		widgets.addAll(placementButtons);
 
 	}
@@ -122,14 +122,14 @@ public class WorldshaperScreen extends ZapperScreen {
 				.writingTo(label)
 				.titled(currentBrush.getParamLabel(index).copy())
 				.calling(state -> {
-					label.l = i + 65 + 20 * indexFinal - o.a(label.text) / 2;
+					label.x = i + 65 + 20 * indexFinal - textRenderer.getWidth(label.text) / 2;
 				});
 			input.setState(params[index]);
 			input.onChanged();
 			if (index >= currentBrush.amtParams) {
-				input.p = false;
-				label.p = false;
-				input.o = false;
+				input.visible = false;
+				label.visible = false;
+				input.active = false;
 			}
 
 			brushParams.add(input);
@@ -144,42 +144,42 @@ public class WorldshaperScreen extends ZapperScreen {
 	}
 
 	@Override
-	public boolean a(double x, double y, int button) {
-		CompoundTag nbt = zapper.o();
+	public boolean mouseClicked(double x, double y, int button) {
+		CompoundTag nbt = zapper.getTag();
 
 		for (IconButton placementButton : placementButtons) {
-			if (placementButton.g()) {
-				placementButtons.forEach(b -> b.o = true);
-				placementButton.o = false;
-				placementButton.a(KeyBinding.B()
-					.V());
+			if (placementButton.isHovered()) {
+				placementButtons.forEach(b -> b.active = true);
+				placementButton.active = false;
+				placementButton.playDownSound(MinecraftClient.getInstance()
+					.getSoundManager());
 				nbt.putString("Placement", PlacementOptions.values()[placementButtons.indexOf(placementButton)].name());
 			}
 		}
 
 		for (IconButton toolButton : toolButtons) {
-			if (toolButton.g()) {
-				toolButtons.forEach(b -> b.o = true);
-				toolButton.o = false;
-				toolButton.a(KeyBinding.B()
-					.V());
+			if (toolButton.isHovered()) {
+				toolButtons.forEach(b -> b.active = true);
+				toolButton.active = false;
+				toolButton.playDownSound(MinecraftClient.getInstance()
+					.getSoundManager());
 				nbt.putString("Tool", TerrainTools.values()[toolButtons.indexOf(toolButton)].name());
 			}
 		}
 
-		return super.a(x, y, button);
+		return super.mouseClicked(x, y, button);
 	}
 
 	@Override
-	protected void drawOnBackground(BufferVertexConsumer matrixStack, int i, int j) {
+	protected void drawOnBackground(MatrixStack matrixStack, int i, int j) {
 		super.drawOnBackground(matrixStack, i, j);
 
 		Brush currentBrush = TerrainBrushes.values()[brushInput.getState()].get();
 		for (int index = 2; index >= currentBrush.amtParams; index--) 
 			AllGuiTextures.TERRAINZAPPER_INACTIVE_PARAM.draw(matrixStack, i + 56 + 20 * index, j + 38);
 
-		o.b(matrixStack, toolSection, i + 7, j + 66, fontColor);
-		o.b(matrixStack, placementSection, i + 136, j + 66, fontColor);
+		textRenderer.draw(matrixStack, toolSection, i + 7, j + 66, fontColor);
+		textRenderer.draw(matrixStack, placementSection, i + 136, j + 66, fontColor);
 	}
 
 	@Override

@@ -1,27 +1,48 @@
-package com.simibubi.kinetic_api.foundation.utility.worldWrappers;
+package com.simibubi.create.foundation.utility.worldWrappers;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.function.Predicate;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.light.LightingProvider;
 
 public class PlacementSimulationWorld extends WrappedWorld {
-	public HashMap<BlockPos, PistonHandler> blocksAdded;
-	public HashMap<BlockPos, BeehiveBlockEntity> tesAdded;
+	public HashMap<BlockPos, BlockState> blocksAdded;
+	public HashMap<BlockPos, BlockEntity> tesAdded;
 
-	public PlacementSimulationWorld(GameMode wrapped) {
-		super(wrapped);
+	public HashSet<ChunkSectionPos> spannedChunks;
+	public LightingProvider lighter;
+	public WrappedChunkProvider chunkProvider;
+	private final BlockPos.Mutable scratch = new BlockPos.Mutable();
+
+	public PlacementSimulationWorld(World wrapped) {
+		this(wrapped, new WrappedChunkProvider());
+	}
+
+	public PlacementSimulationWorld(World wrapped, WrappedChunkProvider chunkProvider) {
+		super(wrapped, chunkProvider);
+		this.chunkProvider = chunkProvider.setWorld(this);
+		spannedChunks = new HashSet<>();
+		lighter = new LightingProvider(chunkProvider, true, false); // blockLight, skyLight
 		blocksAdded = new HashMap<>();
 		tesAdded = new HashMap<>();
 	}
 
-	public void setTileEntities(Collection<BeehiveBlockEntity> tileEntities) {
+	@Override
+	public LightingProvider getLightingProvider() {
+		return lighter;
+	}
+
+	public void setTileEntities(Collection<BlockEntity> tileEntities) {
 		tesAdded.clear();
-		tileEntities.forEach(te -> tesAdded.put(te.o(), te));
+		tileEntities.forEach(te -> tesAdded.put(te.getPos(), te));
 	}
 
 	public void clear() {
@@ -29,28 +50,37 @@ public class PlacementSimulationWorld extends WrappedWorld {
 	}
 
 	@Override
-	public boolean a(BlockPos pos, PistonHandler newState, int flags) {
+	public boolean setBlockState(BlockPos pos, BlockState newState, int flags) {
+
+		ChunkSectionPos sectionPos = ChunkSectionPos.from(pos);
+
+		if (spannedChunks.add(sectionPos)) {
+			lighter.setSectionStatus(sectionPos, false);
+		}
+
+		lighter.checkBlock(pos);
+
 		blocksAdded.put(pos, newState);
 		return true;
 	}
 
 	@Override
-	public boolean a(BlockPos pos, PistonHandler state) {
-		return a(pos, state, 0);
+	public boolean setBlockState(BlockPos pos, BlockState state) {
+		return setBlockState(pos, state, 0);
 	}
 
 	@Override
-	public BeehiveBlockEntity c(BlockPos pos) {
+	public BlockEntity getBlockEntity(BlockPos pos) {
 		return tesAdded.get(pos);
 	}
 
 	@Override
-	public boolean a(BlockPos pos, Predicate<PistonHandler> condition) {
-		return condition.test(d_(pos));
+	public boolean testBlockState(BlockPos pos, Predicate<BlockState> condition) {
+		return condition.test(getBlockState(pos));
 	}
 
 	@Override
-	public boolean p(BlockPos pos) {
+	public boolean canSetBlock(BlockPos pos) {
 		return true;
 	}
 
@@ -59,11 +89,17 @@ public class PlacementSimulationWorld extends WrappedWorld {
 		return true;
 	}
 
+	public BlockState getBlockState(int x, int y, int z) {
+		return getBlockState(scratch.set(x, y, z));
+	}
+
 	@Override
-	public PistonHandler d_(BlockPos pos) {
-		if (blocksAdded.containsKey(pos))
-			return blocksAdded.get(pos);
-		return BellBlock.FACING.n();
+	public BlockState getBlockState(BlockPos pos) {
+		BlockState state = blocksAdded.get(pos);
+		if (state != null)
+			return state;
+		else
+			return Blocks.AIR.getDefaultState();
 	}
 
 }

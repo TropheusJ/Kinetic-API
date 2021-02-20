@@ -1,34 +1,38 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.mounted;
+package com.simibubi.create.content.contraptions.components.structureMovement.mounted;
 
-import static com.simibubi.kinetic_api.content.contraptions.components.structureMovement.mounted.CartAssemblerBlock.RAIL_SHAPE;
+import static com.simibubi.create.content.contraptions.components.structureMovement.mounted.CartAssemblerBlock.RAIL_SHAPE;
 
-import apx;
-import java.util.List;
+import java.util.Queue;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AllContraptionTypes;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.Contraption;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.mounted.CartAssemblerTileEntity.CartMovementMode;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.enums.Instrument;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.color.world.GrassColors;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.entity.boss.BossBar;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.components.structureMovement.AssemblyException;
+import com.simibubi.create.content.contraptions.components.structureMovement.Contraption;
+import com.simibubi.create.content.contraptions.components.structureMovement.ContraptionLighter;
+import com.simibubi.create.content.contraptions.components.structureMovement.ContraptionType;
+import com.simibubi.create.content.contraptions.components.structureMovement.NonStationaryLighter;
+import com.simibubi.create.content.contraptions.components.structureMovement.mounted.CartAssemblerTileEntity.CartMovementMode;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.NBTHelper;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.RailShape;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.structure.processor.StructureProcessor.c;
+import net.minecraft.state.property.Properties;
+import net.minecraft.structure.Structure.StructureBlockInfo;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.wrapper.CombinedInvWrapper;
 import net.minecraftforge.items.wrapper.InvWrapper;
@@ -36,7 +40,7 @@ import net.minecraftforge.items.wrapper.InvWrapper;
 public class MountedContraption extends Contraption {
 
 	public CartMovementMode rotationMode;
-	public ScheduleBuilder connectedCart;
+	public AbstractMinecartEntity connectedCart;
 
 	public MountedContraption() {
 		this(CartMovementMode.ROTATE);
@@ -47,21 +51,21 @@ public class MountedContraption extends Contraption {
 	}
 
 	@Override
-	protected AllContraptionTypes getType() {
-		return AllContraptionTypes.MOUNTED;
+	protected ContraptionType getType() {
+		return ContraptionType.MOUNTED;
 	}
 	
 	@Override
-	public boolean assemble(GameMode world, BlockPos pos) {
-		PistonHandler state = world.d_(pos);
+	public boolean assemble(World world, BlockPos pos) throws AssemblyException {
+		BlockState state = world.getBlockState(pos);
 		if (!BlockHelper.hasBlockStateProperty(state, RAIL_SHAPE))
 			return false;
 		if (!searchMovedStructure(world, pos, null))
 			return false;
 		
-		Axis axis = state.c(RAIL_SHAPE) == Instrument.EAST_WEST ? Axis.X : Axis.Z;
-		addBlock(pos, Pair.of(new c(pos, AllBlocks.MINECART_ANCHOR.getDefaultState()
-			.a(BambooLeaves.E, axis), null), null));
+		Axis axis = state.get(RAIL_SHAPE) == RailShape.EAST_WEST ? Axis.X : Axis.Z;
+		addBlock(pos, Pair.of(new StructureBlockInfo(pos, AllBlocks.MINECART_ANCHOR.getDefaultState()
+			.with(Properties.HORIZONTAL_AXIS, axis), null), null));
 		
 		if (blocks.size() == 1)
 			return false;
@@ -70,33 +74,33 @@ public class MountedContraption extends Contraption {
 	}
 	
 	@Override
-	protected boolean addToInitialFrontier(GameMode world, BlockPos pos, Direction direction, List<BlockPos> frontier) {
+	protected boolean addToInitialFrontier(World world, BlockPos pos, Direction direction, Queue<BlockPos> frontier) {
 		frontier.clear();
 		frontier.add(pos.up());
 		return true;
 	}
 
 	@Override
-	protected Pair<c, BeehiveBlockEntity> capture(GameMode world, BlockPos pos) {
-		Pair<c, BeehiveBlockEntity> pair = super.capture(world, pos);
-		c capture = pair.getKey();
-		if (!AllBlocks.CART_ASSEMBLER.has(capture.b))
+	protected Pair<StructureBlockInfo, BlockEntity> capture(World world, BlockPos pos) {
+		Pair<StructureBlockInfo, BlockEntity> pair = super.capture(world, pos);
+		StructureBlockInfo capture = pair.getKey();
+		if (!AllBlocks.CART_ASSEMBLER.has(capture.state))
 			return pair;
 
-		Pair<c, BeehiveBlockEntity> anchorSwap =
-			Pair.of(new c(pos, CartAssemblerBlock.createAnchor(capture.b), null), pair.getValue());
+		Pair<StructureBlockInfo, BlockEntity> anchorSwap =
+			Pair.of(new StructureBlockInfo(pos, CartAssemblerBlock.createAnchor(capture.state), null), pair.getValue());
 		if (pos.equals(anchor) || connectedCart != null)
 			return anchorSwap;
 
 		for (Axis axis : Iterate.axes) {
 			if (axis.isVertical() || !VecHelper.onSameAxis(anchor, pos, axis))
 				continue;
-			for (ScheduleBuilder abstractMinecartEntity : world
-				.a(ScheduleBuilder.class, new Timer(pos))) {
+			for (AbstractMinecartEntity abstractMinecartEntity : world
+				.getNonSpectatingEntities(AbstractMinecartEntity.class, new Box(pos))) {
 				if (!CartAssemblerBlock.canAssembleTo(abstractMinecartEntity))
 					break;
 				connectedCart = abstractMinecartEntity;
-				connectedCart.d(pos.getX() + .5, pos.getY(), pos.getZ() + .5f);
+				connectedCart.updatePosition(pos.getX() + .5, pos.getY(), pos.getZ() + .5f);
 			}
 		}
 
@@ -104,19 +108,18 @@ public class MountedContraption extends Contraption {
 	}
 
 	@Override
-	protected boolean movementAllowed(GameMode world, BlockPos pos) {
-		PistonHandler blockState = world.d_(pos);
-		if (!pos.equals(anchor) && AllBlocks.CART_ASSEMBLER.has(blockState))
-			return testSecondaryCartAssembler(world, blockState, pos);
-		return super.movementAllowed(world, pos);
+	protected boolean movementAllowed(BlockState state, World world, BlockPos pos) {
+		if (!pos.equals(anchor) && AllBlocks.CART_ASSEMBLER.has(state))
+			return testSecondaryCartAssembler(world, state, pos);
+		return super.movementAllowed(state, world, pos);
 	}
 
-	protected boolean testSecondaryCartAssembler(GameMode world, PistonHandler state, BlockPos pos) {
+	protected boolean testSecondaryCartAssembler(World world, BlockState state, BlockPos pos) {
 		for (Axis axis : Iterate.axes) {
 			if (axis.isVertical() || !VecHelper.onSameAxis(anchor, pos, axis))
 				continue;
-			for (ScheduleBuilder abstractMinecartEntity : world
-				.a(ScheduleBuilder.class, new Timer(pos))) {
+			for (AbstractMinecartEntity abstractMinecartEntity : world
+				.getNonSpectatingEntities(AbstractMinecartEntity.class, new Box(pos))) {
 				if (!CartAssemblerBlock.canAssembleTo(abstractMinecartEntity))
 					break;
 				return true;
@@ -133,31 +136,36 @@ public class MountedContraption extends Contraption {
 	}
 
 	@Override
-	public void readNBT(GameMode world, CompoundTag nbt, boolean spawnData) {
+	public void readNBT(World world, CompoundTag nbt, boolean spawnData) {
 		rotationMode = NBTHelper.readEnum(nbt, "RotationMode", CartMovementMode.class);
 		super.readNBT(world, nbt, spawnData);
 	}
 
 	@Override
-	protected boolean customBlockPlacement(GrassColors world, BlockPos pos, PistonHandler state) {
+	protected boolean customBlockPlacement(WorldAccess world, BlockPos pos, BlockState state) {
 		return AllBlocks.MINECART_ANCHOR.has(state);
 	}
 
 	@Override
-	protected boolean customBlockRemoval(GrassColors world, BlockPos pos, PistonHandler state) {
+	protected boolean customBlockRemoval(WorldAccess world, BlockPos pos, BlockState state) {
 		return AllBlocks.MINECART_ANCHOR.has(state);
 	}
 	
 	@Override
-	protected boolean canAxisBeStabilized(Axis axis) {
+	public boolean canBeStabilized(Direction facing, BlockPos localPos) {
 		return true;
 	}
 	
 	@Override
-	public void addExtraInventories(apx cart) {
-		if (!(cart instanceof BossBar))
+	public void addExtraInventories(Entity cart) {
+		if (!(cart instanceof Inventory))
 			return;
-		IItemHandlerModifiable handlerFromInv = new InvWrapper((BossBar) cart);
+		IItemHandlerModifiable handlerFromInv = new InvWrapper((Inventory) cart);
 		inventory = new CombinedInvWrapper(handlerFromInv, inventory);
+	}
+
+	@Override
+	public ContraptionLighter<?> makeLighter() {
+		return new NonStationaryLighter<>(this);
 	}
 }

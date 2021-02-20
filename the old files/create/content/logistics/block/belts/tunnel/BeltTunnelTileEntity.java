@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.logistics.block.belts.tunnel;
+package com.simibubi.create.content.logistics.block.belts.tunnel;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,21 +8,22 @@ import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.logistics.block.belts.tunnel.BeltTunnelBlock.Shape;
-import com.simibubi.kinetic_api.content.logistics.block.funnel.BeltFunnelBlock;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedChasingValue;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.logistics.block.belts.tunnel.BeltTunnelBlock.Shape;
+import com.simibubi.create.content.logistics.block.funnel.BeltFunnelBlock;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedChasingValue;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Direction.AxisDirection;
@@ -40,7 +41,7 @@ public class BeltTunnelTileEntity extends SmartTileEntity {
 	protected LazyOptional<IItemHandler> cap = LazyOptional.empty();
 	protected List<Pair<Direction, Boolean>> flapsToSend;
 
-	public BeltTunnelTileEntity(BellBlockEntity<? extends BeltTunnelTileEntity> type) {
+	public BeltTunnelTileEntity(BlockEntityType<? extends BeltTunnelTileEntity> type) {
 		super(type);
 		flaps = new HashMap<>();
 		sides = new HashSet<>();
@@ -48,8 +49,8 @@ public class BeltTunnelTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	public void al_() {
-		super.al_();
+	public void markRemoved() {
+		super.markRemoved();
 		cap.invalidate();
 	}
 
@@ -85,7 +86,7 @@ public class BeltTunnelTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		Set<Direction> newFlaps = new HashSet<>(6);
 		ListTag flapsNBT = compound.getList("Flaps", NBT.TAG_INT);
 		for (Tag inbt : flapsNBT)
@@ -127,12 +128,12 @@ public class BeltTunnelTileEntity extends SmartTileEntity {
 	public void updateTunnelConnections() {
 		flaps.clear();
 		sides.clear();
-		PistonHandler tunnelState = p();
+		BlockState tunnelState = getCachedState();
 		for (Direction direction : Iterate.horizontalDirections) {
-			if (direction.getAxis() != tunnelState.c(BambooLeaves.E)) {
+			if (direction.getAxis() != tunnelState.get(Properties.HORIZONTAL_AXIS)) {
 				boolean positive =
 					direction.getDirection() == AxisDirection.POSITIVE ^ direction.getAxis() == Axis.Z;
-				Shape shape = tunnelState.c(BeltTunnelBlock.SHAPE);
+				Shape shape = tunnelState.get(BeltTunnelBlock.SHAPE);
 				if (BeltTunnelBlock.isStraight(tunnelState))
 					continue;
 				if (positive && shape == Shape.T_LEFT)
@@ -144,12 +145,12 @@ public class BeltTunnelTileEntity extends SmartTileEntity {
 			sides.add(direction);
 			
 			// Flap might be occluded
-			PistonHandler nextState = d.d_(e.offset(direction));
-			if (nextState.b() instanceof BeltTunnelBlock)
+			BlockState nextState = world.getBlockState(pos.offset(direction));
+			if (nextState.getBlock() instanceof BeltTunnelBlock)
 				continue;
-			if (nextState.b() instanceof BeltFunnelBlock)
-				if (nextState.c(BeltFunnelBlock.SHAPE) == BeltFunnelBlock.Shape.EXTENDED
-					&& nextState.c(BeltFunnelBlock.aq) == direction.getOpposite())
+			if (nextState.getBlock() instanceof BeltFunnelBlock)
+				if (nextState.get(BeltFunnelBlock.SHAPE) == BeltFunnelBlock.Shape.EXTENDED
+					&& nextState.get(BeltFunnelBlock.FACING) == direction.getOpposite())
 					continue;
 
 			flaps.put(direction, new InterpolatedChasingValue().start(.25f)
@@ -160,7 +161,7 @@ public class BeltTunnelTileEntity extends SmartTileEntity {
 	}
 
 	public void flap(Direction side, boolean inward) {
-		if (d.v) {
+		if (world.isClient) {
 			if (flaps.containsKey(side))
 				flaps.get(side)
 					.set(inward ? -1 : 1);
@@ -177,9 +178,9 @@ public class BeltTunnelTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
-		if (!d.v) {
+	public void tick() {
+		super.tick();
+		if (!world.isClient) {
 			if (!flapsToSend.isEmpty())
 				sendData();
 			return;
@@ -196,8 +197,8 @@ public class BeltTunnelTileEntity extends SmartTileEntity {
 			return super.getCapability(capability, side);
 
 		if (!this.cap.isPresent()) {
-			if (AllBlocks.BELT.has(d.d_(e.down()))) {
-				BeehiveBlockEntity teBelow = d.c(e.down());
+			if (AllBlocks.BELT.has(world.getBlockState(pos.down()))) {
+				BlockEntity teBelow = world.getBlockEntity(pos.down());
 				if (teBelow != null) {
 					T capBelow = teBelow.getCapability(capability, Direction.UP)
 						.orElse(null);

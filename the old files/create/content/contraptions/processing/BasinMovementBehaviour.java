@@ -1,15 +1,15 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementBehaviour;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.entity.decoration.painting.PaintingEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementBehaviour;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.items.ItemStackHandler;
 
 public class BasinMovementBehaviour extends MovementBehaviour {
@@ -22,36 +22,36 @@ public class BasinMovementBehaviour extends MovementBehaviour {
 	}
 
 	@Override
-	public boolean hasSpecialMovementRenderer() {
-		return false;
+	public boolean renderAsNormalTileEntity() {
+		return true;
 	}
 
 	@Override
 	public void tick(MovementContext context) {
 		super.tick(context);
 		if (context.temporaryData == null || (boolean) context.temporaryData) {
-			EntityHitResult facingVec = context.rotation.apply(EntityHitResult.b(Direction.UP.getVector()));
-			facingVec.d();
-			if (Direction.getFacing(facingVec.entity, facingVec.c, facingVec.d) == Direction.DOWN)
+			Vec3d facingVec = context.rotation.apply(Vec3d.of(Direction.UP.getVector()));
+			facingVec.normalize();
+			if (Direction.getFacing(facingVec.x, facingVec.y, facingVec.z) == Direction.DOWN)
 				dump(context, facingVec);
 		}
 	}
 
-	private void dump(MovementContext context, EntityHitResult facingVec) {
+	private void dump(MovementContext context, Vec3d facingVec) {
 		getOrReadInventory(context).forEach((key, itemStackHandler) -> {
 			for (int i = 0; i < itemStackHandler.getSlots(); i++) {
 				if (itemStackHandler.getStackInSlot(i)
-					.a())
+					.isEmpty())
 					continue;
-				PaintingEntity itemEntity = new PaintingEntity(context.world, context.position.entity, context.position.c,
-					context.position.d, itemStackHandler.getStackInSlot(i));
-				itemEntity.f(facingVec.a(.05));
-				context.world.c(itemEntity);
-				itemStackHandler.setStackInSlot(i, ItemCooldownManager.tick);
+				ItemEntity itemEntity = new ItemEntity(context.world, context.position.x, context.position.y,
+					context.position.z, itemStackHandler.getStackInSlot(i));
+				itemEntity.setVelocity(facingVec.multiply(.05));
+				context.world.spawnEntity(itemEntity);
+				itemStackHandler.setStackInSlot(i, ItemStack.EMPTY);
 			}
 			context.tileData.put(key, itemStackHandler.serializeNBT());
 		});
-		BeehiveBlockEntity tileEntity = context.contraption.presentTileEntities.get(context.localPos);
+		BlockEntity tileEntity = context.contraption.presentTileEntities.get(context.localPos);
 		if (tileEntity instanceof BasinTileEntity)
 			((BasinTileEntity) tileEntity).readOnlyItems(context.tileData);
 		context.temporaryData = false; // did already dump, so can't any more

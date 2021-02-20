@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.schematics;
+package com.simibubi.create.content.schematics;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,51 +8,53 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import apx;
-import bck;
-import bcm;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.worldWrappers.WrappedWorld;
-import cqx;
-import cut;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.server.world.ServerTickScheduler;
+
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.worldWrappers.WrappedWorld;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.world.DummyClientTickScheduler;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.decoration.ItemFrameEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.BiomeAdditionsSound;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.TestableWorld;
+import net.minecraft.util.math.Box;
+import net.minecraft.world.LightType;
+import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.world.TickScheduler;
+import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BuiltinBiomes;
-import net.minecraft.world.gen.Spawner;
-import net.minecraft.world.gen.chunk.VerticalBlockSample;
-import net.minecraft.world.timer.Timer;
 
-public class SchematicWorld extends WrappedWorld implements VerticalBlockSample {
+public class SchematicWorld extends WrappedWorld implements ServerWorldAccess {
 
-	private Map<BlockPos, PistonHandler> blocks;
-	private Map<BlockPos, BeehiveBlockEntity> tileEntities;
-	private List<BeehiveBlockEntity> renderedTileEntities;
-	private List<apx> entities;
-	private cqx bounds;
+	private Map<BlockPos, BlockState> blocks;
+	private Map<BlockPos, BlockEntity> tileEntities;
+	private List<BlockEntity> renderedTileEntities;
+	private List<Entity> entities;
+	private BlockBox bounds;
 	public BlockPos anchor;
 	public boolean renderMode;
 
-	public SchematicWorld(GameMode original) {
+	public SchematicWorld(World original) {
 		this(BlockPos.ORIGIN, original);
 	}
 	
-	public SchematicWorld(BlockPos anchor, GameMode original) {
+	public SchematicWorld(BlockPos anchor, World original) {
 		super(original);
 		this.blocks = new HashMap<>();
 		this.tileEntities = new HashMap<>();
-		this.bounds = new cqx();
+		this.bounds = new BlockBox();
 		this.anchor = anchor;
 		this.entities = new ArrayList<>();
 		this.renderedTileEntities = new ArrayList<>();
@@ -63,96 +65,96 @@ public class SchematicWorld extends WrappedWorld implements VerticalBlockSample 
 	}
 
 	@Override
-	public boolean c(apx entityIn) {
-		if (entityIn instanceof bcm)
-			((bcm) entityIn).o()
-				.c(null);
-		if (entityIn instanceof bck) {
-			bck armorStandEntity = (bck) entityIn;
-			armorStandEntity.bo()
-				.forEach(stack -> stack.c(null));
+	public boolean spawnEntity(Entity entityIn) {
+		if (entityIn instanceof ItemFrameEntity)
+			((ItemFrameEntity) entityIn).getHeldItemStack()
+				.setTag(null);
+		if (entityIn instanceof ArmorStandEntity) {
+			ArmorStandEntity armorStandEntity = (ArmorStandEntity) entityIn;
+			armorStandEntity.getItemsEquipped()
+				.forEach(stack -> stack.setTag(null));
 		}
 
 		return entities.add(entityIn);
 	}
 
-	public Stream<apx> getEntities() {
+	public Stream<Entity> getEntities() {
 		return entities.stream();
 	}
 
 	@Override
-	public BeehiveBlockEntity c(BlockPos pos) {
-		if (m(pos))
+	public BlockEntity getBlockEntity(BlockPos pos) {
+		if (isOutOfBuildLimitVertically(pos))
 			return null;
 		if (tileEntities.containsKey(pos))
 			return tileEntities.get(pos);
 		if (!blocks.containsKey(pos.subtract(anchor)))
 			return null;
 
-		PistonHandler blockState = d_(pos);
+		BlockState blockState = getBlockState(pos);
 		if (blockState.hasTileEntity()) {
 			try {
-				BeehiveBlockEntity tileEntity = blockState.createTileEntity(this);
+				BlockEntity tileEntity = blockState.createTileEntity(this);
 				if (tileEntity != null) {
-					tileEntity.a(this, pos);
+					tileEntity.setLocation(this, pos);
 					tileEntities.put(pos, tileEntity);
 					renderedTileEntities.add(tileEntity);
 				}
 				return tileEntity;
 			} catch (Exception e) {
-				Create.logger.debug("Could not kinetic_api TE of block " + blockState + ": " + e);
+				Create.logger.debug("Could not create TE of block " + blockState + ": " + e);
 			}
 		}
 		return null;
 	}
 
 	@Override
-	public PistonHandler d_(BlockPos globalPos) {
+	public BlockState getBlockState(BlockPos globalPos) {
 		BlockPos pos = globalPos.subtract(anchor);
 
-		if (pos.getY() - bounds.b == -1 && !renderMode)
-			return BellBlock.NORTH_SOUTH_WALLS_SHAPE.n();
-		if (getBounds().b(pos) && blocks.containsKey(pos)) {
-			PistonHandler blockState = blocks.get(pos);
-			if (BlockHelper.hasBlockStateProperty(blockState, BambooLeaves.r))
-				blockState = blockState.a(BambooLeaves.r, false);
+		if (pos.getY() - bounds.minY == -1 && !renderMode)
+			return Blocks.GRASS_BLOCK.getDefaultState();
+		if (getBounds().contains(pos) && blocks.containsKey(pos)) {
+			BlockState blockState = blocks.get(pos);
+			if (BlockHelper.hasBlockStateProperty(blockState, Properties.LIT))
+				blockState = blockState.with(Properties.LIT, false);
 			return blockState;
 		}
-		return BellBlock.FACING.n();
+		return Blocks.AIR.getDefaultState();
 	}
 
-	public Map<BlockPos, PistonHandler> getBlockMap() {
+	public Map<BlockPos, BlockState> getBlockMap() {
 		return blocks;
 	}
 
 	@Override
-	public EmptyFluid b(BlockPos pos) {
-		return d_(pos).m();
+	public FluidState getFluidState(BlockPos pos) {
+		return getBlockState(pos).getFluidState();
 	}
 
 	@Override
-	public BiomeAdditionsSound v(BlockPos pos) {
+	public Biome getBiome(BlockPos pos) {
 		return BuiltinBiomes.THE_VOID;
 	}
 
 	@Override
-	public int a(TestableWorld p_226658_1_, BlockPos p_226658_2_) {
+	public int getLightLevel(LightType p_226658_1_, BlockPos p_226658_2_) {
 		return 10;
 	}
 
 	@Override
-	public List<apx> a(apx arg0, Timer arg1, Predicate<? super apx> arg2) {
+	public List<Entity> getOtherEntities(Entity arg0, Box arg1, Predicate<? super Entity> arg2) {
 		return Collections.emptyList();
 	}
 
 	@Override
-	public <T extends apx> List<T> a(Class<? extends T> arg0, Timer arg1,
+	public <T extends Entity> List<T> getEntitiesByClass(Class<? extends T> arg0, Box arg1,
 		Predicate<? super T> arg2) {
 		return Collections.emptyList();
 	}
 
 	@Override
-	public List<? extends PlayerAbilities> x() {
+	public List<? extends PlayerEntity> getPlayers() {
 		return Collections.emptyList();
 	}
 
@@ -162,48 +164,48 @@ public class SchematicWorld extends WrappedWorld implements VerticalBlockSample 
 	}
 
 	@Override
-	public boolean a(BlockPos pos, Predicate<PistonHandler> predicate) {
-		return predicate.test(d_(pos));
+	public boolean testBlockState(BlockPos pos, Predicate<BlockState> predicate) {
+		return predicate.test(getBlockState(pos));
 	}
 
 	@Override
-	public boolean b(BlockPos arg0, boolean arg1) {
-		return a(arg0, BellBlock.FACING.n(), 3);
+	public boolean breakBlock(BlockPos arg0, boolean arg1) {
+		return setBlockState(arg0, Blocks.AIR.getDefaultState(), 3);
 	}
 
 	@Override
-	public boolean a(BlockPos arg0, boolean arg1) {
-		return a(arg0, BellBlock.FACING.n(), 3);
+	public boolean removeBlock(BlockPos arg0, boolean arg1) {
+		return setBlockState(arg0, Blocks.AIR.getDefaultState(), 3);
 	}
 
 	@Override
-	public boolean a(BlockPos pos, PistonHandler arg1, int arg2) {
+	public boolean setBlockState(BlockPos pos, BlockState arg1, int arg2) {
 		pos = pos.subtract(anchor);
-		bounds.c(new cqx(pos, pos.add(1, 1, 1)));
+		bounds.encompass(new BlockBox(pos, pos));
 		blocks.put(pos, arg1);
 		return true;
 	}
 
 	@Override
-	public ServerTickScheduler<BeetrootsBlock> I() {
-		return Spawner.b();
+	public TickScheduler<Block> getBlockTickScheduler() {
+		return DummyClientTickScheduler.get();
 	}
 
 	@Override
-	public ServerTickScheduler<cut> H() {
-		return Spawner.b();
+	public TickScheduler<Fluid> getFluidTickScheduler() {
+		return DummyClientTickScheduler.get();
 	}
 
-	public cqx getBounds() {
+	public BlockBox getBounds() {
 		return bounds;
 	}
 
-	public Iterable<BeehiveBlockEntity> getRenderedTileEntities() {
+	public Iterable<BlockEntity> getRenderedTileEntities() {
 		return renderedTileEntities;
 	}
 
 	@Override
-	public ServerWorld E() {
+	public ServerWorld toServerWorld() {
 		if (this.world instanceof ServerWorld) {
 			return (ServerWorld) this.world;
 		}

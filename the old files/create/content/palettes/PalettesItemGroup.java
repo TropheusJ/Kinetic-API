@@ -1,10 +1,12 @@
-package com.simibubi.kinetic_api.content.palettes;
+package com.simibubi.create.content.palettes;
 
 import java.util.EnumSet;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import com.simibubi.create.content.AllSections;
+import com.simibubi.create.foundation.item.CreateItemGroupBase;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.collection.DefaultedList;
-import com.simibubi.kinetic_api.content.AllSections;
-import com.simibubi.kinetic_api.foundation.item.CreateItemGroupBase;
 
 public class PalettesItemGroup extends CreateItemGroupBase {
 
@@ -18,11 +20,11 @@ public class PalettesItemGroup extends CreateItemGroupBase {
 	}
 
 	@Override
-	public void addItems(DefaultedList<ItemCooldownManager> items, boolean specialItems) {}
+	public void addItems(DefaultedList<ItemStack> items, boolean specialItems) {}
 
 	@Override
-	public ItemCooldownManager e() {
-		return new ItemCooldownManager(AllPaletteBlocks.ORNATE_IRON_WINDOW.get());
+	public ItemStack createIcon() {
+		return new ItemStack(AllPaletteBlocks.ORNATE_IRON_WINDOW.get());
 	}
 
 }

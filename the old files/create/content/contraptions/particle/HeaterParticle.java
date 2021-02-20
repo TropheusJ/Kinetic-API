@@ -1,69 +1,69 @@
-package com.simibubi.kinetic_api.content.contraptions.particle;
+package com.simibubi.create.content.contraptions.particle;
 
-import afj;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.client.particle.AbstractSlowingParticle;
-import net.minecraft.client.particle.ExplosionLargeParticle;
-import net.minecraft.client.particle.LargeFireSmokeParticle;
-import net.minecraft.client.particle.LavaEmberParticle;
-import net.minecraft.client.particle.ParticleTextureData;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
+import net.minecraft.client.particle.AnimatedParticle;
+import net.minecraft.client.particle.Particle;
+import net.minecraft.client.particle.ParticleFactory;
+import net.minecraft.client.particle.ParticleTextureSheet;
+import net.minecraft.client.particle.SpriteProvider;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.MathHelper;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class HeaterParticle extends ParticleTextureData {
+public class HeaterParticle extends AnimatedParticle {
 
-	private final AbstractSlowingParticle animatedSprite;
+	private final SpriteProvider animatedSprite;
 
-	public HeaterParticle(DragonHeadEntityModel worldIn, float r, float g, float b, double x, double y, double z, double vx, double vy,
-						  double vz, AbstractSlowingParticle spriteSet) {
-		super(worldIn, x, y, z, spriteSet, worldIn.t.nextFloat() * .5f);
+	public HeaterParticle(ClientWorld worldIn, float r, float g, float b, double x, double y, double z, double vx, double vy,
+						  double vz, SpriteProvider spriteSet) {
+		super(worldIn, x, y, z, spriteSet, worldIn.random.nextFloat() * .5f);
 
 		this.animatedSprite = spriteSet;
 
-		this.j = this.j * (double) 0.01F + vx;
-		this.k = this.k * (double) 0.01F + vy;
-		this.l = this.l * (double) 0.01F + vz;
+		this.velocityX = this.velocityX * (double) 0.01F + vx;
+		this.velocityY = this.velocityY * (double) 0.01F + vy;
+		this.velocityZ = this.velocityZ * (double) 0.01F + vz;
 
-		this.v = r;
-		this.w = g;
-		this.x = b;
+		this.colorRed = r;
+		this.colorGreen = g;
+		this.colorBlue = b;
 
-		this.g += (this.r.nextFloat() - this.r.nextFloat()) * 0.05F;
-		this.h += (this.r.nextFloat() - this.r.nextFloat()) * 0.05F;
-		this.i += (this.r.nextFloat() - this.r.nextFloat()) * 0.05F;
+		this.x += (this.random.nextFloat() - this.random.nextFloat()) * 0.05F;
+		this.y += (this.random.nextFloat() - this.random.nextFloat()) * 0.05F;
+		this.z += (this.random.nextFloat() - this.random.nextFloat()) * 0.05F;
 
-		this.t = (int) (8.0D / (Math.random() * 0.8D + 0.2D)) + 4;
-		this.B *= 1.875F;
-		this.b(animatedSprite);
+		this.maxAge = (int) (8.0D / (Math.random() * 0.8D + 0.2D)) + 4;
+		this.scale *= 1.875F;
+		this.setSpriteForAge(animatedSprite);
 
 	}
 
 	@Override
-	public LavaEmberParticle b() {
-		return LavaEmberParticle.d;
+	public ParticleTextureSheet getType() {
+		return ParticleTextureSheet.PARTICLE_SHEET_LIT;
 	}
 
 	@Override
-	public float b(float p_217561_1_) {
-		float f = ((float) this.s + p_217561_1_) / (float) this.t;
-		return this.B * (1.0F - f * f * 0.5F);
+	public float getSize(float p_217561_1_) {
+		float f = ((float) this.age + p_217561_1_) / (float) this.maxAge;
+		return this.scale * (1.0F - f * f * 0.5F);
 	}
 
 	@Override
-	public void a(double x, double y, double z) {
-		this.a(this.m()
-			.d(x, y, z));
-		this.k();
+	public void move(double x, double y, double z) {
+		this.setBoundingBox(this.getBoundingBox()
+			.offset(x, y, z));
+		this.repositionFromBoundingBox();
 	}
 
 	@Override
-	public int a(float p_189214_1_) {
-		float f = ((float) this.s + p_189214_1_) / (float) this.t;
-		f = afj.a(f, 0.0F, 1.0F);
-		int i = super.a(p_189214_1_);
+	public int getColorMultiplier(float p_189214_1_) {
+		float f = ((float) this.age + p_189214_1_) / (float) this.maxAge;
+		f = MathHelper.clamp(f, 0.0F, 1.0F);
+		int i = super.getColorMultiplier(p_189214_1_);
 		int j = i & 255;
 		int k = i >> 16 & 255;
 		j = j + (int) (f * 15.0F * 16.0F);
@@ -75,34 +75,34 @@ public class HeaterParticle extends ParticleTextureData {
 	}
 
 	@Override
-	public void clearAtlas() {
-		this.d = this.g;
-		this.e = this.h;
-		this.f = this.i;
-		if (this.s++ >= this.t) {
-			this.j();
+	public void tick() {
+		this.prevPosX = this.x;
+		this.prevPosY = this.y;
+		this.prevPosZ = this.z;
+		if (this.age++ >= this.maxAge) {
+			this.markDead();
 		} else {
-			this.b(animatedSprite);
-			this.a(this.j, this.k, this.l);
-			this.j *= (double) 0.96F;
-			this.k *= (double) 0.96F;
-			this.l *= (double) 0.96F;
-			if (this.m) {
-				this.j *= (double) 0.7F;
-				this.l *= (double) 0.7F;
+			this.setSpriteForAge(animatedSprite);
+			this.move(this.velocityX, this.velocityY, this.velocityZ);
+			this.velocityX *= (double) 0.96F;
+			this.velocityY *= (double) 0.96F;
+			this.velocityZ *= (double) 0.96F;
+			if (this.onGround) {
+				this.velocityX *= (double) 0.7F;
+				this.velocityZ *= (double) 0.7F;
 			}
 		}
 	}
 
-	public static class Factory implements LargeFireSmokeParticle<HeaterParticleData> {
-		private final AbstractSlowingParticle spriteSet;
+	public static class Factory implements ParticleFactory<HeaterParticleData> {
+		private final SpriteProvider spriteSet;
 
-		public Factory(AbstractSlowingParticle animatedSprite) {
+		public Factory(SpriteProvider animatedSprite) {
 			this.spriteSet = animatedSprite;
 		}
 
 		@Override
-		public ExplosionLargeParticle makeParticle(HeaterParticleData data, DragonHeadEntityModel worldIn, double x, double y, double z, double vx,
+		public Particle makeParticle(HeaterParticleData data, ClientWorld worldIn, double x, double y, double z, double vx,
 			double vy, double vz) {
 			return new HeaterParticle(worldIn, data.r, data.g, data.b, x, y, z, vx, vy, vz, this.spriteSet);
 		}

@@ -1,15 +1,16 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
 import java.util.List;
 import java.util.Optional;
 
-import com.simibubi.kinetic_api.AllRecipeTypes;
-import com.simibubi.kinetic_api.content.contraptions.fluids.potion.PotionFluidHandler;
-import com.simibubi.kinetic_api.foundation.utility.Pair;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.NameTagItem;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.world.GameMode;
+import com.simibubi.create.AllRecipeTypes;
+import com.simibubi.create.content.contraptions.fluids.potion.PotionFluidHandler;
+import com.simibubi.create.foundation.utility.Pair;
+
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.PotionItem;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
@@ -22,11 +23,11 @@ public class EmptyingByBasin {
 
 	static RecipeWrapper wrapper = new RecipeWrapper(new ItemStackHandler(1));
 
-	public static boolean canItemBeEmptied(GameMode world, ItemCooldownManager stack) {
-		if (stack.b() instanceof NameTagItem)
+	public static boolean canItemBeEmptied(World world, ItemStack stack) {
+		if (stack.getItem() instanceof PotionItem)
 			return true;
 		
-		wrapper.a(0, stack);
+		wrapper.setStack(0, stack);
 		if (AllRecipeTypes.EMPTYING.find(wrapper, world)
 			.isPresent())
 			return true;
@@ -44,27 +45,27 @@ public class EmptyingByBasin {
 		return false;
 	}
 
-	public static Pair<FluidStack, ItemCooldownManager> emptyItem(GameMode world, ItemCooldownManager stack, boolean simulate) {
+	public static Pair<FluidStack, ItemStack> emptyItem(World world, ItemStack stack, boolean simulate) {
 		FluidStack resultingFluid = FluidStack.EMPTY;
-		ItemCooldownManager resultingItem = ItemCooldownManager.tick;
+		ItemStack resultingItem = ItemStack.EMPTY;
 
-		if (stack.b() instanceof NameTagItem)
+		if (stack.getItem() instanceof PotionItem)
 			return PotionFluidHandler.emptyPotion(stack, simulate);
 		
-		wrapper.a(0, stack);
-		Optional<Ingredient<RecipeWrapper>> recipe = AllRecipeTypes.EMPTYING.find(wrapper, world);
+		wrapper.setStack(0, stack);
+		Optional<Recipe<RecipeWrapper>> recipe = AllRecipeTypes.EMPTYING.find(wrapper, world);
 		if (recipe.isPresent()) {
 			EmptyingRecipe emptyingRecipe = (EmptyingRecipe) recipe.get();
-			List<ItemCooldownManager> results = emptyingRecipe.rollResults();
+			List<ItemStack> results = emptyingRecipe.rollResults();
 			if (!simulate)
-				stack.g(1);
-			resultingItem = results.isEmpty() ? ItemCooldownManager.tick : results.get(0);
+				stack.decrement(1);
+			resultingItem = results.isEmpty() ? ItemStack.EMPTY : results.get(0);
 			resultingFluid = emptyingRecipe.getResultingFluid();
 			return Pair.of(resultingFluid, resultingItem);
 		}
 
-		ItemCooldownManager split = stack.i();
-		split.e(1);
+		ItemStack split = stack.copy();
+		split.setCount(1);
 		LazyOptional<IFluidHandlerItem> capability =
 			split.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY);
 		IFluidHandlerItem tank = capability.orElse(null);
@@ -72,9 +73,9 @@ public class EmptyingByBasin {
 			return Pair.of(resultingFluid, resultingItem);
 		resultingFluid = tank.drain(1000, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
 		resultingItem = tank.getContainer()
-			.i();
+			.copy();
 		if (!simulate)
-			stack.g(1);
+			stack.decrement(1);
 
 		return Pair.of(resultingFluid, resultingItem);
 	}

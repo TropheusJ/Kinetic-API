@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,17 +24,17 @@ public class EmptyNamedTag<T> implements Tags.IOptionalNamedTag<T> {
 	}
 
 	@Override
-	public Identifier a() {
+	public Identifier getId() {
 		return id;
 	}
 
 	@Override
-	public boolean a(Object p_230235_1_) {
+	public boolean contains(Object p_230235_1_) {
 		return false;
 	}
 
 	@Override
-	public List<T> b() {
+	public List<T> values() {
 		return Collections.emptyList()	;
 	}
 }

@@ -1,23 +1,22 @@
-package com.simibubi.kinetic_api.compat.jei.category.animations;
+package com.simibubi.create.compat.jei.category.animations;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
 
 import mezz.jei.api.gui.drawable.IDrawable;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.block.BlockState;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.Direction.Axis;
 
 public abstract class AnimatedKinetics implements IDrawable {
 
 	public static float getCurrentAngle() {
-		return ((AnimationTickHolder.ticks + KeyBinding.B().ai()) * 4f) % 360;
+		return ((AnimationTickHolder.getRenderTick()) * 4f) % 360;
 	}
 	
-	protected PistonHandler shaft(Axis axis) {
-		return AllBlocks.SHAFT.getDefaultState().a(BambooLeaves.F, axis);
+	protected BlockState shaft(Axis axis) {
+		return AllBlocks.SHAFT.getDefaultState().with(Properties.AXIS, axis);
 	}
 	
 	protected AllBlockPartials cogwheel() {

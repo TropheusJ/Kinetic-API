@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.content.contraptions.components.crafter;
+package com.simibubi.create.content.contraptions.components.crafter;
 
-import static com.simibubi.kinetic_api.content.contraptions.base.HorizontalKineticBlock.HORIZONTAL_FACING;
+import static com.simibubi.create.content.contraptions.base.HorizontalKineticBlock.HORIZONTAL_FACING;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,17 +13,18 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.IItemHandlerModifiable;
@@ -32,33 +33,33 @@ import net.minecraftforge.items.wrapper.CombinedInvWrapper;
 
 public class ConnectedInputHandler {
 
-	public static boolean shouldConnect(GameMode world, BlockPos pos, Direction face, Direction direction) {
-		PistonHandler refState = world.d_(pos);
+	public static boolean shouldConnect(World world, BlockPos pos, Direction face, Direction direction) {
+		BlockState refState = world.getBlockState(pos);
 		if (!BlockHelper.hasBlockStateProperty(refState, HORIZONTAL_FACING))
 			return false;
-		Direction refDirection = refState.c(HORIZONTAL_FACING);
+		Direction refDirection = refState.get(HORIZONTAL_FACING);
 		if (direction.getAxis() == refDirection.getAxis())
 			return false;
 		if (face == refDirection)
 			return false;
-		PistonHandler neighbour = world.d_(pos.offset(direction));
+		BlockState neighbour = world.getBlockState(pos.offset(direction));
 		if (!AllBlocks.MECHANICAL_CRAFTER.has(neighbour))
 			return false;
-		if (refDirection != neighbour.c(HORIZONTAL_FACING))
+		if (refDirection != neighbour.get(HORIZONTAL_FACING))
 			return false;
 		return true;
 	}
 
-	public static void toggleConnection(GameMode world, BlockPos pos, BlockPos pos2) {
+	public static void toggleConnection(World world, BlockPos pos, BlockPos pos2) {
 		MechanicalCrafterTileEntity crafter1 = CrafterHelper.getCrafter(world, pos);
 		MechanicalCrafterTileEntity crafter2 = CrafterHelper.getCrafter(world, pos2);
 
 		if (crafter1 == null || crafter2 == null)
 			return;
 
-		BlockPos controllerPos1 = crafter1.o()
+		BlockPos controllerPos1 = crafter1.getPos()
 			.add(crafter1.input.data.get(0));
-		BlockPos controllerPos2 = crafter2.o()
+		BlockPos controllerPos2 = crafter2.getPos()
 			.add(crafter2.input.data.get(0));
 
 		if (controllerPos1.equals(controllerPos2)) {
@@ -87,9 +88,9 @@ public class ConnectedInputHandler {
 			initAndAddAll(world, crafter1, positions);
 			initAndAddAll(world, crafter2, splitGroup);
 
-			crafter1.X_();
+			crafter1.markDirty();
 			crafter1.connectivityChanged();
-			crafter2.X_();
+			crafter2.markDirty();
 			crafter2.connectivityChanged();
 			return;
 		}
@@ -103,29 +104,29 @@ public class ConnectedInputHandler {
 
 		connectControllers(world, crafter1, crafter2);
 
-		world.a(crafter1.o(), crafter1.p(), 3);
+		world.setBlockState(crafter1.getPos(), crafter1.getCachedState(), 3);
 
-		crafter1.X_();
+		crafter1.markDirty();
 		crafter1.connectivityChanged();
-		crafter2.X_();
+		crafter2.markDirty();
 		crafter2.connectivityChanged();
 	}
 
-	public static void initAndAddAll(GameMode world, MechanicalCrafterTileEntity crafter, Collection<BlockPos> positions) {
+	public static void initAndAddAll(World world, MechanicalCrafterTileEntity crafter, Collection<BlockPos> positions) {
 		crafter.input = new ConnectedInput();
 		positions.forEach(splitPos -> {
 			modifyAndUpdate(world, splitPos, input -> {
-				input.attachTo(crafter.o(), splitPos);
-				crafter.input.data.add(splitPos.subtract(crafter.o()));
+				input.attachTo(crafter.getPos(), splitPos);
+				crafter.input.data.add(splitPos.subtract(crafter.getPos()));
 			});
 		});
 	}
 
-	public static void connectControllers(GameMode world, MechanicalCrafterTileEntity crafter1,
+	public static void connectControllers(World world, MechanicalCrafterTileEntity crafter1,
 		MechanicalCrafterTileEntity crafter2) {
 
 		crafter1.input.data.forEach(offset -> {
-			BlockPos connectedPos = crafter1.o()
+			BlockPos connectedPos = crafter1.getPos()
 				.add(offset);
 			modifyAndUpdate(world, connectedPos, input -> {
 			});
@@ -134,26 +135,26 @@ public class ConnectedInputHandler {
 		crafter2.input.data.forEach(offset -> {
 			if (offset.equals(BlockPos.ORIGIN))
 				return;
-			BlockPos connectedPos = crafter2.o()
+			BlockPos connectedPos = crafter2.getPos()
 				.add(offset);
 			modifyAndUpdate(world, connectedPos, input -> {
-				input.attachTo(crafter1.o(), connectedPos);
+				input.attachTo(crafter1.getPos(), connectedPos);
 				crafter1.input.data.add(BlockPos.ORIGIN.subtract(input.data.get(0)));
 			});
 		});
 
-		crafter2.input.attachTo(crafter1.o(), crafter2.o());
+		crafter2.input.attachTo(crafter1.getPos(), crafter2.getPos());
 		crafter1.input.data.add(BlockPos.ORIGIN.subtract(crafter2.input.data.get(0)));
 	}
 
-	private static void modifyAndUpdate(GameMode world, BlockPos pos, Consumer<ConnectedInput> callback) {
-		BeehiveBlockEntity te = world.c(pos);
+	private static void modifyAndUpdate(World world, BlockPos pos, Consumer<ConnectedInput> callback) {
+		BlockEntity te = world.getBlockEntity(pos);
 		if (!(te instanceof MechanicalCrafterTileEntity))
 			return;
 
 		MechanicalCrafterTileEntity crafter = (MechanicalCrafterTileEntity) te;
 		callback.accept(crafter.input);
-		crafter.X_();
+		crafter.markDirty();
 		crafter.connectivityChanged();
 	}
 
@@ -172,7 +173,7 @@ public class ConnectedInputHandler {
 			data.add(controllerPos.subtract(myPos));
 		}
 
-		public IItemHandler getItemHandler(GameMode world, BlockPos pos) {
+		public IItemHandler getItemHandler(World world, BlockPos pos) {
 			if (!isController) {
 				BlockPos controllerPos = pos.add(data.get(0));
 				ConnectedInput input = CrafterHelper.getInput(world, controllerPos);

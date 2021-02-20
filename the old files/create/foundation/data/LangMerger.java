@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.data;
+package com.simibubi.create.foundation.data;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -22,13 +22,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.utility.FilesHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.utility.FilesHelper;
+import com.simibubi.create.foundation.utility.Lang;
 import net.minecraft.data.DataCache;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
-import net.minecraft.text.OrderedText;
+import net.minecraft.util.JsonHelper;
 
 public class LangMerger implements DataProvider {
 
@@ -107,7 +107,7 @@ public class LangMerger implements DataProvider {
 		}
 
 		try (BufferedReader reader = Files.newBufferedReader(path)) {
-			JsonObject jsonobject = OrderedText.a(GSON, reader, JsonObject.class);
+			JsonObject jsonobject = JsonHelper.deserialize(GSON, reader, JsonObject.class);
 			addAll("Game Elements", jsonobject);
 			reader.close();
 		}
@@ -213,8 +213,8 @@ public class LangMerger implements DataProvider {
 	private void save(DataCache cache, List<Object> dataIn, int missingKeys, Path target, String message)
 		throws IOException {
 		String data = createString(dataIn, missingKeys);
-//		data_unused = JavaUnicodeEscaper.outsideOf(0, 0x7f)
-//			.translate(data_unused);
+//		data = JavaUnicodeEscaper.outsideOf(0, 0x7f)
+//			.translate(data);
 		String hash = DataProvider.SHA1.hashUnencodedChars(data)
 			.toString();
 		if (!Objects.equals(cache.getOldSha1(target), hash) || !Files.exists(target)) {
@@ -236,7 +236,7 @@ public class LangMerger implements DataProvider {
 		if (missingKeys != -1)
 			builder.append("\t\"_\": \"Missing Localizations: " + missingKeys + "\",\n");
 		data.forEach(builder::append);
-		builder.append("\t\"_\": \"Thank you for translating KineticAPI!\"\n\n");
+		builder.append("\t\"_\": \"Thank you for translating Create!\"\n\n");
 		builder.append("}");
 		return builder.toString();
 	}

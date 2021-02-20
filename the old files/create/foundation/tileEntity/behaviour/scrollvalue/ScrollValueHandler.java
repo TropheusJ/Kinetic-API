@@ -1,19 +1,19 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue;
+package com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue;
 
-import afj;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.AllKeys;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform.Sided;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour.StepContext;
-import dcg;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllKeys;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform.Sided;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollValueBehaviour.StepContext;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.entity.model.DragonHeadEntityModel;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -23,25 +23,25 @@ public class ScrollValueHandler {
 
 	@Environment(EnvType.CLIENT)
 	public static boolean onScroll(double delta) {
-		Box objectMouseOver = KeyBinding.B().v;
-		if (!(objectMouseOver instanceof dcg))
+		HitResult objectMouseOver = MinecraftClient.getInstance().crosshairTarget;
+		if (!(objectMouseOver instanceof BlockHitResult))
 			return false;
 
-		dcg result = (dcg) objectMouseOver;
-		KeyBinding mc = KeyBinding.B();
-		DragonHeadEntityModel world = mc.r;
-		BlockPos blockPos = result.a();
+		BlockHitResult result = (BlockHitResult) objectMouseOver;
+		MinecraftClient mc = MinecraftClient.getInstance();
+		ClientWorld world = mc.world;
+		BlockPos blockPos = result.getBlockPos();
 
 		ScrollValueBehaviour scrolling = TileEntityBehaviour.get(world, blockPos, ScrollValueBehaviour.TYPE);
 		if (scrolling == null)
 			return false;
-		if (!mc.s.eJ())
+		if (!mc.player.canModifyBlocks())
 			return false;
-		if (scrolling.needsWrench && !AllItems.WRENCH.isIn(mc.s.dC()))
+		if (scrolling.needsWrench && !AllItems.WRENCH.isIn(mc.player.getMainHandStack()))
 			return false;
 		if (scrolling.slotPositioning instanceof Sided)
-			((Sided) scrolling.slotPositioning).fromSide(result.b());
-		if (!scrolling.testHit(objectMouseOver.e()))
+			((Sided) scrolling.slotPositioning).fromSide(result.getSide());
+		if (!scrolling.testHit(objectMouseOver.getPos()))
 			return false;
 
 		if (scrolling instanceof BulkScrollValueBehaviour && AllKeys.ctrlDown()) {
@@ -69,7 +69,7 @@ public class ScrollValueHandler {
 		context.forward = delta > 0;
 
 		double newValue = scrolling.scrollableValue + Math.signum(delta) * scrolling.step.apply(context);
-		scrolling.scrollableValue = (int) afj.a(newValue, scrolling.min, scrolling.max);
+		scrolling.scrollableValue = (int) MathHelper.clamp(newValue, scrolling.min, scrolling.max);
 
 		if (valueBefore != scrolling.scrollableValue)
 			scrolling.clientCallback.accept(scrolling.scrollableValue);

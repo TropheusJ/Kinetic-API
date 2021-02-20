@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.content.schematics.client.tools;
+package com.simibubi.create.content.schematics.client.tools;
 
-import com.simibubi.kinetic_api.foundation.renderState.SuperRenderTypeBuffer;
-import com.simibubi.kinetic_api.foundation.utility.outliner.LineOutline;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.world.timer.Timer;
+import com.simibubi.create.foundation.renderState.SuperRenderTypeBuffer;
+import com.simibubi.create.foundation.utility.outliner.LineOutline;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 public class RotateTool extends PlacementToolBase {
 
@@ -19,14 +19,14 @@ public class RotateTool extends PlacementToolBase {
 	}
 
 	@Override
-	public void renderOnSchematic(BufferVertexConsumer ms, SuperRenderTypeBuffer buffer) {
-		Timer bounds = schematicHandler.getBounds();
-		double height = bounds.c() + Math.max(20, bounds.c());
-		EntityHitResult center = bounds.f()
-			.e(schematicHandler.getTransformation()
+	public void renderOnSchematic(MatrixStack ms, SuperRenderTypeBuffer buffer) {
+		Box bounds = schematicHandler.getBounds();
+		double height = bounds.getYLength() + Math.max(20, bounds.getYLength());
+		Vec3d center = bounds.getCenter()
+			.add(schematicHandler.getTransformation()
 				.getRotationOffset(false));
-		EntityHitResult start = center.a(0, height / 2, 0);
-		EntityHitResult end = center.b(0, height / 2, 0);
+		Vec3d start = center.subtract(0, height / 2, 0);
+		Vec3d end = center.add(0, height / 2, 0);
 
 		line.getParams()
 			.disableCull()

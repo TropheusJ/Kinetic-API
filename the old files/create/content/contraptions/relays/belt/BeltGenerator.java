@@ -1,10 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.belt;
+package com.simibubi.create.content.contraptions.relays.belt;
 
-import com.simibubi.kinetic_api.foundation.data.SpecialBlockStateGen;
+import com.simibubi.create.foundation.data.SpecialBlockStateGen;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.AxisDirection;
@@ -13,36 +14,36 @@ import net.minecraftforge.client.model.generators.ModelFile;
 public class BeltGenerator extends SpecialBlockStateGen {
 
 	@Override
-	protected int getXRotation(PistonHandler state) {
-		Direction direction = state.c(BeltBlock.HORIZONTAL_FACING);
-		BeltSlope slope = state.c(BeltBlock.SLOPE);
+	protected int getXRotation(BlockState state) {
+		Direction direction = state.get(BeltBlock.HORIZONTAL_FACING);
+		BeltSlope slope = state.get(BeltBlock.SLOPE);
 		return slope == BeltSlope.VERTICAL ? 90
 			: slope == BeltSlope.SIDEWAYS && direction.getDirection() == AxisDirection.NEGATIVE ? 180 : 0;
 	}
 
 	@Override
-	protected int getYRotation(PistonHandler state) {
-		Boolean casing = state.c(BeltBlock.CASING);
-		BeltSlope slope = state.c(BeltBlock.SLOPE);
+	protected int getYRotation(BlockState state) {
+		Boolean casing = state.get(BeltBlock.CASING);
+		BeltSlope slope = state.get(BeltBlock.SLOPE);
 
 		boolean flip = slope == BeltSlope.UPWARD;
 		boolean rotate = casing && slope == BeltSlope.VERTICAL;
-		Direction direction = state.c(BeltBlock.HORIZONTAL_FACING);
+		Direction direction = state.get(BeltBlock.HORIZONTAL_FACING);
 		return horizontalAngle(direction) + (flip ? 180 : 0) + (rotate ? 90 : 0);
 	}
 
 	@Override
-	public <T extends BeetrootsBlock> ModelFile getModel(DataGenContext<BeetrootsBlock, T> ctx, RegistrateBlockstateProvider prov,
-		PistonHandler state) {
-		Boolean casing = state.c(BeltBlock.CASING);
+	public <T extends Block> ModelFile getModel(DataGenContext<Block, T> ctx, RegistrateBlockstateProvider prov,
+		BlockState state) {
+		Boolean casing = state.get(BeltBlock.CASING);
 
 		if (!casing)
 			return prov.models()
 				.getExistingFile(prov.modLoc("block/belt/particle"));
 		
-		BeltPart part = state.c(BeltBlock.PART);
-		Direction direction = state.c(BeltBlock.HORIZONTAL_FACING);
-		BeltSlope slope = state.c(BeltBlock.SLOPE);
+		BeltPart part = state.get(BeltBlock.PART);
+		Direction direction = state.get(BeltBlock.HORIZONTAL_FACING);
+		BeltSlope slope = state.get(BeltBlock.SLOPE);
 		boolean downward = slope == BeltSlope.DOWNWARD;
 		boolean diagonal = slope == BeltSlope.UPWARD || downward;
 		boolean vertical = slope == BeltSlope.VERTICAL;
@@ -62,8 +63,8 @@ public class BeltGenerator extends SpecialBlockStateGen {
 			slope = BeltSlope.SIDEWAYS;
 
 		String path = "block/" + (casing ? "belt_casing/" : "belt/");
-		String slopeName = slope.a();
-		String partName = part.a();
+		String slopeName = slope.asString();
+		String partName = part.asString();
 
 		if (diagonal)
 			slopeName = "diagonal";

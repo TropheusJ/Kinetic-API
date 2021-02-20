@@ -1,37 +1,38 @@
-package com.simibubi.kinetic_api.content.contraptions.components.deployer;
+package com.simibubi.create.content.contraptions.components.deployer;
 
 import java.util.OptionalInt;
 import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.Pair;
-import apx;
+
 import com.mojang.authlib.GameProfile;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.config.CKinetics;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.config.CKinetics;
+import com.simibubi.create.foundation.utility.Lang;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.entity.DamageUtil;
-import net.minecraft.entity.ItemSteerable;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.mob.AbstractSkeletonEntity;
-import net.minecraft.entity.mob.PathAwareEntity;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityPose;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.EntityDamageSource;
+import net.minecraft.entity.mob.CreeperEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.Packet;
+import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.FakePlayer;
@@ -50,46 +51,46 @@ public class DeployerFakePlayer extends FakePlayer {
 	public static final GameProfile DEPLOYER_PROFILE =
 		new GameProfile(UUID.fromString("9e2faded-cafe-4ec2-c314-dad129ae971d"), "Deployer");
 	Pair<BlockPos, Float> blockBreakingProgress;
-	ItemCooldownManager spawnedItemEffects;
+	ItemStack spawnedItemEffects;
 
 	public DeployerFakePlayer(ServerWorld world) {
 		super(world, DEPLOYER_PROFILE);
-		networkHandler = new FakePlayNetHandler(world.l(), this);
+		networkHandler = new FakePlayNetHandler(world.getServer(), this);
 	}
 
 	@Override
-	public OptionalInt a(ActionResult container) {
+	public OptionalInt openHandledScreen(NamedScreenHandlerFactory container) {
 		return OptionalInt.empty();
 	}
 
 	@Override
-	public Text d() {
+	public Text getDisplayName() {
 		return Lang.translate("block.deployer.damage_source_name");
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public float e(PathAwareEntity poseIn) {
+	public float getEyeHeight(EntityPose poseIn) {
 		return 0;
 	}
 
 	@Override
-	public EntityHitResult cz() {
-		return new EntityHitResult(cC(), cD(), cG());
+	public Vec3d getPos() {
+		return new Vec3d(getX(), getY(), getZ());
 	}
 
 	@Override
-	public float eQ() {
+	public float getAttackCooldownProgressPerTick() {
 		return 1 / 64f;
 	}
 
 	@Override
-	public boolean q(boolean ignoreHunger) {
+	public boolean canConsume(boolean ignoreHunger) {
 		return false;
 	}
 
 	@Override
-	public ItemCooldownManager a(GameMode world, ItemCooldownManager stack) {
+	public ItemStack eatFood(World world, ItemStack stack) {
 		return stack;
 	}
 
@@ -101,25 +102,25 @@ public class DeployerFakePlayer extends FakePlayer {
 
 	@SubscribeEvent(priority = EventPriority.LOWEST)
 	public static void deployerCollectsDropsFromKilledEntities(LivingDropsEvent event) {
-		if (!(event.getSource() instanceof DamageUtil))
+		if (!(event.getSource() instanceof EntityDamageSource))
 			return;
-		DamageUtil source = (DamageUtil) event.getSource();
-		apx trueSource = source.k();
+		EntityDamageSource source = (EntityDamageSource) event.getSource();
+		Entity trueSource = source.getAttacker();
 		if (trueSource != null && trueSource instanceof DeployerFakePlayer) {
 			DeployerFakePlayer fakePlayer = (DeployerFakePlayer) trueSource;
 			event.getDrops()
-				.forEach(stack -> fakePlayer.bm.a(trueSource.l, stack.g()));
+				.forEach(stack -> fakePlayer.inventory.offerOrDrop(trueSource.world, stack.getStack()));
 			event.setCanceled(true);
 		}
 	}
 
 	@Override
-	protected void b(ItemCooldownManager p_184606_1_) {}
+	protected void onEquipStack(ItemStack p_184606_1_) {}
 
 	@Override
 	public void remove(boolean keepData) {
-		if (blockBreakingProgress != null && !l.v)
-			l.a(X(), blockBreakingProgress.getKey(), -1);
+		if (blockBreakingProgress != null && !world.isClient)
+			world.setBlockBreakingInfo(getEntityId(), blockBreakingProgress.getKey(), -1);
 		super.remove(keepData);
 	}
 
@@ -133,20 +134,20 @@ public class DeployerFakePlayer extends FakePlayer {
 	public static void entitiesDontRetaliate(LivingSetAttackTargetEvent event) {
 		if (!(event.getTarget() instanceof DeployerFakePlayer))
 			return;
-		SaddledComponent entityLiving = event.getEntityLiving();
-		if (!(entityLiving instanceof ItemSteerable))
+		LivingEntity entityLiving = event.getEntityLiving();
+		if (!(entityLiving instanceof MobEntity))
 			return;
-		ItemSteerable mob = (ItemSteerable) entityLiving;
+		MobEntity mob = (MobEntity) entityLiving;
 
 		CKinetics.DeployerAggroSetting setting = AllConfigs.SERVER.kinetics.ignoreDeployerAttacks.get();
 
 		switch (setting) {
 		case ALL:
-			mob.h(null);
+			mob.setTarget(null);
 			break;
 		case CREEPERS:
-			if (mob instanceof AbstractSkeletonEntity)
-				mob.h(null);
+			if (mob instanceof CreeperEntity)
+				mob.setTarget(null);
 			break;
 		case NONE:
 		default:

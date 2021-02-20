@@ -1,30 +1,33 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.bearing;
+package com.simibubi.create.content.contraptions.components.structureMovement.bearing;
 
-import static net.minecraft.block.enums.BambooLeaves.M;
+import static net.minecraft.state.properties.BlockStateProperties.FACING;
 
-import afj;
 import java.util.List;
 
-import com.simibubi.kinetic_api.content.contraptions.base.GeneratingKineticTileEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.AbstractContraptionEntity;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.ControlledContraptionEntity;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.item.TooltipHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.ServerSpeedProvider;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.content.contraptions.base.GeneratingKineticTileEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.AbstractContraptionEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.AssemblyException;
+import com.simibubi.create.content.contraptions.components.structureMovement.ControlledContraptionEntity;
+import com.simibubi.create.content.contraptions.components.structureMovement.IDisplayAssemblyExceptions;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.item.TooltipHelper;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue.ScrollOptionBehaviour;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.ServerSpeedProvider;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 
-public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity implements IBearingTileEntity {
+public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity implements IBearingTileEntity, IDisplayAssemblyExceptions {
 
 	protected ScrollOptionBehaviour<RotationMode> movementMode;
 	protected ControlledContraptionEntity movedContraption;
@@ -32,8 +35,9 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 	protected boolean running;
 	protected boolean assembleNextTick;
 	protected float clientAngleDiff;
+	protected AssemblyException lastException;
 
-	public MechanicalBearingTileEntity(BellBlockEntity<? extends MechanicalBearingTileEntity> type) {
+	public MechanicalBearingTileEntity(BlockEntityType<? extends MechanicalBearingTileEntity> type) {
 		super(type);
 		setLazyTickRate(3);
 	}
@@ -53,26 +57,27 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 	}
 
 	@Override
-	public void al_() {
-		if (!d.v)
+	public void markRemoved() {
+		if (!world.isClient)
 			disassemble();
-		super.al_();
+		super.markRemoved();
 	}
 
 	@Override
 	public void write(CompoundTag compound, boolean clientPacket) {
 		compound.putBoolean("Running", running);
 		compound.putFloat("Angle", angle);
+		AssemblyException.write(compound, lastException);
 		super.write(compound, clientPacket);
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		float angleBefore = angle;
 		running = compound.getBoolean("Running");
 		angle = compound.getFloat("Angle");
+		lastException = AssemblyException.read(compound);
 		super.fromTag(state, compound, clientPacket);
-
 		if (!clientPacket)
 			return;
 		if (running) {
@@ -86,7 +91,7 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 	public float getInterpolatedAngle(float partialTicks) {
 		if (movedContraption == null || movedContraption.isStalled() || !running)
 			partialTicks = 0;
-		return afj.g(partialTicks, angle, angle + getAngularSpeed());
+		return MathHelper.lerp(partialTicks, angle, angle + getAngularSpeed());
 	}
 
 	@Override
@@ -99,11 +104,16 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 		float speed = (isWindmill() ? getGeneratedSpeed() : getSpeed()) * 3 / 10f;
 		if (getSpeed() == 0)
 			speed = 0;
-		if (d.v) {
+		if (world.isClient) {
 			speed *= ServerSpeedProvider.get();
 			speed += clientAngleDiff / 3f;
 		}
 		return speed;
+	}
+
+	@Override
+	public AssemblyException getLastAssemblyException() {
+		return lastException;
 	}
 
 	protected boolean isWindmill() {
@@ -112,30 +122,38 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 
 	@Override
 	public BlockPos getBlockPosition() {
-		return e;
+		return pos;
 	}
 
 	public void assemble() {
-		if (!(d.d_(e)
-			.b() instanceof BearingBlock))
+		if (!(world.getBlockState(pos)
+			.getBlock() instanceof BearingBlock))
 			return;
 
-		Direction direction = p().c(M);
+		Direction direction = getCachedState().get(FACING);
 		BearingContraption contraption = new BearingContraption(isWindmill(), direction);
-		if (!contraption.assemble(d, e))
+		try {
+			if (!contraption.assemble(world, pos))
+				return;
+
+			lastException = null;
+		} catch (AssemblyException e) {
+			lastException = e;
+			sendData();
 			return;
+		}
 
 		if (isWindmill())
-			AllTriggers.triggerForNearbyPlayers(AllTriggers.WINDMILL, d, e, 5);
+			AllTriggers.triggerForNearbyPlayers(AllTriggers.WINDMILL, world, pos, 5);
 		if (contraption.getSailBlocks() >= 16 * 8)
-			AllTriggers.triggerForNearbyPlayers(AllTriggers.MAXED_WINDMILL, d, e, 5);
+			AllTriggers.triggerForNearbyPlayers(AllTriggers.MAXED_WINDMILL, world, pos, 5);
 		
-		contraption.removeBlocksFromWorld(d, BlockPos.ORIGIN);
-		movedContraption = ControlledContraptionEntity.create(d, this, contraption);
-		BlockPos anchor = e.offset(direction);
-		movedContraption.d(anchor.getX(), anchor.getY(), anchor.getZ());
+		contraption.removeBlocksFromWorld(world, BlockPos.ORIGIN);
+		movedContraption = ControlledContraptionEntity.create(world, this, contraption);
+		BlockPos anchor = pos.offset(direction);
+		movedContraption.updatePosition(anchor.getX(), anchor.getY(), anchor.getZ());
 		movedContraption.setRotationAxis(direction.getAxis());
-		d.c(movedContraption);
+		world.spawnEntity(movedContraption);
 
 		running = true;
 		angle = 0;
@@ -160,13 +178,13 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 
-		if (d.v)
+		if (world.isClient)
 			clientAngleDiff /= 2;
 
-		if (!d.v && assembleNextTick) {
+		if (!world.isClient && assembleNextTick) {
 			assembleNextTick = false;
 			if (running) {
 				boolean canDisassemble = movementMode.get() == RotationMode.ROTATE_PLACE
@@ -176,7 +194,7 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 					.isEmpty())) {
 					if (movedContraption != null)
 						movedContraption.getContraption()
-							.stop(d);
+							.stop(world);
 					disassemble();
 				}
 				return;
@@ -207,7 +225,7 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 	@Override
 	public void lazyTick() {
 		super.lazyTick();
-		if (movedContraption != null && !d.v)
+		if (movedContraption != null && !world.isClient)
 			sendData();
 	}
 
@@ -215,25 +233,25 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 		if (movedContraption == null)
 			return;
 		movedContraption.setAngle(angle);
-		PistonHandler blockState = p();
-		if (blockState.b(BambooLeaves.M))
-			movedContraption.setRotationAxis(blockState.c(BambooLeaves.M)
+		BlockState blockState = getCachedState();
+		if (blockState.contains(Properties.FACING))
+			movedContraption.setRotationAxis(blockState.get(Properties.FACING)
 				.getAxis());
 	}
 
 	@Override
 	public void attach(ControlledContraptionEntity contraption) {
-		PistonHandler blockState = p();
+		BlockState blockState = getCachedState();
 		if (!(contraption.getContraption() instanceof BearingContraption))
 			return;
-		if (!BlockHelper.hasBlockStateProperty(blockState, M))
+		if (!BlockHelper.hasBlockStateProperty(blockState, FACING))
 			return;
 
 		this.movedContraption = contraption;
-		X_();
-		BlockPos anchor = e.offset(blockState.c(M));
-		movedContraption.d(anchor.getX(), anchor.getY(), anchor.getZ());
-		if (!d.v) {
+		markDirty();
+		BlockPos anchor = pos.offset(blockState.get(FACING));
+		movedContraption.updatePosition(anchor.getX(), anchor.getY(), anchor.getZ());
+		if (!world.isClient) {
 			this.running = true;
 			sendData();
 		}
@@ -241,13 +259,13 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 
 	@Override
 	public void onStall() {
-		if (!d.v)
+		if (!world.isClient)
 			sendData();
 	}
 
 	@Override
 	public boolean isValid() {
-		return !q();
+		return !isRemoved();
 	}
 
 	@Override
@@ -272,16 +290,20 @@ public class MechanicalBearingTileEntity extends GeneratingKineticTileEntity imp
 			return false;
 		if (running)
 			return false;
-		PistonHandler state = p();
-		if (!(state.b() instanceof BearingBlock))
+		BlockState state = getCachedState();
+		if (!(state.getBlock() instanceof BearingBlock))
 			return false;
 		
-		PistonHandler attachedState = d.d_(e.offset(state.c(BearingBlock.FACING)));
-		if (attachedState.c()
-			.e())
+		BlockState attachedState = world.getBlockState(pos.offset(state.get(BearingBlock.FACING)));
+		if (attachedState.getMaterial()
+			.isReplaceable())
 			return false;
 		TooltipHelper.addHint(tooltip, "hint.empty_bearing");
 		return true;
 	}
 
+	@Override
+	public boolean shouldRenderAsTE() {
+		return true;
+	}
 }

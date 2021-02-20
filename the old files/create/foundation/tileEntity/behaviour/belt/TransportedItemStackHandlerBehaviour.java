@@ -1,17 +1,19 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt;
+package com.simibubi.create.foundation.tileEntity.behaviour.belt;
 
 import java.util.List;
 import java.util.function.Function;
 
 import javax.annotation.Nullable;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.util.hit.EntityHitResult;
+
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.Vec3d;
 
 public class TransportedItemStackHandlerBehaviour extends TileEntityBehaviour {
 
@@ -56,7 +58,7 @@ public class TransportedItemStackHandlerBehaviour extends TileEntityBehaviour {
 			return outputs == null;
 		}
 
-		public boolean didntChangeFrom(ItemCooldownManager stackBefore) {
+		public boolean didntChangeFrom(ItemStack stackBefore) {
 			return doesNothing()
 				|| outputs.size() == 1 && outputs.get(0).stack.equals(stackBefore, false) && !hasHeldOutput();
 		}
@@ -84,7 +86,7 @@ public class TransportedItemStackHandlerBehaviour extends TileEntityBehaviour {
 	public TransportedItemStackHandlerBehaviour(SmartTileEntity te, ProcessingCallback processingCallback) {
 		super(te);
 		this.processingCallback = processingCallback;
-		positionGetter = t -> VecHelper.getCenterOf(te.o());
+		positionGetter = t -> VecHelper.getCenterOf(te.getPos());
 	}
 
 	public TransportedItemStackHandlerBehaviour withStackPlacement(PositionGetter function) {
@@ -109,7 +111,7 @@ public class TransportedItemStackHandlerBehaviour extends TileEntityBehaviour {
 		this.processingCallback.applyToAllItems(maxDistanceFromCenter, processFunction);
 	}
 
-	public EntityHitResult getWorldPositionOf(TransportedItemStack transported) {
+	public Vec3d getWorldPositionOf(TransportedItemStack transported) {
 		return positionGetter.getWorldPositionVector(transported);
 	}
 
@@ -126,7 +128,7 @@ public class TransportedItemStackHandlerBehaviour extends TileEntityBehaviour {
 
 	@FunctionalInterface
 	public interface PositionGetter {
-		public EntityHitResult getWorldPositionVector(TransportedItemStack transported);
+		public Vec3d getWorldPositionVector(TransportedItemStack transported);
 	}
 
 }

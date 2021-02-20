@@ -1,20 +1,20 @@
-package com.simibubi.kinetic_api.content.schematics.client;
+package com.simibubi.create.content.schematics.client;
 
 import static java.lang.Math.abs;
 
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedChasingAngle;
-import com.simibubi.kinetic_api.foundation.gui.widgets.InterpolatedChasingValue;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import net.minecraft.block.LoomBlock;
-import net.minecraft.block.RespawnAnchorBlock;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.structure.rule.RuleTest;
-import net.minecraft.util.hit.EntityHitResult;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedChasingAngle;
+import com.simibubi.create.foundation.gui.widgets.InterpolatedChasingValue;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+import com.simibubi.create.foundation.utility.VecHelper;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.structure.StructurePlacementData;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.util.math.Vec3d;
 
 public class SchematicTransformation {
 
@@ -32,43 +32,42 @@ public class SchematicTransformation {
 		rotation = new InterpolatedChasingAngle();
 	}
 
-	public void init(BlockPos anchor, RuleTest settings, Timer bounds) {
-		int leftRight = settings.c() == LoomBlock.b ? -1 : 1;
-		int frontBack = settings.c() == LoomBlock.c ? -1 : 1;
+	public void init(BlockPos anchor, StructurePlacementData settings, Box bounds) {
+		int leftRight = settings.getMirror() == BlockMirror.LEFT_RIGHT ? -1 : 1;
+		int frontBack = settings.getMirror() == BlockMirror.FRONT_BACK ? -1 : 1;
 		getScaleFB().start(frontBack);
 		getScaleLR().start(leftRight);
-		xOrigin = bounds.b() / 2f;
-		zOrigin = bounds.d() / 2f;
+		xOrigin = bounds.getXLength() / 2f;
+		zOrigin = bounds.getZLength() / 2f;
 
-		int r = -(settings.d()
+		int r = -(settings.getRotation()
 			.ordinal() * 90);
 		rotation.start(r);
 
-		EntityHitResult vec = fromAnchor(anchor);
-		x.start((float) vec.entity);
-		y.start((float) vec.c);
-		z.start((float) vec.d);
+		Vec3d vec = fromAnchor(anchor);
+		x.start((float) vec.x);
+		y.start((float) vec.y);
+		z.start((float) vec.z);
 	}
 
-	public void applyGLTransformations(BufferVertexConsumer ms) {
-		float pt = KeyBinding.B()
-			.ai();
+	public void applyGLTransformations(MatrixStack ms) {
+		float pt = AnimationTickHolder.getPartialTicks();
 
 		// Translation
-		ms.a(x.get(pt), y.get(pt), z.get(pt));
-		EntityHitResult rotationOffset = getRotationOffset(true);
+		ms.translate(x.get(pt), y.get(pt), z.get(pt));
+		Vec3d rotationOffset = getRotationOffset(true);
 
 		// Rotation & Mirror
 		float fb = getScaleFB().get(pt);
 		float lr = getScaleLR().get(pt);
 		float rot = rotation.get(pt) + ((fb < 0 && lr < 0) ? 180 : 0);
-		ms.a(xOrigin, 0, zOrigin);
+		ms.translate(xOrigin, 0, zOrigin);
 		MatrixStacker.of(ms)
 			.translate(rotationOffset)
 			.rotateY(rot)
 			.translateBack(rotationOffset);
-		ms.a(abs(fb), 1, abs(lr));
-		ms.a(-xOrigin, 0, -zOrigin);
+		ms.scale(abs(fb), 1, abs(lr));
+		ms.translate(-xOrigin, 0, -zOrigin);
 
 	}
 
@@ -76,8 +75,8 @@ public class SchematicTransformation {
 		return getMirrorModifier(Axis.X) < 0 != getMirrorModifier(Axis.Z) < 0;
 	}
 
-	public EntityHitResult getRotationOffset(boolean ignoreMirrors) {
-		EntityHitResult rotationOffset = EntityHitResult.a;
+	public Vec3d getRotationOffset(boolean ignoreMirrors) {
+		Vec3d rotationOffset = Vec3d.ZERO;
 		if ((int) (zOrigin * 2) % 2 != (int) (xOrigin * 2) % 2) {
 			boolean xGreaterZ = xOrigin > zOrigin;
 			float xIn = (xGreaterZ ? 0 : .5f);
@@ -86,28 +85,27 @@ public class SchematicTransformation {
 				xIn *= getMirrorModifier(Axis.X);
 				zIn *= getMirrorModifier(Axis.Z);
 			}
-			rotationOffset = new EntityHitResult(xIn, 0, zIn);
+			rotationOffset = new Vec3d(xIn, 0, zIn);
 		}
 		return rotationOffset;
 	}
 
-	public EntityHitResult toLocalSpace(EntityHitResult vec) {
-		float pt = KeyBinding.B()
-			.ai();
-		EntityHitResult rotationOffset = getRotationOffset(true);
+	public Vec3d toLocalSpace(Vec3d vec) {
+		float pt = AnimationTickHolder.getPartialTicks();
+		Vec3d rotationOffset = getRotationOffset(true);
 
-		vec = vec.a(x.get(pt), y.get(pt), z.get(pt));
-		vec = vec.a(xOrigin + rotationOffset.entity, 0, zOrigin + rotationOffset.d);
+		vec = vec.subtract(x.get(pt), y.get(pt), z.get(pt));
+		vec = vec.subtract(xOrigin + rotationOffset.x, 0, zOrigin + rotationOffset.z);
 		vec = VecHelper.rotate(vec, -rotation.get(pt), Axis.Y);
-		vec = vec.b(rotationOffset.entity, 0, rotationOffset.d);
-		vec = vec.d(getScaleFB().get(pt), 1, getScaleLR().get(pt));
-		vec = vec.b(xOrigin, 0, zOrigin);
+		vec = vec.add(rotationOffset.x, 0, rotationOffset.z);
+		vec = vec.multiply(getScaleFB().get(pt), 1, getScaleLR().get(pt));
+		vec = vec.add(xOrigin, 0, zOrigin);
 
 		return vec;
 	}
 
-	public RuleTest toSettings() {
-		RuleTest settings = new RuleTest();
+	public StructurePlacementData toSettings() {
+		StructurePlacementData settings = new StructurePlacementData();
 
 		int i = (int) rotation.getTarget();
 
@@ -121,52 +119,52 @@ public class SchematicTransformation {
 		if (i < 0)
 			i += 360;
 
-		RespawnAnchorBlock rotation = RespawnAnchorBlock.CHARGES;
+		BlockRotation rotation = BlockRotation.NONE;
 		switch (i) {
 		case 90:
-			rotation = RespawnAnchorBlock.d;
+			rotation = BlockRotation.COUNTERCLOCKWISE_90;
 			break;
 		case 180:
-			rotation = RespawnAnchorBlock.field_26443;
+			rotation = BlockRotation.CLOCKWISE_180;
 			break;
 		case 270:
-			rotation = RespawnAnchorBlock.field_26442;
+			rotation = BlockRotation.CLOCKWISE_90;
 			break;
 		default:
 		}
 
-		settings.a(rotation);
+		settings.setRotation(rotation);
 		if (mirrorfb)
-			settings.a(LoomBlock.c);
+			settings.setMirror(BlockMirror.FRONT_BACK);
 		if (mirrorlr)
-			settings.a(LoomBlock.b);
+			settings.setMirror(BlockMirror.LEFT_RIGHT);
 
 		return settings;
 	}
 
 	public BlockPos getAnchor() {
-		EntityHitResult vec = EntityHitResult.a.b(.5, 0, .5);
-		EntityHitResult rotationOffset = getRotationOffset(false);
-		vec = vec.a(xOrigin, 0, zOrigin);
-		vec = vec.a(rotationOffset.entity, 0, rotationOffset.d);
-		vec = vec.d(getScaleFB().getTarget(), 1, getScaleLR().getTarget());
+		Vec3d vec = Vec3d.ZERO.add(.5, 0, .5);
+		Vec3d rotationOffset = getRotationOffset(false);
+		vec = vec.subtract(xOrigin, 0, zOrigin);
+		vec = vec.subtract(rotationOffset.x, 0, rotationOffset.z);
+		vec = vec.multiply(getScaleFB().getTarget(), 1, getScaleLR().getTarget());
 		vec = VecHelper.rotate(vec, rotation.getTarget(), Axis.Y);
-		vec = vec.b(xOrigin, 0, zOrigin);
+		vec = vec.add(xOrigin, 0, zOrigin);
 
-		vec = vec.b(x.getTarget(), y.getTarget(), z.getTarget());
-		return new BlockPos(vec.entity, vec.c, vec.d);
+		vec = vec.add(x.getTarget(), y.getTarget(), z.getTarget());
+		return new BlockPos(vec.x, vec.y, vec.z);
 	}
 
-	public EntityHitResult fromAnchor(BlockPos pos) {
-		EntityHitResult vec = EntityHitResult.a.b(.5, 0, .5);
-		EntityHitResult rotationOffset = getRotationOffset(false);
-		vec = vec.a(xOrigin, 0, zOrigin);
-		vec = vec.a(rotationOffset.entity, 0, rotationOffset.d);
-		vec = vec.d(getScaleFB().getTarget(), 1, getScaleLR().getTarget());
+	public Vec3d fromAnchor(BlockPos pos) {
+		Vec3d vec = Vec3d.ZERO.add(.5, 0, .5);
+		Vec3d rotationOffset = getRotationOffset(false);
+		vec = vec.subtract(xOrigin, 0, zOrigin);
+		vec = vec.subtract(rotationOffset.x, 0, rotationOffset.z);
+		vec = vec.multiply(getScaleFB().getTarget(), 1, getScaleLR().getTarget());
 		vec = VecHelper.rotate(vec, rotation.getTarget(), Axis.Y);
-		vec = vec.b(xOrigin, 0, zOrigin);
+		vec = vec.add(xOrigin, 0, zOrigin);
 
-		return EntityHitResult.b(pos.subtract(new BlockPos(vec.entity, vec.c, vec.d)));
+		return Vec3d.of(pos.subtract(new BlockPos(vec.x, vec.y, vec.z)));
 	}
 
 	public int getRotationTarget() {
@@ -180,8 +178,7 @@ public class SchematicTransformation {
 	}
 
 	public float getCurrentRotation() {
-		float pt = KeyBinding.B()
-			.ai();
+		float pt = AnimationTickHolder.getPartialTicks();
 		return rotation.get(pt);
 	}
 

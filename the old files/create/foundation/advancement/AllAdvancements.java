@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.advancement;
+package com.simibubi.create.foundation.advancement;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,29 +12,29 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllFluids;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper.BlockzapperItem;
-import com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper.BlockzapperItem.ComponentTier;
-import com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper.BlockzapperItem.Components;
-import com.simibubi.kinetic_api.foundation.advancement.AllAdvancements.TaskType;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllFluids;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.curiosities.zapper.blockzapper.BlockzapperItem;
+import com.simibubi.create.content.curiosities.zapper.blockzapper.BlockzapperItem.ComponentTier;
+import com.simibubi.create.content.curiosities.zapper.blockzapper.BlockzapperItem.Components;
+import com.simibubi.create.foundation.advancement.AllAdvancements.TaskType;
 import net.minecraft.advancement.Advancement;
 import net.minecraft.advancement.Advancement.Task;
 import net.minecraft.advancement.AdvancementFrame;
 import net.minecraft.advancement.criterion.InventoryChangedCriterion;
 import net.minecraft.advancement.criterion.PlacedBlockCriterion;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.data.DataCache;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.item.AliasedBlockItem;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.GameRules;
 
 @SuppressWarnings("unused") // dont warn about unused avancements
 public class AllAdvancements implements DataProvider {
@@ -45,11 +45,11 @@ public class AllAdvancements implements DataProvider {
 		String id = Create.ID;
 
 		Advancement root = Advancement.Task.create()
-			.a(AllItems.BRASS_HAND.asStack(), new TranslatableText(LANG + "root"),
+			.display(AllItems.BRASS_HAND.asStack(), new TranslatableText(LANG + "root"),
 				new TranslatableText(LANG + "root.desc"),
 				new Identifier(Create.ID, "textures/block/palettes/gabbro/bricks.png"), AdvancementFrame.TASK, false,
 				false, false)
-			.criterion("0", InventoryChangedCriterion.Conditions.a(new GameRules[] {}))
+			.criterion("0", InventoryChangedCriterion.Conditions.items(new ItemConvertible[] {}))
 			.build(t, id + ":root");
 
 		Advancement andesite_alloy =
@@ -79,12 +79,12 @@ public class AllAdvancements implements DataProvider {
 				.criterion("1", AllTriggers.WATER_WHEEL.instance())
 				.build(t, id + ":water_wheel");
 
-		Advancement lava_wheel = advancement("lava_wheel", AliasedBlockItem.lM, TaskType.SECRET).parent(water_wheel)
+		Advancement lava_wheel = advancement("lava_wheel", Items.LAVA_BUCKET, TaskType.SECRET).parent(water_wheel)
 			.criterion("0", AllTriggers.LAVA_WHEEL.instance())
 			.build(t, id + ":lava_wheel");
 
 		Advancement chocolate_wheel = advancement("chocolate_wheel", AllFluids.CHOCOLATE.get()
-			.a(), TaskType.SECRET).parent(water_wheel)
+			.getBucketItem(), TaskType.SECRET).parent(water_wheel)
 				.criterion("0", AllTriggers.CHOCOLATE_WHEEL.instance())
 				.build(t, id + ":chocolate_wheel");
 
@@ -125,15 +125,15 @@ public class AllAdvancements implements DataProvider {
 			.criterion("0", AllTriggers.FAN.instance())
 			.build(t, id + ":fan");
 
-		Advancement fan_lava = advancement("fan_lava", AliasedBlockItem.lM, TaskType.NORMAL).parent(fan)
+		Advancement fan_lava = advancement("fan_lava", Items.LAVA_BUCKET, TaskType.NORMAL).parent(fan)
 			.criterion("0", AllTriggers.FAN_LAVA.instance())
 			.build(t, id + ":fan_lava");
 
-		Advancement fan_smoke = advancement("fan_smoke", AliasedBlockItem.rn, TaskType.NORMAL).parent(fan)
+		Advancement fan_smoke = advancement("fan_smoke", Items.CAMPFIRE, TaskType.NORMAL).parent(fan)
 			.criterion("0", AllTriggers.FAN_SMOKE.instance())
 			.build(t, id + ":fan_smoke");
 
-		Advancement fan_water = advancement("fan_water", AliasedBlockItem.lL, TaskType.NORMAL).parent(fan)
+		Advancement fan_water = advancement("fan_water", Items.WATER_BUCKET, TaskType.NORMAL).parent(fan)
 			.criterion("0", AllTriggers.FAN_WATER.instance())
 			.build(t, id + ":fan_water");
 
@@ -162,7 +162,7 @@ public class AllAdvancements implements DataProvider {
 			.parent(basin)
 			.build(t, id + ":mixer");
 
-		Advancement compact = advancement("compact", BellBlock.bF, TaskType.NORMAL)
+		Advancement compact = advancement("compact", Blocks.IRON_BLOCK, TaskType.NORMAL)
 			.criterion("0", AllTriggers.PRESS_COMPACT.instance())
 			.parent(basin)
 			.build(t, id + ":compact");
@@ -236,7 +236,7 @@ public class AllAdvancements implements DataProvider {
 				.criterion("0", AllTriggers.SHIFTING_GEARS.instance())
 				.build(t, id + ":shifting_gears");
 
-		Advancement overstressed = advancement("overstressed", AliasedBlockItem.fJ, TaskType.SECRET).parent(its_alive)
+		Advancement overstressed = advancement("overstressed", Items.BARRIER, TaskType.SECRET).parent(its_alive)
 			.criterion("0", AllTriggers.OVERSTRESSED.instance())
 			.build(t, id + ":overstressed");
 
@@ -264,12 +264,12 @@ public class AllAdvancements implements DataProvider {
 			.criterion("0", AllTriggers.SPOUT.instance())
 			.build(t, id + ":spout");
 
-		Advancement spout_potion = advancement("spout_potion", AliasedBlockItem.nv, TaskType.GOAL).parent(spout)
+		Advancement spout_potion = advancement("spout_potion", Items.POTION, TaskType.GOAL).parent(spout)
 			.criterion("0", AllTriggers.SPOUT_POTION.instance())
 			.build(t, id + ":spout_potion");
 
 		Advancement chocolate = itemAdvancement("chocolate", () -> AllFluids.CHOCOLATE.get()
-			.a(), TaskType.GOAL).parent(spout)
+			.getBucketItem(), TaskType.GOAL).parent(spout)
 				.build(t, id + ":chocolate");
 
 		Advancement glass_pipe =
@@ -282,7 +282,7 @@ public class AllAdvancements implements DataProvider {
 				.criterion("0", AllTriggers.PIPE_COLLISION.instance())
 				.build(t, id + ":pipe_collision");
 
-		Advancement pipe_spill = advancement("pipe_spill", AliasedBlockItem.lK, TaskType.NORMAL).parent(glass_pipe)
+		Advancement pipe_spill = advancement("pipe_spill", Items.BUCKET, TaskType.NORMAL).parent(glass_pipe)
 			.criterion("0", AllTriggers.PIPE_SPILL.instance())
 			.build(t, id + ":pipe_spill");
 
@@ -292,17 +292,17 @@ public class AllAdvancements implements DataProvider {
 				.build(t, id + ":hose_pulley");
 
 		Advancement infinite_water =
-			advancement("infinite_water", AliasedBlockItem.lL, TaskType.NORMAL).parent(hose_pulley)
+			advancement("infinite_water", Items.WATER_BUCKET, TaskType.NORMAL).parent(hose_pulley)
 				.criterion("0", AllTriggers.INFINITE_WATER.instance())
 				.build(t, id + ":infinite_water");
 
 		Advancement infinite_lava =
-			advancement("infinite_lava", AliasedBlockItem.lM, TaskType.GOAL).parent(hose_pulley)
+			advancement("infinite_lava", Items.LAVA_BUCKET, TaskType.GOAL).parent(hose_pulley)
 				.criterion("0", AllTriggers.INFINITE_LAVA.instance())
 				.build(t, id + ":infinite_lava");
 
 		Advancement infinite_chocolate = advancement("infinite_chocolate", AllFluids.CHOCOLATE.get()
-			.a(), TaskType.CHALLENGE).parent(hose_pulley)
+			.getBucketItem(), TaskType.CHALLENGE).parent(hose_pulley)
 				.criterion("0", AllTriggers.INFINITE_CHOCOLATE.instance())
 				.build(t, id + ":infinite_chocolate");
 	}
@@ -367,7 +367,7 @@ public class AllAdvancements implements DataProvider {
 			.parent(brass_casing)
 			.build(t, id + ":mechanical_arm");
 
-		Advancement musical_arm = advancement("musical_arm", AliasedBlockItem.qz, TaskType.MILESTONE)
+		Advancement musical_arm = advancement("musical_arm", Items.MUSIC_DISC_13, TaskType.MILESTONE)
 			.criterion("0", AllTriggers.MUSICAL_ARM.instance())
 			.parent(mechanical_arm)
 			.build(t, id + ":musical_arm");
@@ -430,7 +430,7 @@ public class AllAdvancements implements DataProvider {
 			itemAdvancement("zapper", AllItems.BLOCKZAPPER, TaskType.NORMAL).parent(refined_radiance)
 				.build(t, id + ":zapper");
 
-		ItemCooldownManager gunWithPurpurStuff = AllItems.BLOCKZAPPER.asStack();
+		ItemStack gunWithPurpurStuff = AllItems.BLOCKZAPPER.asStack();
 		for (Components c : Components.values())
 			BlockzapperItem.setTier(c, ComponentTier.Chromatic, gunWithPurpurStuff);
 		Advancement upgraded_zapper = advancement("upgraded_zapper", gunWithPurpurStuff, TaskType.CHALLENGE)
@@ -477,7 +477,7 @@ public class AllAdvancements implements DataProvider {
 	}
 
 	private static Path getPath(Path pathIn, Advancement advancementIn) {
-		return pathIn.resolve("data_unused/" + advancementIn.getId()
+		return pathIn.resolve("data/" + advancementIn.getId()
 			.getNamespace() + "/advancements/"
 			+ advancementIn.getId()
 				.getPath()
@@ -486,19 +486,19 @@ public class AllAdvancements implements DataProvider {
 
 	@Override
 	public String getName() {
-		return "KineticAPI's Advancements";
+		return "Create's Advancements";
 	}
 
-	public PlacedBlockCriterion.Conditions placeBlock(BeetrootsBlock block) {
-		return PlacedBlockCriterion.Conditions.a(block);
+	public PlacedBlockCriterion.Conditions placeBlock(Block block) {
+		return PlacedBlockCriterion.Conditions.block(block);
 	}
 
-	public KineticBlockTrigger.Instance isPowered(BeetrootsBlock block) {
+	public KineticBlockTrigger.Instance isPowered(Block block) {
 		return AllTriggers.KINETIC_BLOCK.forBlock(block);
 	}
 
-	public InventoryChangedCriterion.Conditions itemGathered(GameRules itemprovider) {
-		return InventoryChangedCriterion.Conditions.a(itemprovider);
+	public InventoryChangedCriterion.Conditions itemGathered(ItemConvertible itemprovider) {
+		return InventoryChangedCriterion.Conditions.items(itemprovider);
 	}
 
 	static enum TaskType {
@@ -525,27 +525,27 @@ public class AllAdvancements implements DataProvider {
 		}
 	}
 
-	public Task kinecticAdvancement(String name, BeetrootsBlock block, TaskType type) {
+	public Task kinecticAdvancement(String name, Block block, TaskType type) {
 		return advancement(name, block, type).criterion("0", placeBlock(block));
 //			.withCriterion("1", isPowered(block)); Duplicate toast
 	}
 
-	public Task advancement(String name, GameRules icon, TaskType type) {
-		return advancement(name, new ItemCooldownManager(icon), type);
+	public Task advancement(String name, ItemConvertible icon, TaskType type) {
+		return advancement(name, new ItemStack(icon), type);
 	}
 
 	public Task deadEnd() {
-		return advancement("eob", AliasedBlockItem.x, TaskType.SILENT_GATE);
+		return advancement("eob", Items.OAK_SAPLING, TaskType.SILENT_GATE);
 	}
 
-	public Task advancement(String name, ItemCooldownManager icon, TaskType type) {
+	public Task advancement(String name, ItemStack icon, TaskType type) {
 		return Advancement.Task.create()
-			.a(icon, new TranslatableText(LANG + name),
+			.display(icon, new TranslatableText(LANG + name),
 				new TranslatableText(LANG + name + ".desc"), null, type.frame, type.toast, type.announce,
 				type.hide);
 	}
 
-	public Task itemAdvancement(String name, Supplier<? extends GameRules> item, TaskType type) {
+	public Task itemAdvancement(String name, Supplier<? extends ItemConvertible> item, TaskType type) {
 		return advancement(name, item.get(), type).criterion("0", itemGathered(item.get()));
 	}
 

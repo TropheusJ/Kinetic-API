@@ -1,16 +1,18 @@
-package com.simibubi.kinetic_api.content.contraptions.components.press;
+package com.simibubi.create.content.contraptions.components.press;
 
-import static com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult.HOLD;
-import static com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult.PASS;
+import static com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult.HOLD;
+import static com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult.PASS;
 
 import java.util.List;
 import java.util.Optional;
-import net.minecraft.entity.player.ItemCooldownManager;
-import com.simibubi.kinetic_api.content.contraptions.components.press.MechanicalPressTileEntity.Mode;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import com.simibubi.kinetic_api.foundation.item.ItemHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
+
+import com.simibubi.create.content.contraptions.components.press.MechanicalPressTileEntity.Mode;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+import com.simibubi.create.foundation.item.ItemHelper;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.BeltProcessingBehaviour.ProcessingResult;
+import com.simibubi.create.foundation.tileEntity.behaviour.belt.TransportedItemStackHandlerBehaviour;
+
+import net.minecraft.item.ItemStack;
 
 public class BeltPressingCallbacks {
 
@@ -43,12 +45,12 @@ public class BeltPressingCallbacks {
 		if (!recipe.isPresent())
 			return PASS;
 
-		ItemCooldownManager out = recipe.get()
-			.c()
-			.i();
-		List<ItemCooldownManager> multipliedOutput = ItemHelper.multipliedOutput(transported.stack, out);
+		ItemStack out = recipe.get()
+			.getOutput()
+			.copy();
+		List<ItemStack> multipliedOutput = ItemHelper.multipliedOutput(transported.stack, out);
 		if (multipliedOutput.isEmpty())
-			transported.stack = ItemCooldownManager.tick;
+			transported.stack = ItemStack.EMPTY;
 		transported.stack = multipliedOutput.get(0);
 		pressTe.sendData();
 		return HOLD;

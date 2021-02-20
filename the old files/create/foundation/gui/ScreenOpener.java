@@ -1,9 +1,9 @@
-package com.simibubi.kinetic_api.foundation.gui;
+package com.simibubi.create.foundation.gui;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screen.PresetsScreen;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.DistExecutor;
@@ -11,19 +11,19 @@ import net.minecraftforge.fml.DistExecutor;
 public class ScreenOpener {
 
 	@Environment(EnvType.CLIENT)
-	private static PresetsScreen openedGuiNextTick;
+	private static Screen openedGuiNextTick;
 
 	public static void tick() {
-		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
+		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
 			if (openedGuiNextTick != null) {
-				KeyBinding.B().a(openedGuiNextTick);
+				MinecraftClient.getInstance().openScreen(openedGuiNextTick);
 				openedGuiNextTick = null;
 			}
 		});
 	}
 
-	public static void open(PresetsScreen gui) {
-		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> {
+	public static void open(Screen gui) {
+		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
 			openedGuiNextTick = gui;
 		});
 	}

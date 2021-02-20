@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.utility;
+package com.simibubi.create.foundation.utility;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,22 +8,23 @@ import java.util.List;
 import java.util.Set;
 
 import com.google.common.base.Predicates;
-import com.simibubi.kinetic_api.AllTags;
-import net.minecraft.block.AirBlock;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.CauldronBlock;
-import net.minecraft.block.ChainBlock;
-import net.minecraft.block.FluidDrainable;
-import net.minecraft.block.JigsawBlock;
+import com.simibubi.create.AllTags;
+
+import net.minecraft.block.BambooBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.CactusBlock;
+import net.minecraft.block.ChorusFlowerBlock;
+import net.minecraft.block.ChorusPlantBlock;
+import net.minecraft.block.KelpBlock;
 import net.minecraft.block.KelpPlantBlock;
-import net.minecraft.block.PaneBlock;
-import net.minecraft.block.StonecutterBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.stat.StatHandler;
+import net.minecraft.block.LeavesBlock;
+import net.minecraft.block.SugarCaneBlock;
+import net.minecraft.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
 
 public class TreeCutter {
 
@@ -44,19 +45,19 @@ public class TreeCutter {
 	 * @param pos
 	 * @return null if not found or not fully cut
 	 */
-	public static Tree cutTree(MobSpawnerLogic reader, BlockPos pos) {
+	public static Tree cutTree(BlockView reader, BlockPos pos) {
 		List<BlockPos> logs = new ArrayList<>();
 		List<BlockPos> leaves = new ArrayList<>();
 		Set<BlockPos> visited = new HashSet<>();
 		List<BlockPos> frontier = new LinkedList<>();
 
 		// Bamboo, Sugar Cane, Cactus
-		PistonHandler stateAbove = reader.d_(pos.up());
+		BlockState stateAbove = reader.getBlockState(pos.up());
 		if (isVerticalPlant(stateAbove)) {
 			logs.add(pos.up());
 			for (int i = 1; i < 256; i++) {
 				BlockPos current = pos.up(i);
-				if (!isVerticalPlant(reader.d_(current)))
+				if (!isVerticalPlant(reader.getBlockState(current)))
 					break;
 				logs.add(current);
 			}
@@ -75,7 +76,7 @@ public class TreeCutter {
 					BlockPos offset = current.offset(direction);
 					if (visited.contains(offset))
 						continue;
-					if (!isChorus(reader.d_(offset)))
+					if (!isChorus(reader.getBlockState(offset)))
 						continue;
 					frontier.add(offset);
 				}
@@ -99,7 +100,7 @@ public class TreeCutter {
 				continue;
 			visited.add(currentPos);
 
-			if (!isLog(reader.d_(currentPos)))
+			if (!isLog(reader.getBlockState(currentPos)))
 				continue;
 			logs.add(currentPos);
 			addNeighbours(currentPos, frontier, visited);
@@ -116,7 +117,7 @@ public class TreeCutter {
 					continue;
 			visited.add(currentPos);
 
-			PistonHandler blockState = reader.d_(currentPos);
+			BlockState blockState = reader.getBlockState(currentPos);
 			boolean isLog = isLog(blockState);
 			boolean isLeaf = isLeaf(blockState);
 			boolean isGenericLeaf = isLeaf || isNonDecayingLeaf(blockState);
@@ -126,15 +127,15 @@ public class TreeCutter {
 			if (isGenericLeaf)
 				leaves.add(currentPos);
 
-			int distance = !isLeaf ? 0 : blockState.c(KelpPlantBlock.a);
+			int distance = !isLeaf ? 0 : blockState.get(LeavesBlock.DISTANCE);
 			for (Direction direction : Iterate.directions) {
 				BlockPos offset = currentPos.offset(direction);
 				if (visited.contains(offset))
 					continue;
-				PistonHandler state = reader.d_(offset);
+				BlockState state = reader.getBlockState(offset);
 				BlockPos subtract = offset.subtract(pos);
 				int horizontalDistance = Math.max(Math.abs(subtract.getX()), Math.abs(subtract.getZ()));
-				if (isLeaf(state) && state.c(KelpPlantBlock.a) > distance || isNonDecayingLeaf(state) && horizontalDistance < 4)
+				if (isLeaf(state) && state.get(LeavesBlock.DISTANCE) > distance || isNonDecayingLeaf(state) && horizontalDistance < 4)
 					frontier.add(offset);
 			}
 
@@ -143,21 +144,21 @@ public class TreeCutter {
 		return new Tree(logs, leaves);
 	}
 
-	public static boolean isChorus(PistonHandler stateAbove) {
-		return stateAbove.b() instanceof ChainBlock || stateAbove.b() instanceof CauldronBlock;
+	public static boolean isChorus(BlockState stateAbove) {
+		return stateAbove.getBlock() instanceof ChorusPlantBlock || stateAbove.getBlock() instanceof ChorusFlowerBlock;
 	}
 
-	public static boolean isVerticalPlant(PistonHandler stateAbove) {
-		BeetrootsBlock block = stateAbove.b();
-		if (block instanceof AirBlock)
+	public static boolean isVerticalPlant(BlockState stateAbove) {
+		Block block = stateAbove.getBlock();
+		if (block instanceof BambooBlock)
 			return true;
-		if (block instanceof FluidDrainable)
+		if (block instanceof CactusBlock)
 			return true;
-		if (block instanceof StonecutterBlock)
+		if (block instanceof SugarCaneBlock)
 			return true;
-		if (block instanceof JigsawBlock)
+		if (block instanceof KelpPlantBlock)
 			return true;
-		if (block instanceof PaneBlock)
+		if (block instanceof KelpBlock)
 			return true;
 		return false;
 	}
@@ -170,7 +171,7 @@ public class TreeCutter {
 	 * @param pos
 	 * @return
 	 */
-	private static boolean validateCut(MobSpawnerLogic reader, BlockPos pos) {
+	private static boolean validateCut(BlockView reader, BlockPos pos) {
 		Set<BlockPos> visited = new HashSet<>();
 		List<BlockPos> frontier = new LinkedList<>();
 		frontier.add(pos);
@@ -182,9 +183,9 @@ public class TreeCutter {
 			visited.add(currentPos);
 			boolean lowerLayer = currentPos.getY() == posY;
 
-			if (!isLog(reader.d_(currentPos)))
+			if (!isLog(reader.getBlockState(currentPos)))
 				continue;
-			if (!lowerLayer && !pos.equals(currentPos.down()) && isLog(reader.d_(currentPos.down())))
+			if (!lowerLayer && !pos.equals(currentPos.down()) && isLog(reader.getBlockState(currentPos.down())))
 				return false;
 
 			for (Direction direction : Iterate.directions) {
@@ -209,16 +210,16 @@ public class TreeCutter {
 			.forEach(p -> frontier.add(new BlockPos(p)));
 	}
 
-	private static boolean isLog(PistonHandler state) {
-		return state.a(StatHandler.s) || AllTags.AllBlockTags.SLIMY_LOGS.matches(state);
+	private static boolean isLog(BlockState state) {
+		return state.isIn(BlockTags.LOGS) || AllTags.AllBlockTags.SLIMY_LOGS.matches(state);
 	}
 
-	private static boolean isNonDecayingLeaf(PistonHandler state) {
-		return state.a(StatHandler.ap) || state.b() == BellBlock.mw;
+	private static boolean isNonDecayingLeaf(BlockState state) {
+		return state.isIn(BlockTags.WART_BLOCKS) || state.getBlock() == Blocks.SHROOMLIGHT;
 	}
 
-	private static boolean isLeaf(PistonHandler state) {
-		return BlockHelper.hasBlockStateProperty(state, KelpPlantBlock.a);
+	private static boolean isLeaf(BlockState state) {
+		return BlockHelper.hasBlockStateProperty(state, LeavesBlock.DISTANCE);
 	}
 
 }

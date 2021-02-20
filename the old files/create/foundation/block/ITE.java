@@ -1,28 +1,28 @@
-package com.simibubi.kinetic_api.foundation.block;
+package com.simibubi.create.foundation.block;
 
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.utility.WorldHelper;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.client.color.world.GrassColors;
+import com.simibubi.create.Create;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.utility.WorldHelper;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.WorldAccess;
 
-public interface ITE<T extends BeehiveBlockEntity> {
+public interface ITE<T extends BlockEntity> {
 
 	Class<T> getTileEntityClass();
 
-	default void withTileEntityDo(MobSpawnerLogic world, BlockPos pos, Consumer<T> action) {
+	default void withTileEntityDo(BlockView world, BlockPos pos, Consumer<T> action) {
 		try {
 			action.accept(getTileEntity(world, pos));
 		} catch (TileEntityException e) {}
 	}
 	
-	default Optional<T> getTileEntityOptional(MobSpawnerLogic world, BlockPos pos) {
+	default Optional<T> getTileEntityOptional(BlockView world, BlockPos pos) {
 		try {
 			return Optional.of(getTileEntity(world, pos));
 		} catch (TileEntityException e) {}
@@ -30,13 +30,13 @@ public interface ITE<T extends BeehiveBlockEntity> {
 	}
 
 	@SuppressWarnings("unchecked")
-	default T getTileEntity(MobSpawnerLogic worldIn, BlockPos pos) throws TileEntityException {
-		BeehiveBlockEntity tileEntity = worldIn.c(pos);
+	default T getTileEntity(BlockView worldIn, BlockPos pos) throws TileEntityException {
+		BlockEntity tileEntity = worldIn.getBlockEntity(pos);
 		Class<T> expectedClass = getTileEntityClass();
 
-		GrassColors world = null;
-		if (worldIn instanceof GrassColors)
-			world = (GrassColors) worldIn;
+		WorldAccess world = null;
+		if (worldIn instanceof WorldAccess)
+			world = (WorldAccess) worldIn;
 
 		if (tileEntity == null)
 			throw new MissingTileEntityException(world, pos, expectedClass);
@@ -49,7 +49,7 @@ public interface ITE<T extends BeehiveBlockEntity> {
 	static class TileEntityException extends Throwable {
 		private static final long serialVersionUID = 1L;
 
-		public TileEntityException(GrassColors world, BlockPos pos, Class<?> teClass) {
+		public TileEntityException(WorldAccess world, BlockPos pos, Class<?> teClass) {
 			super(makeBaseMessage(world, pos, teClass));
 		}
 
@@ -58,12 +58,12 @@ public interface ITE<T extends BeehiveBlockEntity> {
 			report(this);
 		}
 
-		static String makeBaseMessage(GrassColors world, BlockPos pos, Class<?> expectedTeClass) {
+		static String makeBaseMessage(WorldAccess world, BlockPos pos, Class<?> expectedTeClass) {
 			return String.format("[%s] @(%d, %d, %d), expecting a %s", getDimensionName(world), pos.getX(), pos.getY(),
 					pos.getZ(), expectedTeClass.getSimpleName());
 		}
 
-		static String getDimensionName(GrassColors world) {
+		static String getDimensionName(WorldAccess world) {
 			String notAvailable = "Dim N/A";
 			if (world == null)
 				return notAvailable;
@@ -77,7 +77,7 @@ public interface ITE<T extends BeehiveBlockEntity> {
 	static class MissingTileEntityException extends TileEntityException {
 		private static final long serialVersionUID = 1L;
 
-		public MissingTileEntityException(GrassColors world, BlockPos pos, Class<?> teClass) {
+		public MissingTileEntityException(WorldAccess world, BlockPos pos, Class<?> teClass) {
 			super("Missing TileEntity: " + makeBaseMessage(world, pos, teClass));
 		}
 
@@ -86,7 +86,7 @@ public interface ITE<T extends BeehiveBlockEntity> {
 	static class InvalidTileEntityException extends TileEntityException {
 		private static final long serialVersionUID = 1L;
 
-		public InvalidTileEntityException(GrassColors world, BlockPos pos, Class<?> expectedTeClass, Class<?> foundTeClass) {
+		public InvalidTileEntityException(WorldAccess world, BlockPos pos, Class<?> expectedTeClass, Class<?> foundTeClass) {
 			super("Wrong TileEntity: " + makeBaseMessage(world, pos, expectedTeClass) + ", found "
 					+ foundTeClass.getSimpleName());
 		}

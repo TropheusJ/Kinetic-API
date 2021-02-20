@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.content.schematics.packet;
+package com.simibubi.create.content.schematics.packet;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.schematics.block.SchematicTableContainer;
-import com.simibubi.kinetic_api.foundation.networking.SimplePacketBase;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.schematics.block.SchematicTableContainer;
+import com.simibubi.create.foundation.networking.SimplePacketBase;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
@@ -70,8 +70,8 @@ public class SchematicUploadPacket extends SimplePacketBase {
 				if (player == null)
 					return;
 				if (code == BEGIN) {
-					BlockPos pos = ((SchematicTableContainer) player.bp).getTileEntity()
-						.o();
+					BlockPos pos = ((SchematicTableContainer) player.currentScreenHandler).getTileEntity()
+						.getPos();
 					Create.schematicReceiver.handleNewUpload(player, schematic, size, pos);
 				}
 				if (code == WRITE) 

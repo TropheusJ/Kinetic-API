@@ -1,48 +1,50 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.pipes;
+package com.simibubi.create.content.contraptions.fluids.pipes;
 
 import java.util.Random;
 
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidPropagator;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.VoxelShaper;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.EndRodBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
-import net.minecraft.predicate.block.BlockPredicate;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.fluids.FluidPropagator;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.VoxelShaper;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.WallMountedBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.enums.WallMountLocation;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.server.network.DebugInfoSender;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager.Builder;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.shape.ArrayVoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
-import net.minecraft.world.gen.StructureAccessor;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.TickPriority;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
-public class SmartFluidPipeBlock extends EndRodBlock implements IAxisPipe {
+public class SmartFluidPipeBlock extends WallMountedBlock implements IAxisPipe {
 
-	public SmartFluidPipeBlock(c p_i48339_1_) {
+	public SmartFluidPipeBlock(Settings p_i48339_1_) {
 		super(p_i48339_1_);
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(u)
-			.a(aq);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(FACE)
+			.add(FACING);
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil ctx) {
-		PistonHandler stateForPlacement = super.a(ctx);
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		BlockState stateForPlacement = super.getPlacementState(ctx);
 		Axis prefferedAxis = null;
-		BlockPos pos = ctx.a();
-		GameMode world = ctx.p();
+		BlockPos pos = ctx.getBlockPos();
+		World world = ctx.getWorld();
 		for (Direction side : Iterate.directions) {
 			if (!prefersConnectionTo(world, pos, side))
 				continue;
@@ -54,100 +56,100 @@ public class SmartFluidPipeBlock extends EndRodBlock implements IAxisPipe {
 		}
 
 		if (prefferedAxis == Axis.Y)
-			stateForPlacement = stateForPlacement.a(u, BlockPredicate.b)
-				.a(aq, stateForPlacement.c(aq)
+			stateForPlacement = stateForPlacement.with(FACE, WallMountLocation.WALL)
+				.with(FACING, stateForPlacement.get(FACING)
 					.getOpposite());
 		else if (prefferedAxis != null) {
-			if (stateForPlacement.c(u) == BlockPredicate.b)
-				stateForPlacement = stateForPlacement.a(u, BlockPredicate.block);
-			for (Direction direction : ctx.e()) {
+			if (stateForPlacement.get(FACE) == WallMountLocation.WALL)
+				stateForPlacement = stateForPlacement.with(FACE, WallMountLocation.FLOOR);
+			for (Direction direction : ctx.getPlacementDirections()) {
 				if (direction.getAxis() != prefferedAxis)
 					continue;
-				stateForPlacement = stateForPlacement.a(aq, direction.getOpposite());
+				stateForPlacement = stateForPlacement.with(FACING, direction.getOpposite());
 			}
 		}
 
 		return stateForPlacement;
 	}
 
-	protected boolean prefersConnectionTo(ItemConvertible reader, BlockPos pos, Direction facing) {
+	protected boolean prefersConnectionTo(WorldView reader, BlockPos pos, Direction facing) {
 		BlockPos offset = pos.offset(facing);
-		PistonHandler blockState = reader.d_(offset);
+		BlockState blockState = reader.getBlockState(offset);
 		return FluidPipeBlock.canConnectTo(reader, offset, blockState, facing);
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode world, BlockPos pos, PistonHandler newState, boolean isMoving) {
-		boolean blockTypeChanged = state.b() != newState.b();
-		if (blockTypeChanged && !world.v)
+	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean isMoving) {
+		boolean blockTypeChanged = state.getBlock() != newState.getBlock();
+		if (blockTypeChanged && !world.isClient)
 			FluidPropagator.propagateChangedPipe(world, pos, state);
 		if (state.hasTileEntity() && (blockTypeChanged || !newState.hasTileEntity()))
-			world.o(pos);
+			world.removeBlockEntity(pos);
 	}
 
 	@Override
-	public boolean a(PistonHandler p_196260_1_, ItemConvertible p_196260_2_, BlockPos p_196260_3_) {
+	public boolean canPlaceAt(BlockState p_196260_1_, WorldView p_196260_2_, BlockPos p_196260_3_) {
 		return true;
 	}
 
 	@Override
-	public void b(PistonHandler state, GameMode world, BlockPos pos, PistonHandler oldState, boolean isMoving) {
-		if (world.v)
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean isMoving) {
+		if (world.isClient)
 			return;
 		if (state != oldState)
-			world.I()
-				.a(pos, this, 1, StructureAccessor.c);
+			world.getBlockTickScheduler()
+				.schedule(pos, this, 1, TickPriority.HIGH);
 	}
 
 	@Override
-	public void a(PistonHandler state, GameMode world, BlockPos pos, BeetrootsBlock otherBlock, BlockPos neighborPos,
+	public void neighborUpdate(BlockState state, World world, BlockPos pos, Block otherBlock, BlockPos neighborPos,
 		boolean isMoving) {
-		DebugInfoSender.a(world, pos);
+		DebugInfoSender.sendNeighborUpdate(world, pos);
 		Direction d = FluidPropagator.validateNeighbourChange(state, world, pos, otherBlock, neighborPos, isMoving);
 		if (d == null)
 			return;
 		if (!isOpenAt(state, d))
 			return;
-		world.I()
-			.a(pos, this, 1, StructureAccessor.c);
+		world.getBlockTickScheduler()
+			.schedule(pos, this, 1, TickPriority.HIGH);
 	}
 
-	public static boolean isOpenAt(PistonHandler state, Direction d) {
+	public static boolean isOpenAt(BlockState state, Direction d) {
 		return d.getAxis() == getPipeAxis(state);
 	}
 	
 	@Override
-	public void a(PistonHandler state, ServerWorld world, BlockPos pos, Random r) {
+	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random r) {
 		FluidPropagator.propagateChangedPipe(world, pos, state);
 	}
 
-	protected static Axis getPipeAxis(PistonHandler state) {
-		return state.c(u) == BlockPredicate.b ? Axis.Y
-			: state.c(aq)
+	protected static Axis getPipeAxis(BlockState state) {
+		return state.get(FACE) == WallMountLocation.WALL ? Axis.Y
+			: state.get(FACING)
 				.getAxis();
 	}
 
 	@Override
-	public boolean hasTileEntity(PistonHandler state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.SMART_FLUID_PIPE.create();
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic p_220053_2_, BlockPos p_220053_3_,
-		ArrayVoxelShape p_220053_4_) {
-		BlockPredicate face = state.c(u);
-		VoxelShaper shape = face == BlockPredicate.block ? AllShapes.SMART_FLUID_PIPE_FLOOR
-			: face == BlockPredicate.c ? AllShapes.SMART_FLUID_PIPE_CEILING : AllShapes.SMART_FLUID_PIPE_WALL;
-		return shape.get(state.c(aq));
+	public VoxelShape getOutlineShape(BlockState state, BlockView p_220053_2_, BlockPos p_220053_3_,
+		ShapeContext p_220053_4_) {
+		WallMountLocation face = state.get(FACE);
+		VoxelShaper shape = face == WallMountLocation.FLOOR ? AllShapes.SMART_FLUID_PIPE_FLOOR
+			: face == WallMountLocation.CEILING ? AllShapes.SMART_FLUID_PIPE_CEILING : AllShapes.SMART_FLUID_PIPE_WALL;
+		return shape.get(state.get(FACING));
 	}
 
 	@Override
-	public Axis getAxis(PistonHandler state) {
+	public Axis getAxis(BlockState state) {
 		return getPipeAxis(state);
 	}
 

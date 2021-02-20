@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.advancement;
+package com.simibubi.create.foundation.advancement;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -13,7 +13,7 @@ import net.minecraft.predicate.entity.EntityPredicate;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import com.google.common.collect.Maps;
-import com.simibubi.kinetic_api.Create;
+import com.simibubi.create.Create;
 
 public abstract class CriterionTriggerBase<T extends CriterionTriggerBase.Instance> implements Criterion<T> {
 

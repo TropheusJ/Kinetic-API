@@ -1,27 +1,28 @@
-package com.simibubi.kinetic_api.content.curiosities.symmetry.mirror;
+package com.simibubi.create.content.curiosities.symmetry.mirror;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.block.LoomBlock;
-import net.minecraft.block.RespawnAnchorBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.util.SmoothUtil;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.IntProperty;
+import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.state.property.Properties;
+import net.minecraft.state.property.Property;
 import net.minecraft.text.Text;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 public abstract class SymmetryMirror {
 
@@ -30,12 +31,12 @@ public abstract class SymmetryMirror {
 	public static final String CROSS_PLANE = "cross_plane";
 	public static final String TRIPLE_PLANE = "triple_plane";
 
-	protected EntityHitResult position;
-	protected SmoothUtil orientation;
+	protected Vec3d position;
+	protected StringIdentifiable orientation;
 	protected int orientationIndex;
 	public boolean enable;
 
-	public SymmetryMirror(EntityHitResult pos) {
+	public SymmetryMirror(Vec3d pos) {
 		position = pos;
 		enable = true;
 		orientationIndex = 0;
@@ -46,11 +47,11 @@ public abstract class SymmetryMirror {
 			Lang.translate("symmetry.mirror.triplePlane"));
 	}
 
-	public SmoothUtil getOrientation() {
+	public StringIdentifiable getOrientation() {
 		return orientation;
 	}
 
-	public EntityHitResult getPosition() {
+	public Vec3d getPosition() {
 		return position;
 	}
 
@@ -63,15 +64,15 @@ public abstract class SymmetryMirror {
 		setOrientation();
 	}
 
-	public void process(Map<BlockPos, PistonHandler> blocks) {
-		Map<BlockPos, PistonHandler> result = new HashMap<>();
+	public void process(Map<BlockPos, BlockState> blocks) {
+		Map<BlockPos, BlockState> result = new HashMap<>();
 		for (BlockPos pos : blocks.keySet()) {
 			result.putAll(process(pos, blocks.get(pos)));
 		}
 		blocks.putAll(result);
 	}
 
-	public abstract Map<BlockPos, PistonHandler> process(BlockPos position, PistonHandler block);
+	public abstract Map<BlockPos, BlockState> process(BlockPos position, BlockState block);
 
 	protected abstract void setOrientation();
 
@@ -81,7 +82,7 @@ public abstract class SymmetryMirror {
 
 	public abstract AllBlockPartials getModel();
 
-	public void applyModelTransform(BufferVertexConsumer ms) {}
+	public void applyModelTransform(MatrixStack ms) {}
 
 	private static final String $ORIENTATION = "direction";
 	private static final String $POSITION = "pos";
@@ -93,9 +94,9 @@ public abstract class SymmetryMirror {
 		nbt.putInt($ORIENTATION, orientationIndex);
 
 		ListTag floatList = new ListTag();
-		floatList.add(FloatTag.of((float) position.entity));
-		floatList.add(FloatTag.of((float) position.c));
-		floatList.add(FloatTag.of((float) position.d));
+		floatList.add(FloatTag.of((float) position.x));
+		floatList.add(FloatTag.of((float) position.y));
+		floatList.add(FloatTag.of((float) position.z));
 		nbt.put($POSITION, floatList);
 		nbt.putString($TYPE, typeName());
 		nbt.putBoolean($ENABLE, enable);
@@ -105,7 +106,7 @@ public abstract class SymmetryMirror {
 
 	public static SymmetryMirror fromNBT(CompoundTag nbt) {
 		ListTag floatList = nbt.getList($POSITION, 5);
-		EntityHitResult pos = new EntityHitResult(floatList.getFloat(0), floatList.getFloat(1), floatList.getFloat(2));
+		Vec3d pos = new Vec3d(floatList.getFloat(0), floatList.getFloat(1), floatList.getFloat(2));
 		SymmetryMirror element;
 
 		switch (nbt.getString($TYPE)) {
@@ -129,49 +130,49 @@ public abstract class SymmetryMirror {
 		return element;
 	}
 
-	protected EntityHitResult getDiff(BlockPos position) {
-		return this.position.a(-1)
-			.b(position.getX(), position.getY(), position.getZ());
+	protected Vec3d getDiff(BlockPos position) {
+		return this.position.multiply(-1)
+			.add(position.getX(), position.getY(), position.getZ());
 	}
 
 	protected BlockPos getIDiff(BlockPos position) {
-		EntityHitResult diff = getDiff(position);
-		return new BlockPos((int) diff.entity, (int) diff.c, (int) diff.d);
+		Vec3d diff = getDiff(position);
+		return new BlockPos((int) diff.x, (int) diff.y, (int) diff.z);
 	}
 
-	protected PistonHandler flipX(PistonHandler in) {
-		return in.a(LoomBlock.c);
+	protected BlockState flipX(BlockState in) {
+		return in.mirror(BlockMirror.FRONT_BACK);
 	}
 
-	protected PistonHandler flipY(PistonHandler in) {
-		for (IntProperty<?> property : in.r()) {
+	protected BlockState flipY(BlockState in) {
+		for (Property<?> property : in.getProperties()) {
 
-			if (property == BambooLeaves.ab)
-				return in.a(property);
+			if (property == Properties.BLOCK_HALF)
+				return in.cycle(property);
 			// Directional Blocks
-			if (property instanceof BooleanProperty) {
-				if (in.c(property) == Direction.DOWN) {
-					return in.a((BooleanProperty) property, Direction.UP);
-				} else if (in.c(property) == Direction.UP) {
-					return in.a((BooleanProperty) property, Direction.DOWN);
+			if (property instanceof DirectionProperty) {
+				if (in.get(property) == Direction.DOWN) {
+					return in.with((DirectionProperty) property, Direction.UP);
+				} else if (in.get(property) == Direction.UP) {
+					return in.with((DirectionProperty) property, Direction.DOWN);
 				}
 			}
 		}
 		return in;
 	}
 
-	protected PistonHandler flipZ(PistonHandler in) {
-		return in.a(LoomBlock.b);
+	protected BlockState flipZ(BlockState in) {
+		return in.mirror(BlockMirror.LEFT_RIGHT);
 	}
 
-	protected PistonHandler flipD1(PistonHandler in) {
-		return in.a(RespawnAnchorBlock.d)
-			.a(LoomBlock.c);
+	protected BlockState flipD1(BlockState in) {
+		return in.rotate(BlockRotation.COUNTERCLOCKWISE_90)
+			.mirror(BlockMirror.FRONT_BACK);
 	}
 
-	protected PistonHandler flipD2(PistonHandler in) {
-		return in.a(RespawnAnchorBlock.d)
-			.a(LoomBlock.b);
+	protected BlockState flipD2(BlockState in) {
+		return in.rotate(BlockRotation.COUNTERCLOCKWISE_90)
+			.mirror(BlockMirror.LEFT_RIGHT);
 	}
 
 	protected BlockPos flipX(BlockPos position) {
@@ -201,7 +202,7 @@ public abstract class SymmetryMirror {
 			position.getZ() - diff.getZ() - diff.getX());
 	}
 
-	public void setPosition(EntityHitResult pos3d) {
+	public void setPosition(Vec3d pos3d) {
 		this.position = pos3d;
 	}
 

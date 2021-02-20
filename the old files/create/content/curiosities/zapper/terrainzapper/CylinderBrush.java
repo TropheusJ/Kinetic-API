@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.terrainzapper;
+package com.simibubi.create.content.curiosities.zapper.terrainzapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,13 +8,13 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.VecHelper;
 import net.minecraft.text.Text;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.AxisDirection;
+import net.minecraft.util.math.Vec3d;
 
 public class CylinderBrush extends Brush {
 
@@ -32,7 +32,7 @@ public class CylinderBrush extends Brush {
 				BlockPos.stream(BlockPos.ORIGIN.add(-i - 1, 0, -i - 1), BlockPos.ORIGIN.add(i + 1, 0, i + 1))
 					.map(BlockPos::new)
 					.filter(p -> VecHelper.getCenterOf(p)
-						.f(VecHelper.getCenterOf(BlockPos.ORIGIN)) < radius + .42f)
+						.distanceTo(VecHelper.getCenterOf(BlockPos.ORIGIN)) < radius + .42f)
 					.collect(Collectors.toList());
 			for (int h = 0; h <= MAX_HEIGHT; h++) {
 				List<BlockPos> stackedPositions = new ArrayList<>();
@@ -47,7 +47,7 @@ public class CylinderBrush extends Brush {
 	}
 
 	@Override
-	public BlockPos getOffset(EntityHitResult ray, Direction face, PlacementOptions option) {
+	public BlockPos getOffset(Vec3d ray, Direction face, PlacementOptions option) {
 		if (option == PlacementOptions.Merged)
 			return BlockPos.ORIGIN;
 

@@ -1,39 +1,40 @@
-package com.simibubi.kinetic_api.content.contraptions.components.flywheel.engine;
+package com.simibubi.create.content.contraptions.components.flywheel.engine;
 
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.foundation.tileEntity.renderer.SafeTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import ebv;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.client.gl.JsonGlProgram;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.foundation.tileEntity.renderer.SafeTileEntityRenderer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+
+import net.minecraft.block.Block;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 
 public class EngineRenderer<T extends EngineTileEntity> extends SafeTileEntityRenderer<T> {
 
-	public EngineRenderer(ebv dispatcher) {
+	public EngineRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(T te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer, int light,
+	protected void renderSafe(T te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer, int light,
 		int overlay) {
-		BeetrootsBlock block = te.p()
-			.b();
+		Block block = te.getCachedState()
+			.getBlock();
 		if (block instanceof EngineBlock) {
 			EngineBlock engineBlock = (EngineBlock) block;
 			AllBlockPartials frame = engineBlock.getFrameModel();
 			if (frame != null) {
-				Direction facing = te.p()
-					.c(EngineBlock.aq);
+				Direction facing = te.getCachedState()
+					.get(EngineBlock.FACING);
 				float angle = AngleHelper.rad(AngleHelper.horizontalAngle(facing));
-				frame.renderOn(te.p())
+				frame.renderOn(te.getCachedState())
 					.rotateCentered(Direction.UP, angle)
 					.translate(0, 0, -1)
-					.light(JsonGlProgram.a(te.v(), te.p(), te.o()))
-					.renderInto(ms, buffer.getBuffer(VertexConsumerProvider.c()));
+					.light(WorldRenderer.getLightmapCoordinates(te.getWorld(), te.getCachedState(), te.getPos()))
+					.renderInto(ms, buffer.getBuffer(RenderLayer.getSolid()));
 			}
 		}
 	}

@@ -1,23 +1,24 @@
-package com.simibubi.kinetic_api.content.curiosities.symmetry.mirror;
+package com.simibubi.create.content.curiosities.symmetry.mirror;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.util.SmoothUtil;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 public class CrossPlaneMirror extends SymmetryMirror {
 
-	public static enum Align implements SmoothUtil {
+	public static enum Align implements StringIdentifiable {
 		Y("y"), D("d");
 
 		private final String name;
@@ -27,7 +28,7 @@ public class CrossPlaneMirror extends SymmetryMirror {
 		}
 
 		@Override
-		public String a() {
+		public String asString() {
 			return name;
 		}
 
@@ -37,7 +38,7 @@ public class CrossPlaneMirror extends SymmetryMirror {
 		}
 	}
 
-	public CrossPlaneMirror(EntityHitResult pos) {
+	public CrossPlaneMirror(Vec3d pos) {
 		super(pos);
 		orientation = Align.Y;
 	}
@@ -58,8 +59,8 @@ public class CrossPlaneMirror extends SymmetryMirror {
 	}
 
 	@Override
-	public Map<BlockPos, PistonHandler> process(BlockPos position, PistonHandler block) {
-		Map<BlockPos, PistonHandler> result = new HashMap<>();
+	public Map<BlockPos, BlockState> process(BlockPos position, BlockState block) {
+		Map<BlockPos, BlockState> result = new HashMap<>();
 
 		switch ((Align) orientation) {
 		case D:
@@ -90,7 +91,7 @@ public class CrossPlaneMirror extends SymmetryMirror {
 	}
 
 	@Override
-	public void applyModelTransform(BufferVertexConsumer ms) {
+	public void applyModelTransform(MatrixStack ms) {
 		super.applyModelTransform(ms);
 		MatrixStacker.of(ms)
 			.centre()

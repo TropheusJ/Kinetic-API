@@ -1,34 +1,35 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
 import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.simibubi.kinetic_api.AllFluids;
-import com.simibubi.kinetic_api.content.contraptions.fluids.potion.PotionFluidHandler;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import com.simibubi.kinetic_api.foundation.utility.BlockFace;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import net.minecraft.block.LecternBlock;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.sound.MusicType;
-import net.minecraft.entity.SaddledComponent;
-import net.minecraft.entity.effect.DamageModifierStatusEffect;
-import net.minecraft.entity.effect.InstantStatusEffect;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.WrittenBookItem;
+import com.simibubi.create.AllFluids;
+import com.simibubi.create.content.contraptions.fluids.potion.PotionFluidHandler;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+import com.simibubi.create.foundation.utility.BlockFace;
+import com.simibubi.create.foundation.utility.BlockHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.FluidBlock;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.tag.BlockTags;
+import net.minecraft.potion.PotionUtil;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.property.Properties;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
@@ -36,29 +37,29 @@ import net.minecraftforge.fluids.capability.templates.FluidTank;
 
 public class OpenEndedPipe extends FlowSource {
 
-	GameMode world;
+	World world;
 	BlockPos pos;
-	Timer aoe;
+	Box aoe;
 
 	private OpenEndFluidHandler fluidHandler;
 	private BlockPos outputPos;
 	private boolean wasPulling;
 
 	private FluidStack cachedFluid;
-	private List<InstantStatusEffect> cachedEffects;
+	private List<StatusEffectInstance> cachedEffects;
 
 	public OpenEndedPipe(BlockFace face) {
 		super(face);
 		fluidHandler = new OpenEndFluidHandler();
 		outputPos = face.getConnectedPos();
 		pos = face.getPos();
-		aoe = new Timer(outputPos).b(0, -1, 0);
+		aoe = new Box(outputPos).stretch(0, -1, 0);
 		if (face.getFace() == Direction.DOWN)
-			aoe = aoe.b(0, -1, 0);
+			aoe = aoe.stretch(0, -1, 0);
 	}
 
 	@Override
-	public void manageSource(GameMode world) {
+	public void manageSource(World world) {
 		this.world = world;
 	}
 
@@ -69,17 +70,17 @@ public class OpenEndedPipe extends FlowSource {
 		if (!world.isAreaLoaded(outputPos, 0))
 			return empty;
 
-		PistonHandler state = world.d_(outputPos);
-		EmptyFluid fluidState = state.m();
-		boolean waterlog = BlockHelper.hasBlockStateProperty(state, BambooLeaves.C);
+		BlockState state = world.getBlockState(outputPos);
+		FluidState fluidState = state.getFluidState();
+		boolean waterlog = BlockHelper.hasBlockStateProperty(state, Properties.WATERLOGGED);
 
-		if (!waterlog && !state.c()
-			.e())
+		if (!waterlog && !state.getMaterial()
+			.isReplaceable())
 			return empty;
-		if (fluidState.c() || !fluidState.b())
+		if (fluidState.isEmpty() || !fluidState.isStill())
 			return empty;
 
-		FluidStack stack = new FluidStack(fluidState.a(), 1000);
+		FluidStack stack = new FluidStack(fluidState.getFluid(), 1000);
 
 		if (simulate)
 			return stack;
@@ -87,13 +88,13 @@ public class OpenEndedPipe extends FlowSource {
 		AllTriggers.triggerForNearbyPlayers(AllTriggers.PIPE_SPILL, world, pos, 5);
 
 		if (waterlog) {
-			world.a(outputPos, state.a(BambooLeaves.C, false), 3);
-			world.H()
-				.a(outputPos, FlowableFluid.c, 1);
+			world.setBlockState(outputPos, state.with(Properties.WATERLOGGED, false), 3);
+			world.getFluidTickScheduler()
+				.schedule(outputPos, Fluids.WATER, 1);
 			return stack;
 		}
-		world.a(outputPos, fluidState.g()
-			.a(LecternBlock.FACING, 14), 3);
+		world.setBlockState(outputPos, fluidState.getBlockState()
+			.with(FluidBlock.LEVEL, 14), 3);
 		return stack;
 	}
 
@@ -103,12 +104,12 @@ public class OpenEndedPipe extends FlowSource {
 		if (!world.isAreaLoaded(outputPos, 0))
 			return false;
 
-		PistonHandler state = world.d_(outputPos);
-		EmptyFluid fluidState = state.m();
-		boolean waterlog = state.b(BambooLeaves.C);
+		BlockState state = world.getBlockState(outputPos);
+		FluidState fluidState = state.getFluidState();
+		boolean waterlog = state.contains(Properties.WATERLOGGED);
 
-		if (!waterlog && !state.c()
-			.e())
+		if (!waterlog && !state.getMaterial()
+			.isReplaceable())
 			return false;
 		if (fluid.isEmpty())
 			return false;
@@ -118,45 +119,45 @@ public class OpenEndedPipe extends FlowSource {
 			return true;
 		}
 
-		if (!fluidState.c() && fluidState.a() != fluid.getFluid()) {
+		if (!fluidState.isEmpty() && fluidState.getFluid() != fluid.getFluid()) {
 			FluidReactions.handlePipeSpillCollision(world, outputPos, fluid.getFluid(), fluidState);
 			return false;
 		}
 
-		if (fluidState.b())
+		if (fluidState.isStill())
 			return false;
-		if (waterlog && fluid.getFluid() != FlowableFluid.c)
+		if (waterlog && fluid.getFluid() != Fluids.WATER)
 			return false;
 		if (simulate)
 			return true;
 
-		if (world.k().d() && fluid.getFluid()
-			.a(BlockTags.field_15481)) {
+		if (world.getDimension().isUltrawarm() && fluid.getFluid()
+			.isIn(FluidTags.WATER)) {
 			int i = outputPos.getX();
 			int j = outputPos.getY();
 			int k = outputPos.getZ();
-			world.a(null, i, j, k, MusicType.ej, SoundEvent.e, 0.5F,
-				2.6F + (world.t.nextFloat() - world.t.nextFloat()) * 0.8F);
+			world.playSound(null, i, j, k, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F,
+				2.6F + (world.random.nextFloat() - world.random.nextFloat()) * 0.8F);
 			return true;
 		}
 		
 		AllTriggers.triggerForNearbyPlayers(AllTriggers.PIPE_SPILL, world, pos, 5);
 
 		if (waterlog) {
-			world.a(outputPos, state.a(BambooLeaves.C, true), 3);
-			world.H()
-				.a(outputPos, FlowableFluid.c, 1);
+			world.setBlockState(outputPos, state.with(Properties.WATERLOGGED, true), 3);
+			world.getFluidTickScheduler()
+				.schedule(outputPos, Fluids.WATER, 1);
 			return true;
 		}
-		world.a(outputPos, fluid.getFluid()
-			.h()
-			.g(), 3);
+		world.setBlockState(outputPos, fluid.getFluid()
+			.getDefaultState()
+			.getBlockState(), 3);
 		return true;
 	}
 
-	private void applyEffects(GameMode world, FluidStack fluid) {
+	private void applyEffects(World world, FluidStack fluid) {
 		if (!fluid.getFluid()
-			.a(AllFluids.POTION.get())) {
+			.matchesType(AllFluids.POTION.get())) {
 			// other fx
 			return;
 		}
@@ -164,23 +165,23 @@ public class OpenEndedPipe extends FlowSource {
 		if (cachedFluid == null || cachedEffects == null || !fluid.isFluidEqual(cachedFluid)) {
 			FluidStack copy = fluid.copy();
 			copy.setAmount(250);
-			ItemCooldownManager bottle = PotionFluidHandler.fillBottle(new ItemCooldownManager(AliasedBlockItem.nw), fluid);
-			cachedEffects = WrittenBookItem.a(bottle);
+			ItemStack bottle = PotionFluidHandler.fillBottle(new ItemStack(Items.GLASS_BOTTLE), fluid);
+			cachedEffects = PotionUtil.getPotionEffects(bottle);
 		}
 
 		if (cachedEffects.isEmpty())
 			return;
 
-		List<SaddledComponent> list =
-			this.world.a(SaddledComponent.class, aoe, SaddledComponent::eg);
-		for (SaddledComponent livingentity : list) {
-			for (InstantStatusEffect effectinstance : cachedEffects) {
-				DamageModifierStatusEffect effect = effectinstance.a();
-				if (effect.a()) {
-					effect.a(null, null, livingentity, effectinstance.c(), 0.5D);
+		List<LivingEntity> list =
+			this.world.getEntitiesByClass(LivingEntity.class, aoe, LivingEntity::isAffectedBySplashPotions);
+		for (LivingEntity livingentity : list) {
+			for (StatusEffectInstance effectinstance : cachedEffects) {
+				StatusEffect effect = effectinstance.getEffectType();
+				if (effect.isInstant()) {
+					effect.applyInstantEffect(null, null, livingentity, effectinstance.getAmplifier(), 0.5D);
 					continue;
 				}
-				livingentity.c(new InstantStatusEffect(effectinstance));
+				livingentity.addStatusEffect(new StatusEffectInstance(effectinstance));
 			}
 		}
 

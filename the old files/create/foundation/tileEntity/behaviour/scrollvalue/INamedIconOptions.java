@@ -1,6 +1,6 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.scrollvalue;
+package com.simibubi.create.foundation.tileEntity.behaviour.scrollvalue;
 
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.gui.AllIcons;
 
 public interface INamedIconOptions {
 	AllIcons getIcon();

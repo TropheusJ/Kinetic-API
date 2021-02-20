@@ -1,41 +1,41 @@
-package com.simibubi.kinetic_api.foundation.networking;
+package com.simibubi.create.foundation.networking;
 
 import java.util.function.Supplier;
 
-import com.simibubi.kinetic_api.content.curiosities.symmetry.SymmetryWandItem;
-import com.simibubi.kinetic_api.content.curiosities.zapper.ZapperItem;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.curiosities.symmetry.SymmetryWandItem;
+import com.simibubi.create.content.curiosities.zapper.ZapperItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.Hand;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
 
 @Deprecated
 public class NbtPacket extends SimplePacketBase {
 
-	public ItemCooldownManager stack;
+	public ItemStack stack;
 	public int slot;
-	public ItemScatterer hand;
+	public Hand hand;
 
-	public NbtPacket(ItemCooldownManager stack, ItemScatterer hand) {
+	public NbtPacket(ItemStack stack, Hand hand) {
 		this(stack, -1);
 		this.hand = hand;
 	}
 	
-	public NbtPacket(ItemCooldownManager stack, int slot) {
+	public NbtPacket(ItemStack stack, int slot) {
 		this.stack = stack;
 		this.slot = slot;
-		this.hand = ItemScatterer.RANDOM;
+		this.hand = Hand.MAIN_HAND;
 	}
 
 	public NbtPacket(PacketByteBuf buffer) {
-		stack = buffer.n();
+		stack = buffer.readItemStack();
 		slot = buffer.readInt();
-		hand = ItemScatterer.values()[buffer.readInt()];
+		hand = Hand.values()[buffer.readInt()];
 	}
 	
 	public void write(PacketByteBuf buffer) {
-		buffer.a(stack);
+		buffer.writeItemStack(stack);
 		buffer.writeInt(slot);
 		buffer.writeInt(hand.ordinal());
 	}
@@ -45,21 +45,21 @@ public class NbtPacket extends SimplePacketBase {
 			ServerPlayerEntity player = context.get().getSender();
 			if (player == null)
 				return;
-			if (!(stack.b() instanceof SymmetryWandItem || stack.b() instanceof ZapperItem)) {
+			if (!(stack.getItem() instanceof SymmetryWandItem || stack.getItem() instanceof ZapperItem)) {
 				return;
 			}
-			stack.c("AttributeModifiers");
+			stack.removeSubTag("AttributeModifiers");
 			if (slot == -1) {
-				ItemCooldownManager heldItem = player.b(hand);
-				if (heldItem.b() == stack.b()) {
-					heldItem.c(stack.o());
+				ItemStack heldItem = player.getStackInHand(hand);
+				if (heldItem.getItem() == stack.getItem()) {
+					heldItem.setTag(stack.getTag());
 				}
 				return;
 			}
 			
-			ItemCooldownManager heldInSlot = player.bm.a(slot);
-			if (heldInSlot.b() == stack.b()) {
-				heldInSlot.c(stack.o());
+			ItemStack heldInSlot = player.inventory.getStack(slot);
+			if (heldInSlot.getItem() == stack.getItem()) {
+				heldInSlot.setTag(stack.getTag());
 			}
 			
 		});

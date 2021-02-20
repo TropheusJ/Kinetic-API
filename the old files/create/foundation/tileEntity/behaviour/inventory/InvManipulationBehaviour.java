@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.inventory;
+package com.simibubi.create.foundation.tileEntity.behaviour.inventory;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -6,19 +6,20 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Predicates;
-import com.simibubi.kinetic_api.foundation.item.ItemHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockFace;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.foundation.item.ItemHelper;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.foundation.tileEntity.behaviour.filtering.FilteringBehaviour;
+import com.simibubi.create.foundation.utility.BlockFace;
+import com.simibubi.create.foundation.utility.BlockHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
@@ -84,30 +85,30 @@ public class InvManipulationBehaviour extends TileEntityBehaviour {
 		return targetCapability.orElse(null);
 	}
 
-	public ItemCooldownManager extract() {
+	public ItemStack extract() {
 		return extract(getAmountFromFilter());
 	}
 
-	public ItemCooldownManager extract(int amount) {
+	public ItemStack extract(int amount) {
 		return extract(amount, Predicates.alwaysTrue());
 	}
 
-	public ItemCooldownManager extract(int amount, Predicate<ItemCooldownManager> filter) {
-		return extract(amount, filter, ItemCooldownManager::c);
+	public ItemStack extract(int amount, Predicate<ItemStack> filter) {
+		return extract(amount, filter, ItemStack::getMaxCount);
 	}
 
-	public ItemCooldownManager extract(int amount, Predicate<ItemCooldownManager> filter, Function<ItemCooldownManager, Integer> amountThreshold) {
+	public ItemStack extract(int amount, Predicate<ItemStack> filter, Function<ItemStack, Integer> amountThreshold) {
 		boolean shouldSimulate = simulateNext;
 		simulateNext = false;
 
-		if (getWorld().v)
-			return ItemCooldownManager.tick;
+		if (getWorld().isClient)
+			return ItemStack.EMPTY;
 		IItemHandler inventory = targetCapability.orElse(null);
 		if (inventory == null)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 
-		Predicate<ItemCooldownManager> test = getFilterTest(filter);
-		ItemCooldownManager extract = ItemCooldownManager.tick;
+		Predicate<ItemStack> test = getFilterTest(filter);
+		ItemStack extract = ItemStack.EMPTY;
 		if (amount != -1)
 			extract = ItemHelper.extract(inventory, test, amount, shouldSimulate);
 		else
@@ -115,7 +116,7 @@ public class InvManipulationBehaviour extends TileEntityBehaviour {
 		return extract;
 	}
 
-	public ItemCooldownManager insert(ItemCooldownManager stack) {
+	public ItemStack insert(ItemStack stack) {
 		boolean shouldSimulate = simulateNext;
 		simulateNext = false;
 		IItemHandler inventory = targetCapability.orElse(null);
@@ -124,8 +125,8 @@ public class InvManipulationBehaviour extends TileEntityBehaviour {
 		return ItemHandlerHelper.insertItemStacked(inventory, stack, shouldSimulate);
 	}
 
-	protected Predicate<ItemCooldownManager> getFilterTest(Predicate<ItemCooldownManager> customFilter) {
-		Predicate<ItemCooldownManager> test = customFilter;
+	protected Predicate<ItemStack> getFilterTest(Predicate<ItemStack> customFilter) {
+		Predicate<ItemStack> test = customFilter;
 		FilteringBehaviour filter = tileEntity.getBehaviour(FilteringBehaviour.TYPE);
 		if (filter != null)
 			test = customFilter.and(filter::test);
@@ -168,16 +169,16 @@ public class InvManipulationBehaviour extends TileEntityBehaviour {
 	}
 
 	protected void findNewCapability() {
-		BlockFace targetBlockFace = target.getTarget(getWorld(), tileEntity.o(), tileEntity.p())
+		BlockFace targetBlockFace = target.getTarget(getWorld(), tileEntity.getPos(), tileEntity.getCachedState())
 			.getOpposite();
 		BlockPos pos = targetBlockFace.getPos();
-		GameMode world = getWorld();
+		World world = getWorld();
 
 		targetCapability = LazyOptional.empty();
 
-		if (!world.p(pos))
+		if (!world.canSetBlock(pos))
 			return;
-		BeehiveBlockEntity invTE = world.c(pos);
+		BlockEntity invTE = world.getBlockEntity(pos);
 		if (invTE == null)
 			return;
 		targetCapability = bypassSided ? invTE.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY)
@@ -195,17 +196,17 @@ public class InvManipulationBehaviour extends TileEntityBehaviour {
 	public interface InterfaceProvider {
 
 		public static InterfaceProvider towardBlockFacing() {
-			return (w, p, s) -> new BlockFace(p, BlockHelper.hasBlockStateProperty(s, BambooLeaves.M) ? s.c(BambooLeaves.M)
-				: s.c(BambooLeaves.O));
+			return (w, p, s) -> new BlockFace(p, BlockHelper.hasBlockStateProperty(s, Properties.FACING) ? s.get(Properties.FACING)
+				: s.get(Properties.HORIZONTAL_FACING));
 		}
 
 		public static InterfaceProvider oppositeOfBlockFacing() {
 			return (w, p, s) -> new BlockFace(p,
-				(BlockHelper.hasBlockStateProperty(s, BambooLeaves.M) ? s.c(BambooLeaves.M)
-					: s.c(BambooLeaves.O)).getOpposite());
+				(BlockHelper.hasBlockStateProperty(s, Properties.FACING) ? s.get(Properties.FACING)
+					: s.get(Properties.HORIZONTAL_FACING)).getOpposite());
 		}
 
-		public BlockFace getTarget(GameMode world, BlockPos pos, PistonHandler blockState);
+		public BlockFace getTarget(World world, BlockPos pos, BlockState blockState);
 	}
 
 }

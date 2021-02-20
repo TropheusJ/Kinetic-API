@@ -1,51 +1,53 @@
-package com.simibubi.kinetic_api.content.contraptions.base;
+package com.simibubi.create.content.contraptions.base;
 
-import com.simibubi.kinetic_api.foundation.utility.DirectionHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.RespawnAnchorBlock;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.potion.PotionUtil;
+import com.simibubi.create.foundation.utility.DirectionHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 public abstract class DirectionalAxisKineticBlock extends DirectionalKineticBlock {
 
-	public static final BedPart AXIS_ALONG_FIRST_COORDINATE = BedPart.a("axis_along_first");
+	public static final BooleanProperty AXIS_ALONG_FIRST_COORDINATE = BooleanProperty.of("axis_along_first");
 
-	public DirectionalAxisKineticBlock(c properties) {
+	public DirectionalAxisKineticBlock(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(AXIS_ALONG_FIRST_COORDINATE);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(AXIS_ALONG_FIRST_COORDINATE);
+		super.appendProperties(builder);
 	}
 
-	protected Direction getFacingForPlacement(PotionUtil context) {
-		Direction facing = context.d()
+	protected Direction getFacingForPlacement(ItemPlacementContext context) {
+		Direction facing = context.getPlayerLookDirection()
 			.getOpposite();
-		if (context.n() != null && context.n()
-			.bt())
+		if (context.getPlayer() != null && context.getPlayer()
+			.isSneaking())
 			facing = facing.getOpposite();
 		return facing;
 	}
 
-	protected boolean getAxisAlignmentForPlacement(PotionUtil context) {
-		return context.f()
+	protected boolean getAxisAlignmentForPlacement(ItemPlacementContext context) {
+		return context.getPlayerFacing()
 			.getAxis() == Axis.X;
 	}
 
 	@Override
-	public PistonHandler a(PotionUtil context) {
+	public BlockState getPlacementState(ItemPlacementContext context) {
 		Direction facing = getFacingForPlacement(context);
-		BlockPos pos = context.a();
-		GameMode world = context.p();
+		BlockPos pos = context.getBlockPos();
+		World world = context.getWorld();
 		boolean alongFirst = false;
 		Axis faceAxis = facing.getAxis();
 
@@ -81,26 +83,26 @@ public abstract class DirectionalAxisKineticBlock extends DirectionalKineticBloc
 				alongFirst = prefferedSide.getAxis() == Axis.X;
 		}
 
-		return this.n()
-			.a(FACING, facing)
-			.a(AXIS_ALONG_FIRST_COORDINATE, alongFirst);
+		return this.getDefaultState()
+			.with(FACING, facing)
+			.with(AXIS_ALONG_FIRST_COORDINATE, alongFirst);
 	}
 
-	protected boolean prefersConnectionTo(ItemConvertible reader, BlockPos pos, Direction facing, boolean shaftAxis) {
+	protected boolean prefersConnectionTo(WorldView reader, BlockPos pos, Direction facing, boolean shaftAxis) {
 		if (!shaftAxis)
 			return false;
 		BlockPos neighbourPos = pos.offset(facing);
-		PistonHandler blockState = reader.d_(neighbourPos);
-		BeetrootsBlock block = blockState.b();
+		BlockState blockState = reader.getBlockState(neighbourPos);
+		Block block = blockState.getBlock();
 		return block instanceof IRotate
 			&& ((IRotate) block).hasShaftTowards(reader, neighbourPos, blockState, facing.getOpposite());
 	}
 
 	@Override
-	public Axis getRotationAxis(PistonHandler state) {
-		Axis pistonAxis = state.c(FACING)
+	public Axis getRotationAxis(BlockState state) {
+		Axis pistonAxis = state.get(FACING)
 			.getAxis();
-		boolean alongFirst = state.c(AXIS_ALONG_FIRST_COORDINATE);
+		boolean alongFirst = state.get(AXIS_ALONG_FIRST_COORDINATE);
 
 		if (pistonAxis == Axis.X)
 			return alongFirst ? Axis.Y : Axis.Z;
@@ -113,14 +115,14 @@ public abstract class DirectionalAxisKineticBlock extends DirectionalKineticBloc
 	}
 
 	@Override
-	public PistonHandler a(PistonHandler state, RespawnAnchorBlock rot) {
+	public BlockState rotate(BlockState state, BlockRotation rot) {
 		if (rot.ordinal() % 2 == 1)
-			state = state.a(AXIS_ALONG_FIRST_COORDINATE);
-		return super.a(state, rot);
+			state = state.cycle(AXIS_ALONG_FIRST_COORDINATE);
+		return super.rotate(state, rot);
 	}
 
 	@Override
-	public boolean hasShaftTowards(ItemConvertible world, BlockPos pos, PistonHandler state, Direction face) {
+	public boolean hasShaftTowards(WorldView world, BlockPos pos, BlockState state, Direction face) {
 		return face.getAxis() == getRotationAxis(state);
 	}
 

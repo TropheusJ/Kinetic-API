@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.foundation.advancement;
+package com.simibubi.create.foundation.advancement;
 
 import net.minecraft.server.network.ServerPlayerEntity;
 

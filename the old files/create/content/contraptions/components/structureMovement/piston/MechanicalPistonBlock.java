@@ -1,139 +1,141 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.piston;
+package com.simibubi.create.content.contraptions.components.structureMovement.piston;
 
-import bnx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.AllShapes;
-import com.simibubi.kinetic_api.AllSoundEvents;
-import com.simibubi.kinetic_api.AllTileEntities;
-import com.simibubi.kinetic_api.content.contraptions.base.DirectionalAxisKineticBlock;
-import com.simibubi.kinetic_api.foundation.block.ITE;
-import com.simibubi.kinetic_api.foundation.config.AllConfigs;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import dcg;
-import ddb;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.enums.BambooLeaves;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.util.SmoothUtil;
-import net.minecraft.entity.player.PlayerAbilities;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllShapes;
+import com.simibubi.create.AllSoundEvents;
+import com.simibubi.create.AllTileEntities;
+import com.simibubi.create.content.contraptions.base.DirectionalAxisKineticBlock;
+import com.simibubi.create.foundation.block.ITE;
+import com.simibubi.create.foundation.config.AllConfigs;
+import com.simibubi.create.foundation.utility.Lang;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.util.ItemScatterer;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.state.StateManager.Builder;
+import net.minecraft.state.property.EnumProperty;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.StringIdentifiable;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.ArrayVoxelShape;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.MobSpawnerLogic;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 import net.minecraftforge.common.Tags;
 
 public class MechanicalPistonBlock extends DirectionalAxisKineticBlock implements ITE<MechanicalPistonTileEntity> {
 
-	public static final DirectionProperty<PistonState> STATE = DirectionProperty.a("state", PistonState.class);
+	public static final EnumProperty<PistonState> STATE = EnumProperty.of("state", PistonState.class);
 	protected boolean isSticky;
 
-	public static MechanicalPistonBlock normal(c properties) {
+	public static MechanicalPistonBlock normal(Settings properties) {
 		return new MechanicalPistonBlock(properties, false);
 	}
 
-	public static MechanicalPistonBlock sticky(c properties) {
+	public static MechanicalPistonBlock sticky(Settings properties) {
 		return new MechanicalPistonBlock(properties, true);
 	}
 
-	protected MechanicalPistonBlock(c properties, boolean sticky) {
+	protected MechanicalPistonBlock(Settings properties, boolean sticky) {
 		super(properties);
-		j(n().a(FACING, Direction.NORTH)
-			.a(STATE, PistonState.RETRACTED));
+		setDefaultState(getDefaultState().with(FACING, Direction.NORTH)
+			.with(STATE, PistonState.RETRACTED));
 		isSticky = sticky;
 	}
 
 	@Override
-	protected void a(cef.a<BeetrootsBlock, PistonHandler> builder) {
-		builder.a(STATE);
-		super.a(builder);
+	protected void appendProperties(Builder<Block, BlockState> builder) {
+		builder.add(STATE);
+		super.appendProperties(builder);
 	}
 
 	@Override
-	public Difficulty a(PistonHandler state, GameMode worldIn, BlockPos pos, PlayerAbilities player, ItemScatterer handIn,
-		dcg hit) {
-		if (!player.eJ())
-			return Difficulty.PASS;
-		if (player.bt())
-			return Difficulty.PASS;
-		if (!player.b(handIn)
-			.b()
-			.a(Tags.Items.SLIMEBALLS)) {
-			if (player.b(handIn)
-				.a()) {
+	public ActionResult onUse(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn,
+		BlockHitResult hit) {
+		if (!player.canModifyBlocks())
+			return ActionResult.PASS;
+		if (player.isSneaking())
+			return ActionResult.PASS;
+		if (!player.getStackInHand(handIn)
+			.getItem()
+			.isIn(Tags.Items.SLIMEBALLS)) {
+			if (player.getStackInHand(handIn)
+				.isEmpty()) {
 				withTileEntityDo(worldIn, pos, te -> te.assembleNextTick = true);
-				return Difficulty.SUCCESS;
+				return ActionResult.SUCCESS;
 			}
-			return Difficulty.PASS;
+			return ActionResult.PASS;
 		}
-		if (state.c(STATE) != PistonState.RETRACTED)
-			return Difficulty.PASS;
-		Direction direction = state.c(FACING);
-		if (hit.b() != direction)
-			return Difficulty.PASS;
-		if (((MechanicalPistonBlock) state.b()).isSticky)
-			return Difficulty.PASS;
-		if (worldIn.v) {
-			EntityHitResult vec = hit.e();
-			worldIn.addParticle(ParticleTypes.ITEM_SLIME, vec.entity, vec.c, vec.d, 0, 0, 0);
-			return Difficulty.SUCCESS;
+		if (state.get(STATE) != PistonState.RETRACTED)
+			return ActionResult.PASS;
+		Direction direction = state.get(FACING);
+		if (hit.getSide() != direction)
+			return ActionResult.PASS;
+		if (((MechanicalPistonBlock) state.getBlock()).isSticky)
+			return ActionResult.PASS;
+		if (worldIn.isClient) {
+			Vec3d vec = hit.getPos();
+			worldIn.addParticle(ParticleTypes.ITEM_SLIME, vec.x, vec.y, vec.z, 0, 0, 0);
+			return ActionResult.SUCCESS;
 		}
-		worldIn.a(null, pos, AllSoundEvents.SLIME_ADDED.get(), SoundEvent.e, .5f, 1);
-		if (!player.b_())
-			player.b(handIn)
-				.g(1);
-		worldIn.a(pos, AllBlocks.STICKY_MECHANICAL_PISTON.getDefaultState()
-			.a(FACING, direction)
-			.a(AXIS_ALONG_FIRST_COORDINATE, state.c(AXIS_ALONG_FIRST_COORDINATE)));
-		return Difficulty.SUCCESS;
+		worldIn.playSound(null, pos, AllSoundEvents.SLIME_ADDED.get(), SoundCategory.BLOCKS, .5f, 1);
+		if (!player.isCreative())
+			player.getStackInHand(handIn)
+				.decrement(1);
+		worldIn.setBlockState(pos, AllBlocks.STICKY_MECHANICAL_PISTON.getDefaultState()
+			.with(FACING, direction)
+			.with(AXIS_ALONG_FIRST_COORDINATE, state.get(AXIS_ALONG_FIRST_COORDINATE)));
+		return ActionResult.SUCCESS;
 	}
 
 	@Override
-	public BeehiveBlockEntity createTileEntity(PistonHandler state, MobSpawnerLogic world) {
+	public BlockEntity createTileEntity(BlockState state, BlockView world) {
 		return AllTileEntities.MECHANICAL_PISTON.create();
 	}
 
 	@Override
-	public Difficulty onWrenched(PistonHandler state, bnx context) {
-		if (state.c(STATE) != PistonState.RETRACTED)
-			return Difficulty.PASS;
+	public ActionResult onWrenched(BlockState state, ItemUsageContext context) {
+		if (state.get(STATE) != PistonState.RETRACTED)
+			return ActionResult.PASS;
 		return super.onWrenched(state, context);
 	}
 
-	public enum PistonState implements SmoothUtil {
+	public enum PistonState implements StringIdentifiable {
 		RETRACTED, MOVING, EXTENDED;
 
 		@Override
-		public String a() {
+		public String asString() {
 			return Lang.asId(name());
 		}
 	}
 
 	@Override
-	public void a(GameMode worldIn, BlockPos pos, PistonHandler state, PlayerAbilities player) {
-		Direction direction = state.c(FACING);
+	public void onBreak(World worldIn, BlockPos pos, BlockState state, PlayerEntity player) {
+		Direction direction = state.get(FACING);
 		BlockPos pistonHead = null;
 		BlockPos pistonBase = pos;
-		boolean dropBlocks = player == null || !player.b_();
+		boolean dropBlocks = player == null || !player.isCreative();
 
 		Integer maxPoles = maxAllowedPistonPoles();
 		for (int offset = 1; offset < maxPoles; offset++) {
 			BlockPos currentPos = pos.offset(direction, offset);
-			PistonHandler block = worldIn.d_(currentPos);
+			BlockState block = worldIn.getBlockState(currentPos);
 
-			if (isExtensionPole(block) && direction.getAxis() == block.c(BambooLeaves.M)
+			if (isExtensionPole(block) && direction.getAxis() == block.get(Properties.FACING)
 				.getAxis())
 				continue;
 
-			if (isPistonHead(block) && block.c(BambooLeaves.M) == direction) {
+			if (isPistonHead(block) && block.get(Properties.FACING) == direction) {
 				pistonHead = currentPos;
 			}
 
@@ -143,23 +145,23 @@ public class MechanicalPistonBlock extends DirectionalAxisKineticBlock implement
 		if (pistonHead != null && pistonBase != null) {
 			BlockPos.stream(pistonBase, pistonHead)
 				.filter(p -> !p.equals(pos))
-				.forEach(p -> worldIn.b(p, dropBlocks));
+				.forEach(p -> worldIn.breakBlock(p, dropBlocks));
 		}
 
 		for (int offset = 1; offset < maxPoles; offset++) {
 			BlockPos currentPos = pos.offset(direction.getOpposite(), offset);
-			PistonHandler block = worldIn.d_(currentPos);
+			BlockState block = worldIn.getBlockState(currentPos);
 
-			if (isExtensionPole(block) && direction.getAxis() == block.c(BambooLeaves.M)
+			if (isExtensionPole(block) && direction.getAxis() == block.get(Properties.FACING)
 				.getAxis()) {
-				worldIn.b(currentPos, dropBlocks);
+				worldIn.breakBlock(currentPos, dropBlocks);
 				continue;
 			}
 
 			break;
 		}
 
-		super.a(worldIn, pos, state, player);
+		super.onBreak(worldIn, pos, state, player);
 	}
 
 	public static int maxAllowedPistonPoles() {
@@ -167,15 +169,15 @@ public class MechanicalPistonBlock extends DirectionalAxisKineticBlock implement
 	}
 
 	@Override
-	public VoxelShapes b(PistonHandler state, MobSpawnerLogic worldIn, BlockPos pos, ArrayVoxelShape context) {
+	public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, ShapeContext context) {
 
-		if (state.c(STATE) == PistonState.EXTENDED)
-			return AllShapes.MECHANICAL_PISTON_EXTENDED.get(state.c(FACING));
+		if (state.get(STATE) == PistonState.EXTENDED)
+			return AllShapes.MECHANICAL_PISTON_EXTENDED.get(state.get(FACING));
 
-		if (state.c(STATE) == PistonState.MOVING)
-			return AllShapes.MECHANICAL_PISTON.get(state.c(FACING));
+		if (state.get(STATE) == PistonState.MOVING)
+			return AllShapes.MECHANICAL_PISTON.get(state.get(FACING));
 
-		return ddb.b();
+		return VoxelShapes.fullCube();
 	}
 
 	@Override
@@ -183,19 +185,19 @@ public class MechanicalPistonBlock extends DirectionalAxisKineticBlock implement
 		return MechanicalPistonTileEntity.class;
 	}
 
-	public static boolean isPiston(PistonHandler state) {
+	public static boolean isPiston(BlockState state) {
 		return AllBlocks.MECHANICAL_PISTON.has(state) || isStickyPiston(state);
 	}
 
-	public static boolean isStickyPiston(PistonHandler state) {
+	public static boolean isStickyPiston(BlockState state) {
 		return AllBlocks.STICKY_MECHANICAL_PISTON.has(state);
 	}
 
-	public static boolean isExtensionPole(PistonHandler state) {
+	public static boolean isExtensionPole(BlockState state) {
 		return AllBlocks.PISTON_EXTENSION_POLE.has(state);
 	}
 
-	public static boolean isPistonHead(PistonHandler state) {
+	public static boolean isPistonHead(BlockState state) {
 		return AllBlocks.MECHANICAL_PISTON_HEAD.has(state);
 	}
 }

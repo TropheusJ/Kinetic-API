@@ -1,10 +1,10 @@
-package com.simibubi.kinetic_api.content.palettes;
+package com.simibubi.create.content.palettes;
 
-import net.minecraft.block.MushroomBlock;
+import net.minecraft.block.PaneBlock;
 
-public class GlassPaneBlock extends MushroomBlock {
+public class GlassPaneBlock extends PaneBlock {
 
-	public GlassPaneBlock(c builder) {
+	public GlassPaneBlock(Settings builder) {
 		super(builder);
 	}
 

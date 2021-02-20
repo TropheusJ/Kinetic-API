@@ -1,54 +1,58 @@
-package com.simibubi.kinetic_api.content.logistics.block.funnel;
+package com.simibubi.create.content.logistics.block.funnel;
 
-import afj;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.foundation.tileEntity.renderer.SmartTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
-import ebv;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.tileEntity.renderer.SmartTileEntityRenderer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+import com.simibubi.create.foundation.utility.VecHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class FunnelRenderer extends SmartTileEntityRenderer<FunnelTileEntity> {
 
-	public FunnelRenderer(ebv dispatcher) {
+	public FunnelRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(FunnelTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(FunnelTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
 		super.renderSafe(te, partialTicks, ms, buffer, light, overlay);
 
 		if (!te.hasFlap())
 			return;
 
-		OverlayVertexConsumer vb = buffer.getBuffer(VertexConsumerProvider.c());
-		SuperByteBuffer flapBuffer = AllBlockPartials.BELT_FUNNEL_FLAP.renderOn(te.p());
-		EntityHitResult pivot = VecHelper.voxelSpace(0, 10, 9.5f);
+		BlockState blockState = te.getCachedState();
+		VertexConsumer vb = buffer.getBuffer(RenderLayer.getSolid());
+		SuperByteBuffer flapBuffer = (blockState.getBlock() instanceof FunnelBlock ? AllBlockPartials.FUNNEL_FLAP
+			: AllBlockPartials.BELT_FUNNEL_FLAP).renderOn(blockState);
+		Vec3d pivot = VecHelper.voxelSpace(0, 10, 9.5f);
 		MatrixStacker msr = MatrixStacker.of(ms);
 
-		float horizontalAngle = AngleHelper.horizontalAngle(FunnelBlock.getFunnelFacing(te.p())
+		float horizontalAngle = AngleHelper.horizontalAngle(FunnelBlock.getFunnelFacing(blockState)
 			.getOpposite());
 		float f = te.flap.get(partialTicks);
 
-		ms.a();
+		ms.push();
 		msr.centre()
 			.rotateY(horizontalAngle)
 			.unCentre();
-		ms.a(0, 0, -te.getFlapOffset());
-		
+		ms.translate(0, 0, -te.getFlapOffset());
+
 		for (int segment = 0; segment <= 3; segment++) {
-			ms.a();
+			ms.push();
 
 			float intensity = segment == 3 ? 1.5f : segment + 1;
 			float abs = Math.abs(f);
-			float flapAngle = afj.a((float) ((1 - abs) * Math.PI * intensity)) * 30 * -f;
+			float flapAngle = MathHelper.sin((float) ((1 - abs) * Math.PI * intensity)) * 30 * -f;
 			if (f > 0)
 				flapAngle *= .5f;
 
@@ -59,10 +63,10 @@ public class FunnelRenderer extends SmartTileEntityRenderer<FunnelTileEntity> {
 			flapBuffer.light(light)
 				.renderInto(ms, vb);
 
-			ms.b();
-			ms.a(-3 / 16f, 0, 0);
+			ms.pop();
+			ms.translate(-3 / 16f, 0, 0);
 		}
-		ms.b();
+		ms.pop();
 	}
 
 }

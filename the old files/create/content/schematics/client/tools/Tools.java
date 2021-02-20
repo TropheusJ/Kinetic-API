@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.content.schematics.client.tools;
+package com.simibubi.create.content.schematics.client.tools;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.utility.Lang;
 
 public enum Tools {
 

@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.logistics.block.inventories;
+package com.simibubi.create.content.logistics.block.inventories;
 
 import java.util.function.Supplier;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.entity.player.ItemCooldownManager;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 
@@ -13,9 +13,9 @@ import net.minecraftforge.items.ItemStackHandler;
 @ParametersAreNonnullByDefault
 public class BottomlessItemHandler extends ItemStackHandler {
 
-	private Supplier<ItemCooldownManager> suppliedItemStack;
+	private Supplier<ItemStack> suppliedItemStack;
 
-	public BottomlessItemHandler(Supplier<ItemCooldownManager> suppliedItemStack) {
+	public BottomlessItemHandler(Supplier<ItemStack> suppliedItemStack) {
 		this.suppliedItemStack = suppliedItemStack;
 	}
 
@@ -25,39 +25,39 @@ public class BottomlessItemHandler extends ItemStackHandler {
 	}
 
 	@Override
-	public ItemCooldownManager getStackInSlot(int slot) {
-		ItemCooldownManager stack = suppliedItemStack.get();
+	public ItemStack getStackInSlot(int slot) {
+		ItemStack stack = suppliedItemStack.get();
 		if (slot == 1)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		if (stack == null)
-			return ItemCooldownManager.tick;
-		if (!stack.a())
-			return ItemHandlerHelper.copyStackWithSize(stack, stack.c());
+			return ItemStack.EMPTY;
+		if (!stack.isEmpty())
+			return ItemHandlerHelper.copyStackWithSize(stack, stack.getMaxCount());
 		return stack;
 	}
 
 	@Override
-	public void setStackInSlot(int slot, ItemCooldownManager stack) {}
+	public void setStackInSlot(int slot, ItemStack stack) {}
 
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
-		return ItemCooldownManager.tick;
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
-		ItemCooldownManager stack = suppliedItemStack.get();
+	public ItemStack extractItem(int slot, int amount, boolean simulate) {
+		ItemStack stack = suppliedItemStack.get();
 		if (slot == 1)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 		if (stack == null)
-			return ItemCooldownManager.tick;
-		if (!stack.a())
-			return ItemHandlerHelper.copyStackWithSize(stack, Math.min(stack.c(), amount));
-		return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
+		if (!stack.isEmpty())
+			return ItemHandlerHelper.copyStackWithSize(stack, Math.min(stack.getMaxCount(), amount));
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		return true;
 	}
 }

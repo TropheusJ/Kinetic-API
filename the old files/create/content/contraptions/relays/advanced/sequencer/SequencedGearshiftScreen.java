@@ -1,19 +1,19 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.advanced.sequencer;
+package com.simibubi.create.content.contraptions.relays.advanced.sequencer;
 
 import java.util.Vector;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.gui.AbstractSimiScreen;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.AllIcons;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
-import com.simibubi.kinetic_api.foundation.gui.widgets.IconButton;
-import com.simibubi.kinetic_api.foundation.gui.widgets.ScrollInput;
-import com.simibubi.kinetic_api.foundation.gui.widgets.SelectionScrollInput;
-import com.simibubi.kinetic_api.foundation.networking.AllPackets;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.gui.AbstractSimiScreen;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.AllIcons;
+import com.simibubi.create.foundation.gui.GuiGameElement;
+import com.simibubi.create.foundation.gui.widgets.IconButton;
+import com.simibubi.create.foundation.gui.widgets.ScrollInput;
+import com.simibubi.create.foundation.gui.widgets.SelectionScrollInput;
+import com.simibubi.create.foundation.networking.AllPackets;
+import com.simibubi.create.foundation.utility.Lang;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -21,7 +21,7 @@ import net.minecraft.util.math.BlockPos;
 
 public class SequencedGearshiftScreen extends AbstractSimiScreen {
 
-	private final ItemCooldownManager renderedItem = AllBlocks.SEQUENCED_GEARSHIFT.asStack();
+	private final ItemStack renderedItem = AllBlocks.SEQUENCED_GEARSHIFT.asStack();
 	private final AllGuiTextures background = AllGuiTextures.SEQUENCER;
 	private IconButton confirmButton;
 
@@ -34,14 +34,14 @@ public class SequencedGearshiftScreen extends AbstractSimiScreen {
 
 	public SequencedGearshiftScreen(SequencedGearshiftTileEntity te) {
 		this.instructions = te.instructions;
-		this.pos = te.o();
+		this.pos = te.getPos();
 		compareTag = Instruction.serializeAll(instructions);
 	}
 
 	@Override
-	protected void b() {
+	protected void init() {
 		setWindowSize(background.width + 50, background.height);
-		super.b();
+		super.init();
 		widgets.clear();
 
 		inputs = new Vector<>(5);
@@ -95,7 +95,7 @@ public class SequencedGearshiftScreen extends AbstractSimiScreen {
 		boolean hasModifier = def.hasSpeedParameter;
 
 		ScrollInput value = rowInputs.get(1);
-		value.o = value.p = hasValue;
+		value.active = value.visible = hasValue;
 		if (hasValue)
 			value.withRange(1, def.maxValue + 1)
 				.titled(Lang.translate(def.parameterKey))
@@ -115,13 +115,13 @@ public class SequencedGearshiftScreen extends AbstractSimiScreen {
 			value.withStepFunction(value.standardStep());
 
 		ScrollInput modifier = rowInputs.get(2);
-		modifier.o = modifier.p = hasModifier;
+		modifier.active = modifier.visible = hasModifier;
 		if (hasModifier)
 			modifier.setState(instruction.speedModifier.ordinal());
 	}
 
 	@Override
-	protected void renderWindow(BufferVertexConsumer matrixStack, int mouseX, int mouseY, float partialTicks) {
+	protected void renderWindow(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
 		int hFontColor = 0xD3CBBE;
 		background.draw(matrixStack, this, guiLeft, guiTop);
 
@@ -140,14 +140,14 @@ public class SequencedGearshiftScreen extends AbstractSimiScreen {
 			label(matrixStack, 36, yOffset - 3, Lang.translate(def.translationKey));
 			if (def.hasValueParameter) {
 				String text = def.formatValue(instruction.value);
-				int stringWidth = o.b(text);
+				int stringWidth = textRenderer.getWidth(text);
 				label(matrixStack, 90 + (12 - stringWidth / 2), yOffset - 3, new LiteralText(text));
 			}
 			if (def.hasSpeedParameter)
 				label(matrixStack, 127, yOffset - 3, instruction.speedModifier.label);
 		}
 
-		o.a(matrixStack, d, guiLeft - 3 + (background.width - o.a(d)) / 2, guiTop + 3,
+		textRenderer.drawWithShadow(matrixStack, title, guiLeft - 3 + (background.width - textRenderer.getWidth(title)) / 2, guiTop + 3,
 			0xffffff);
 
 		GuiGameElement.of(renderedItem)
@@ -156,8 +156,8 @@ public class SequencedGearshiftScreen extends AbstractSimiScreen {
 			.render(matrixStack);
 	}
 
-	private void label(BufferVertexConsumer matrixStack, int x, int y, Text text) {
-		o.a(matrixStack, text, guiLeft + x, guiTop + 26 + y, 0xFFFFEE);
+	private void label(MatrixStack matrixStack, int x, int y, Text text) {
+		textRenderer.drawWithShadow(matrixStack, text, guiLeft + x, guiTop + 26 + y, 0xFFFFEE);
 	}
 
 	public void sendPacket() {
@@ -168,7 +168,7 @@ public class SequencedGearshiftScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public void e() {
+	public void removed() {
 		sendPacket();
 	}
 
@@ -193,13 +193,13 @@ public class SequencedGearshiftScreen extends AbstractSimiScreen {
 	}
 
 	@Override
-	public boolean a(double x, double y, int button) {
-		if (confirmButton.g()) {
-			KeyBinding.B().s.m();
+	public boolean mouseClicked(double x, double y, int button) {
+		if (confirmButton.isHovered()) {
+			MinecraftClient.getInstance().player.updateSubmergedInWaterState();
 			return true;
 		}
 
-		return super.a(x, y, button);
+		return super.mouseClicked(x, y, button);
 	}
 
 }

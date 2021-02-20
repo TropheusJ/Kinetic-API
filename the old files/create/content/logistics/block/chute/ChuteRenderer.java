@@ -1,48 +1,54 @@
-package com.simibubi.kinetic_api.content.logistics.block.chute;
+package com.simibubi.create.content.logistics.block.chute;
 
-import com.simibubi.kinetic_api.content.logistics.block.chute.ChuteBlock.Shape;
-import com.simibubi.kinetic_api.foundation.tileEntity.renderer.SafeTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import ebv;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.entity.HorseEntityRenderer;
-import net.minecraft.client.render.model.json.ModelElementTexture.b;
+import com.simibubi.create.content.logistics.block.chute.ChuteBlock.Shape;
+import com.simibubi.create.foundation.tileEntity.renderer.SafeTileEntityRenderer;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.render.model.json.ModelTransformation.Mode;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 
 public class ChuteRenderer extends SafeTileEntityRenderer<ChuteTileEntity> {
 
-	public ChuteRenderer(ebv dispatcher) {
+	public ChuteRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(ChuteTileEntity te, float partialTicks, BufferVertexConsumer ms, BackgroundRenderer buffer,
+	protected void renderSafe(ChuteTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
 		int light, int overlay) {
-		if (te.item.a())
+		if (te.item.isEmpty())
 			return;
-		PistonHandler blockState = te.p();
-		if (blockState.c(ChuteBlock.FACING) != Direction.DOWN)
+		BlockState blockState = te.getCachedState();
+		if (blockState.get(ChuteBlock.FACING) != Direction.DOWN)
 			return;
-		if (blockState.c(ChuteBlock.SHAPE) != Shape.WINDOW
+		if (blockState.get(ChuteBlock.SHAPE) != Shape.WINDOW
 			&& (te.bottomPullDistance == 0 || te.itemPosition.get(partialTicks) > .5f))
 			return;
 
-		HorseEntityRenderer itemRenderer = KeyBinding.B()
-			.ac();
+		renderItem(te, partialTicks, ms, buffer, light, overlay);
+	}
+
+	public static void renderItem(ChuteTileEntity te, float partialTicks, MatrixStack ms, VertexConsumerProvider buffer,
+		int light, int overlay) {
+		ItemRenderer itemRenderer = MinecraftClient.getInstance()
+			.getItemRenderer();
 		MatrixStacker msr = MatrixStacker.of(ms);
-		ms.a();
+		ms.push();
 		msr.centre();
 		float itemScale = .5f;
 		float itemPosition = te.itemPosition.get(partialTicks);
-		ms.a(0, -.5 + itemPosition, 0);
-		ms.a(itemScale, itemScale, itemScale);
+		ms.translate(0, -.5 + itemPosition, 0);
+		ms.scale(itemScale, itemScale, itemScale);
 		msr.rotateX(itemPosition * 180);
 		msr.rotateY(itemPosition * 180);
-		itemRenderer.a(te.item, b.i, light, overlay, ms, buffer);
-		ms.b();
+		itemRenderer.renderItem(te.item, Mode.FIXED, light, overlay, ms, buffer);
+		ms.pop();
 	}
 
 }

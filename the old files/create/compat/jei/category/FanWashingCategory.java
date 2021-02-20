@@ -1,25 +1,25 @@
-package com.simibubi.kinetic_api.compat.jei.category;
+package com.simibubi.create.compat.jei.category;
 
 import java.util.Arrays;
 import java.util.List;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.content.contraptions.components.fan.SplashingRecipe;
-import com.simibubi.kinetic_api.content.contraptions.processing.ProcessingOutput;
-import com.simibubi.kinetic_api.foundation.gui.AllGuiTextures;
-import com.simibubi.kinetic_api.foundation.gui.GuiGameElement;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.content.contraptions.components.fan.SplashingRecipe;
+import com.simibubi.create.content.contraptions.processing.ProcessingOutput;
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.GuiGameElement;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.gui.ingredient.IGuiItemStackGroup;
 import mezz.jei.api.ingredients.IIngredients;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.item.AliasedBlockItem;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.Items;
 
 public class FanWashingCategory extends ProcessingViaFanCategory<SplashingRecipe> {
 
 	public FanWashingCategory() {
-		super(185, doubleItemIcon(AllItems.PROPELLER.get(), AliasedBlockItem.lL));
+		super(185, doubleItemIcon(AllItems.PROPELLER.get(), Items.WATER_BUCKET));
 	}
 
 	@Override
@@ -29,7 +29,7 @@ public class FanWashingCategory extends ProcessingViaFanCategory<SplashingRecipe
 
 	@Override
 	public void setIngredients(SplashingRecipe recipe, IIngredients ingredients) {
-		ingredients.setInputIngredients(recipe.a());
+		ingredients.setInputIngredients(recipe.getPreviewInputs());
 		ingredients.setOutputs(VanillaTypes.ITEM, recipe.getRollableResultsAsItemStacks());
 	}
 
@@ -37,9 +37,9 @@ public class FanWashingCategory extends ProcessingViaFanCategory<SplashingRecipe
 	public void setRecipe(IRecipeLayout recipeLayout, SplashingRecipe recipe, IIngredients ingredients) {
 		IGuiItemStackGroup itemStacks = recipeLayout.getItemStacks();
 		itemStacks.init(0, true, 12, 47);
-		itemStacks.set(0, Arrays.asList(recipe.a()
+		itemStacks.set(0, Arrays.asList(recipe.getPreviewInputs()
 				.get(0)
-				.a()));
+				.getMatchingStacksClient()));
 
 		List<ProcessingOutput> results = recipe.getRollableResults();
 		boolean single = results.size() == 1;
@@ -57,7 +57,7 @@ public class FanWashingCategory extends ProcessingViaFanCategory<SplashingRecipe
 	}
 
 	@Override
-	protected void renderWidgets(BufferVertexConsumer matrixStack, SplashingRecipe recipe, double mouseX, double mouseY) {
+	protected void renderWidgets(MatrixStack matrixStack, SplashingRecipe recipe, double mouseX, double mouseY) {
 		int size = recipe.getRollableResultsAsItemStacks()
 				.size();
 
@@ -79,20 +79,20 @@ public class FanWashingCategory extends ProcessingViaFanCategory<SplashingRecipe
 	}
 	
 	@Override
-	protected void translateFan(BufferVertexConsumer ms) {
-		ms.a(43, 33, 0);
+	protected void translateFan(MatrixStack ms) {
+		ms.translate(43, 33, 0);
 	}
 
 	@Override
-	public void renderAttachedBlock(BufferVertexConsumer matrixStack) {
-		matrixStack.a();
+	public void renderAttachedBlock(MatrixStack matrixStack) {
+		matrixStack.push();
 
-		GuiGameElement.of(FlowableFluid.c)
+		GuiGameElement.of(Fluids.WATER)
 				.scale(24)
 				.atLocal(0, 0, 2)
 				.render(matrixStack);
 
-		matrixStack.b();
+		matrixStack.pop();
 	}
 
 }

@@ -1,18 +1,19 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.pipes;
+package com.simibubi.create.content.contraptions.fluids.pipes;
 
 import javax.annotation.Nullable;
-import net.minecraft.block.piston.PistonHandler;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.Direction.Axis;
 
 public interface IAxisPipe {
 
 	@Nullable
-	public static Axis getAxisOf(PistonHandler state) {
-		if (state.b() instanceof IAxisPipe) 
-			return ((IAxisPipe) state.b()).getAxis(state);
+	public static Axis getAxisOf(BlockState state) {
+		if (state.getBlock() instanceof IAxisPipe) 
+			return ((IAxisPipe) state.getBlock()).getAxis(state);
 		return null;
 	}
 
-	public Axis getAxis(PistonHandler state);
+	public Axis getAxis(BlockState state);
 
 }

@@ -1,105 +1,105 @@
-package com.simibubi.kinetic_api.content.contraptions.components.structureMovement.glue;
+package com.simibubi.create.content.contraptions.components.structureMovement.glue;
 
-import afj;
-import bnx;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+import com.simibubi.create.foundation.utility.VecHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.item.AliasedBlockItem;
-import net.minecraft.item.HoeItem;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.particle.ItemStackParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public class SuperGlueItem extends HoeItem {
+public class SuperGlueItem extends Item {
 
-	public SuperGlueItem(a properties) {
+	public SuperGlueItem(Settings properties) {
 		super(properties);
 	}
 
 	@Override
-	public boolean k() {
+	public boolean isDamageable() {
 		return true;
 	}
 
 	@Override
-	public int getMaxDamage(ItemCooldownManager stack) {
+	public int getMaxDamage(ItemStack stack) {
 		return 99;
 	}
 
 	@Override
-	public int getItemStackLimit(ItemCooldownManager stack) {
+	public int getItemStackLimit(ItemStack stack) {
 		return 1;
 	}
 
 	@Override
-	public Difficulty a(bnx context) {
-		BlockPos blockpos = context.a();
-		Direction direction = context.j();
+	public ActionResult useOnBlock(ItemUsageContext context) {
+		BlockPos blockpos = context.getBlockPos();
+		Direction direction = context.getSide();
 		BlockPos blockpos1 = blockpos.offset(direction);
-		PlayerAbilities playerentity = context.n();
-		ItemCooldownManager itemstack = context.m();
+		PlayerEntity playerentity = context.getPlayer();
+		ItemStack itemstack = context.getStack();
 
 		if (playerentity == null || !this.canPlace(playerentity, direction, itemstack, blockpos1))
-			return Difficulty.FAIL;
+			return ActionResult.FAIL;
 
-		GameMode world = context.p();
+		World world = context.getWorld();
 		SuperGlueEntity entity = new SuperGlueEntity(world, blockpos1, direction);
-		CompoundTag compoundnbt = itemstack.o();
+		CompoundTag compoundnbt = itemstack.getTag();
 		if (compoundnbt != null)
-			EntityDimensions.a(world, playerentity, entity, compoundnbt);
+			EntityType.loadFromEntityTag(world, playerentity, entity, compoundnbt);
 
 		if (!entity.onValidSurface())
-			return Difficulty.FAIL;
+			return ActionResult.FAIL;
 
-		if (!world.v) {
+		if (!world.isClient) {
 			entity.playPlaceSound();
-			world.c(entity);
+			world.spawnEntity(entity);
 		}
-		itemstack.a(1, playerentity, SuperGlueItem::onBroken);
+		itemstack.damage(1, playerentity, SuperGlueItem::onBroken);
 
-		return Difficulty.SUCCESS;
+		return ActionResult.SUCCESS;
 	}
 
-	public static void onBroken(PlayerAbilities player) {
+	public static void onBroken(PlayerEntity player) {
 
 	}
 
-	protected boolean canPlace(PlayerAbilities entity, Direction facing, ItemCooldownManager stack, BlockPos pos) {
-		return !GameMode.m(pos) && entity.a(pos, facing, stack);
+	protected boolean canPlace(PlayerEntity entity, Direction facing, ItemStack stack, BlockPos pos) {
+		return !World.isOutOfBuildLimitVertically(pos) && entity.canPlaceOn(pos, facing, stack);
 	}
 
 	@Environment(EnvType.CLIENT)
-	public static void spawnParticles(GameMode world, BlockPos pos, Direction direction, boolean fullBlock) {
-		EntityHitResult vec = EntityHitResult.b(direction.getVector());
-		EntityHitResult plane = VecHelper.axisAlingedPlaneOf(vec);
-		EntityHitResult facePos = VecHelper.getCenterOf(pos)
-			.e(vec.a(.5f));
+	public static void spawnParticles(World world, BlockPos pos, Direction direction, boolean fullBlock) {
+		Vec3d vec = Vec3d.of(direction.getVector());
+		Vec3d plane = VecHelper.axisAlingedPlaneOf(vec);
+		Vec3d facePos = VecHelper.getCenterOf(pos)
+			.add(vec.multiply(.5f));
 
-		float distance = fullBlock ? 1f : .25f + .25f * (world.t.nextFloat() - .5f);
-		plane = plane.a(distance);
-		ItemCooldownManager stack = new ItemCooldownManager(AliasedBlockItem.md);
+		float distance = fullBlock ? 1f : .25f + .25f * (world.random.nextFloat() - .5f);
+		plane = plane.multiply(distance);
+		ItemStack stack = new ItemStack(Items.SLIME_BALL);
 
 		for (int i = fullBlock ? 40 : 15; i > 0; i--) {
-			EntityHitResult offset = VecHelper.rotate(plane, 360 * world.t.nextFloat(), direction.getAxis());
-			EntityHitResult motion = offset.d()
-				.a(1 / 16f);
+			Vec3d offset = VecHelper.rotate(plane, 360 * world.random.nextFloat(), direction.getAxis());
+			Vec3d motion = offset.normalize()
+				.multiply(1 / 16f);
 			if (fullBlock)
-				offset = new EntityHitResult(afj.a(offset.entity, -.5, .5), afj.a(offset.c, -.5, .5),
-					afj.a(offset.d, -.5, .5));
-			EntityHitResult particlePos = facePos.e(offset);
-			world.addParticle(new ItemStackParticleEffect(ParticleTypes.ITEM, stack), particlePos.entity, particlePos.c,
-				particlePos.d, motion.entity, motion.c, motion.d);
+				offset = new Vec3d(MathHelper.clamp(offset.x, -.5, .5), MathHelper.clamp(offset.y, -.5, .5),
+					MathHelper.clamp(offset.z, -.5, .5));
+			Vec3d particlePos = facePos.add(offset);
+			world.addParticle(new ItemStackParticleEffect(ParticleTypes.ITEM, stack), particlePos.x, particlePos.y,
+				particlePos.z, motion.x, motion.y, motion.z);
 		}
 
 	}

@@ -1,21 +1,21 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
 import java.util.List;
 
-import com.simibubi.kinetic_api.content.contraptions.base.KineticTileEntity;
-import com.simibubi.kinetic_api.foundation.fluid.SmartFluidTank;
-import com.simibubi.kinetic_api.foundation.item.TooltipHelper;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.LerpedFloat;
-import com.simibubi.kinetic_api.foundation.utility.ServerSpeedProvider;
+import com.simibubi.create.content.contraptions.base.KineticTileEntity;
+import com.simibubi.create.foundation.fluid.SmartFluidTank;
+import com.simibubi.create.foundation.item.TooltipHelper;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.LerpedFloat;
+import com.simibubi.create.foundation.utility.ServerSpeedProvider;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.timer.Timer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
@@ -35,14 +35,14 @@ public class HosePulleyTileEntity extends KineticTileEntity {
 	private HosePulleyFluidHandler handler;
 	private boolean infinite;
 
-	public HosePulleyTileEntity(BellBlockEntity<?> typeIn) {
+	public HosePulleyTileEntity(BlockEntityType<?> typeIn) {
 		super(typeIn);
 		offset = LerpedFloat.linear()
 			.startWithValue(0);
 		isMoving = true;
 		internalTank = new SmartFluidTank(1500, this::onTankContentsChanged);
 		handler = new HosePulleyFluidHandler(internalTank, filler, drainer,
-			() -> e.down((int) Math.ceil(offset.getValue())), () -> !this.isMoving);
+			() -> pos.down((int) Math.ceil(offset.getValue())), () -> !this.isMoving);
 		capability = LazyOptional.of(() -> handler);
 	}
 
@@ -84,9 +84,9 @@ public class HosePulleyTileEntity extends KineticTileEntity {
 			float newOffset = offset.getValue() + getMovementSpeed();
 			if (newOffset < 0)
 				isMoving = false;
-			if (!d.d_(e.down((int) Math.ceil(newOffset)))
-				.c()
-				.e()) {
+			if (!world.getBlockState(pos.down((int) Math.ceil(newOffset)))
+				.getMaterial()
+				.isReplaceable()) {
 				isMoving = false;
 			}
 			if (isMoving) {
@@ -100,27 +100,27 @@ public class HosePulleyTileEntity extends KineticTileEntity {
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public Timer getRenderBoundingBox() {
-		return super.getRenderBoundingBox().b(0, -offset.getValue(), 0);
+	public Box getRenderBoundingBox() {
+		return super.getRenderBoundingBox().stretch(0, -offset.getValue(), 0);
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public double i() {
-		return super.i() + offset.getValue() * offset.getValue();
+	public double getSquaredRenderDistance() {
+		return super.getSquaredRenderDistance() + offset.getValue() * offset.getValue();
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 		float newOffset = offset.getValue() + getMovementSpeed();
 		if (newOffset < 0) {
 			newOffset = 0;
 			isMoving = false;
 		}
-		if (!d.d_(e.down((int) Math.ceil(newOffset)))
-			.c()
-			.e()) {
+		if (!world.getBlockState(pos.down((int) Math.ceil(newOffset)))
+			.getMaterial()
+			.isReplaceable()) {
 			newOffset = (int) newOffset;
 			isMoving = false;
 		}
@@ -133,15 +133,15 @@ public class HosePulleyTileEntity extends KineticTileEntity {
 	@Override
 	public void lazyTick() {
 		super.lazyTick();
-		if (d.v)
+		if (world.isClient)
 			return;
 		if (isMoving)
 			return;
 
 		int ceil = (int) Math.ceil(offset.getValue() + getMovementSpeed());
-		if (getMovementSpeed() > 0 && d.d_(e.down(ceil))
-			.c()
-			.e()) {
+		if (getMovementSpeed() > 0 && world.getBlockState(pos.down(ceil))
+			.getMaterial()
+			.isReplaceable()) {
 			isMoving = true;
 			drainer.reset();
 			filler.reset();
@@ -161,7 +161,7 @@ public class HosePulleyTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		offset.readNBT(compound.getCompound("Offset"), clientPacket);
 		internalTank.readFromNBT(compound.getCompound("Tank"));
 		super.fromTag(state, compound, clientPacket);
@@ -170,14 +170,14 @@ public class HosePulleyTileEntity extends KineticTileEntity {
 	}
 
 	@Override
-	public void al_() {
-		super.al_();
+	public void markRemoved() {
+		super.markRemoved();
 		capability.invalidate();
 	}
 
 	public float getMovementSpeed() {
 		float movementSpeed = getSpeed() / 512f;
-		if (d.v)
+		if (world.isClient)
 			movementSpeed *= ServerSpeedProvider.get();
 		return movementSpeed;
 	}
@@ -189,9 +189,13 @@ public class HosePulleyTileEntity extends KineticTileEntity {
 	@Override
 	public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
 		if (isFluidHandlerCap(cap)
-			&& (side == null || HosePulleyBlock.hasPipeTowards(d, e, p(), side)))
+			&& (side == null || HosePulleyBlock.hasPipeTowards(world, pos, getCachedState(), side)))
 			return this.capability.cast();
 		return super.getCapability(cap, side);
 	}
 
+	@Override
+	public boolean shouldRenderAsTE() {
+		return true;
+	}
 }

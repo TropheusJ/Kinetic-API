@@ -1,36 +1,36 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper.blockzapper;
+package com.simibubi.create.content.curiosities.zapper.blockzapper;
 
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import apx;
-import com.simibubi.kinetic_api.AllItems;
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.curiosities.zapper.PlacementPatterns;
-import com.simibubi.kinetic_api.content.curiosities.zapper.ZapperInteractionHandler;
-import com.simibubi.kinetic_api.content.curiosities.zapper.ZapperItem;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.gui.ScreenOpener;
-import com.simibubi.kinetic_api.foundation.item.ItemDescription;
-import com.simibubi.kinetic_api.foundation.item.ItemDescription.Palette;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.Lang;
-import com.simibubi.kinetic_api.foundation.utility.NBTHelper;
-import dcg;
+
+import com.simibubi.create.AllItems;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.curiosities.zapper.PlacementPatterns;
+import com.simibubi.create.content.curiosities.zapper.ZapperInteractionHandler;
+import com.simibubi.create.content.curiosities.zapper.ZapperItem;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.gui.ScreenOpener;
+import com.simibubi.create.foundation.item.ItemDescription;
+import com.simibubi.create.foundation.item.ItemDescription.Palette;
+import com.simibubi.create.foundation.utility.BlockHelper;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.Lang;
+import com.simibubi.create.foundation.utility.NBTHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.advancement.criterion.Criteria;
-import net.minecraft.block.BeetrootsBlock;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.gui.screen.PresetsScreen;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.item.ChorusFruitItem;
-import net.minecraft.item.ToolItem;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.item.TooltipContext;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -38,12 +38,14 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.BlockView.b;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.RaycastContext.FluidHandling;
+import net.minecraft.world.RaycastContext.ShapeType;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.BlockSnapshot;
@@ -52,16 +54,16 @@ import net.minecraftforge.event.ForgeEventFactory;
 
 public class BlockzapperItem extends ZapperItem {
 
-	public BlockzapperItem(a properties) {
+	public BlockzapperItem(Settings properties) {
 		super(properties);
 	}
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public void a(ItemCooldownManager stack, GameMode worldIn, List<Text> tooltip, ToolItem flagIn) {
-		super.a(stack, worldIn, tooltip, flagIn);
+	public void appendTooltip(ItemStack stack, World worldIn, List<Text> tooltip, TooltipContext flagIn) {
+		super.appendTooltip(stack, worldIn, tooltip, flagIn);
 		Palette palette = Palette.Purple;
-		if (PresetsScreen.y()) {
+		if (Screen.hasShiftDown()) {
 			ItemDescription.add(tooltip, Lang.translate("blockzapper.componentUpgrades").formatted(palette.color));
 
 			for (Components c : Components.values()) {
@@ -75,70 +77,70 @@ public class BlockzapperItem extends ZapperItem {
 	}
 
 	@Override
-	public void a(ChorusFruitItem group, DefaultedList<ItemCooldownManager> items) {
-		if (group != Create.baseCreativeTab && group != ChorusFruitItem.g)
+	public void appendStacks(ItemGroup group, DefaultedList<ItemStack> items) {
+		if (group != Create.baseCreativeTab && group != ItemGroup.SEARCH)
 			return;
 		
-		ItemCooldownManager gunWithoutStuff = new ItemCooldownManager(this);
+		ItemStack gunWithoutStuff = new ItemStack(this);
 		items.add(gunWithoutStuff);
 
-		ItemCooldownManager gunWithGoldStuff = new ItemCooldownManager(this);
+		ItemStack gunWithGoldStuff = new ItemStack(this);
 		for (Components c : Components.values())
 			setTier(c, ComponentTier.Brass, gunWithGoldStuff);
 		items.add(gunWithGoldStuff);
 
-		ItemCooldownManager gunWithPurpurStuff = new ItemCooldownManager(this);
+		ItemStack gunWithPurpurStuff = new ItemStack(this);
 		for (Components c : Components.values())
 			setTier(c, ComponentTier.Chromatic, gunWithPurpurStuff);
 		items.add(gunWithPurpurStuff);
 	}
 
 	@Override
-	protected boolean activate(GameMode world, PlayerAbilities player, ItemCooldownManager stack, PistonHandler selectedState,
-		dcg raytrace, CompoundTag data) {
-		CompoundTag nbt = stack.p();
+	protected boolean activate(World world, PlayerEntity player, ItemStack stack, BlockState selectedState,
+		BlockHitResult raytrace, CompoundTag data) {
+		CompoundTag nbt = stack.getOrCreateTag();
 		boolean replace = nbt.contains("Replace") && nbt.getBoolean("Replace");
 
 		List<BlockPos> selectedBlocks = getSelectedBlocks(stack, world, player);
 		PlacementPatterns.applyPattern(selectedBlocks, stack);
-		Direction face = raytrace.b();
+		Direction face = raytrace.getSide();
 
 		for (BlockPos placed : selectedBlocks) {
-			if (world.d_(placed) == selectedState)
+			if (world.getBlockState(placed) == selectedState)
 				continue;
-			if (!selectedState.a(world, placed))
+			if (!selectedState.canPlaceAt(world, placed))
 				continue;
-			if (!player.b_() && !canBreak(stack, world.d_(placed), world, placed))
+			if (!player.isCreative() && !canBreak(stack, world.getBlockState(placed), world, placed))
 				continue;
-			if (!player.b_() && BlockHelper.findAndRemoveInInventory(selectedState, player, 1) == 0) {
-				player.eS()
-					.a(stack.b(), 20);
-				player.a( Lang.translate("blockzapper.empty").formatted(Formatting.RED), true);
+			if (!player.isCreative() && BlockHelper.findAndRemoveInInventory(selectedState, player, 1) == 0) {
+				player.getItemCooldownManager()
+					.set(stack.getItem(), 20);
+				player.sendMessage( Lang.translate("blockzapper.empty").formatted(Formatting.RED), true);
 				return false;
 			}
 
-			if (!player.b_() && replace)
+			if (!player.isCreative() && replace)
 				dropBlocks(world, player, stack, face, placed);
 
-			PistonHandler state = selectedState;
+			BlockState state = selectedState;
 			for (Direction updateDirection : Iterate.directions)
-				state = state.a(updateDirection,
-					world.d_(placed.offset(updateDirection)), world, placed, placed.offset(updateDirection));
+				state = state.getStateForNeighborUpdate(updateDirection,
+					world.getBlockState(placed.offset(updateDirection)), world, placed, placed.offset(updateDirection));
 
-			BlockSnapshot blocksnapshot = BlockSnapshot.create(world.X(), world, placed);
-			EmptyFluid FluidState = world.b(placed);
-			world.a(placed, FluidState.g(), BlockFlags.UPDATE_NEIGHBORS);
-			world.a(placed, state);
+			BlockSnapshot blocksnapshot = BlockSnapshot.create(world.getRegistryKey(), world, placed);
+			FluidState FluidState = world.getFluidState(placed);
+			world.setBlockState(placed, FluidState.getBlockState(), BlockFlags.UPDATE_NEIGHBORS);
+			world.setBlockState(placed, state);
 
 			if (ForgeEventFactory.onBlockPlace(player, blocksnapshot, Direction.UP)) {
 				blocksnapshot.restore(true, false);
 				return false;
 			}
-			setTileData(world, placed, state, data);
+			setTileData(world, placed, state, data, player);
 
 			if (player instanceof ServerPlayerEntity && world instanceof ServerWorld) {
 				ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-				Criteria.PLACED_BLOCK.a(serverPlayer, placed, new ItemCooldownManager(state.b()));
+				Criteria.PLACED_BLOCK.trigger(serverPlayer, placed, new ItemStack(state.getBlock()));
 
 				boolean fullyUpgraded = true;
 				for (Components c : Components.values()) {
@@ -152,16 +154,16 @@ public class BlockzapperItem extends ZapperItem {
 			}
 		}
 		for (BlockPos placed : selectedBlocks) {
-			world.a(placed, selectedState.b(), placed);
+			world.updateNeighbor(placed, selectedState.getBlock(), placed);
 		}
 
 		return true;
 	}
 
 	@Override
-	public void a(ItemCooldownManager stack, GameMode worldIn, apx entityIn, int itemSlot, boolean isSelected) {
+	public void inventoryTick(ItemStack stack, World worldIn, Entity entityIn, int itemSlot, boolean isSelected) {
 		if (AllItems.BLOCKZAPPER.isIn(stack)) {
-			CompoundTag nbt = stack.p();
+			CompoundTag nbt = stack.getOrCreateTag();
 			if (!nbt.contains("Replace"))
 				nbt.putBoolean("Replace", false);
 			if (!nbt.contains("Pattern"))
@@ -177,13 +179,13 @@ public class BlockzapperItem extends ZapperItem {
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	protected void openHandgunGUI(ItemCooldownManager handgun, boolean offhand) {
+	protected void openHandgunGUI(ItemStack handgun, boolean offhand) {
 		ScreenOpener.open(new BlockzapperScreen(handgun, offhand));
 	}
 
-	public static List<BlockPos> getSelectedBlocks(ItemCooldownManager stack, GameMode worldIn, PlayerAbilities player) {
+	public static List<BlockPos> getSelectedBlocks(ItemStack stack, World worldIn, PlayerEntity player) {
 		List<BlockPos> list = new LinkedList<>();
-		CompoundTag tag = stack.o();
+		CompoundTag tag = stack.getTag();
 		if (tag == null)
 			return list;
 
@@ -195,20 +197,20 @@ public class BlockzapperItem extends ZapperItem {
 		Set<BlockPos> visited = new HashSet<>();
 		List<BlockPos> frontier = new LinkedList<>();
 
-		EntityHitResult start = player.cz()
-			.b(0, player.cd(), 0);
-		EntityHitResult range = player.bg()
-			.a(ZapperInteractionHandler.getRange(stack));
-		dcg raytrace = player.l
-			.a(new BlockView(start, start.e(range), net.minecraft.world.BlockView.a.a, b.a, player));
-		BlockPos pos = raytrace.a()
+		Vec3d start = player.getPos()
+			.add(0, player.getStandingEyeHeight(), 0);
+		Vec3d range = player.getRotationVector()
+			.multiply(ZapperInteractionHandler.getRange(stack));
+		BlockHitResult raytrace = player.world
+			.raycast(new RaycastContext(start, start.add(range), ShapeType.COLLIDER, FluidHandling.NONE, player));
+		BlockPos pos = raytrace.getBlockPos()
 			.toImmutable();
 
 		if (pos == null)
 			return list;
 
-		PistonHandler state = worldIn.d_(pos);
-		Direction face = raytrace.b();
+		BlockState state = worldIn.getBlockState(pos);
+		Direction face = raytrace.getSide();
 		List<BlockPos> offsets = new LinkedList<>();
 
 		for (int x = -1; x <= 1; x++)
@@ -232,18 +234,18 @@ public class BlockzapperItem extends ZapperItem {
 
 			// Replace Mode
 			if (replace) {
-				PistonHandler stateToReplace = worldIn.d_(currentPos);
-				PistonHandler stateAboveStateToReplace = worldIn.d_(currentPos.offset(face));
+				BlockState stateToReplace = worldIn.getBlockState(currentPos);
+				BlockState stateAboveStateToReplace = worldIn.getBlockState(currentPos.offset(face));
 
 				// Criteria
-				if (stateToReplace.h(worldIn, currentPos) == -1)
+				if (stateToReplace.getHardness(worldIn, currentPos) == -1)
 					continue;
-				if (stateToReplace.b() != state.b() && !searchAcrossMaterials)
+				if (stateToReplace.getBlock() != state.getBlock() && !searchAcrossMaterials)
 					continue;
-				if (stateToReplace.c()
-					.e())
+				if (stateToReplace.getMaterial()
+					.isReplaceable())
 					continue;
-				if (stateAboveStateToReplace.l())
+				if (stateAboveStateToReplace.isOpaque())
 					continue;
 				list.add(currentPos);
 
@@ -254,17 +256,17 @@ public class BlockzapperItem extends ZapperItem {
 			}
 
 			// Place Mode
-			PistonHandler stateToPlaceAt = worldIn.d_(currentPos);
-			PistonHandler stateToPlaceOn = worldIn.d_(currentPos.offset(face.getOpposite()));
+			BlockState stateToPlaceAt = worldIn.getBlockState(currentPos);
+			BlockState stateToPlaceOn = worldIn.getBlockState(currentPos.offset(face.getOpposite()));
 
 			// Criteria
-			if (stateToPlaceOn.c()
-				.e())
+			if (stateToPlaceOn.getMaterial()
+				.isReplaceable())
 				continue;
-			if (stateToPlaceOn.b() != state.b() && !searchAcrossMaterials)
+			if (stateToPlaceOn.getBlock() != state.getBlock() && !searchAcrossMaterials)
 				continue;
-			if (!stateToPlaceAt.c()
-				.e())
+			if (!stateToPlaceAt.getMaterial()
+				.isReplaceable())
 				continue;
 			list.add(currentPos);
 
@@ -277,9 +279,9 @@ public class BlockzapperItem extends ZapperItem {
 		return list;
 	}
 
-	public static boolean canBreak(ItemCooldownManager stack, PistonHandler state, GameMode world, BlockPos pos) {
+	public static boolean canBreak(ItemStack stack, BlockState state, World world, BlockPos pos) {
 		ComponentTier tier = getTier(Components.Body, stack);
-		float blockHardness = state.h(world, pos);
+		float blockHardness = state.getHardness(world, pos);
 
 		if (blockHardness == -1)
 			return false;
@@ -293,7 +295,7 @@ public class BlockzapperItem extends ZapperItem {
 		return false;
 	}
 
-	public static int getMaxAoe(ItemCooldownManager stack) {
+	public static int getMaxAoe(ItemStack stack) {
 		ComponentTier tier = getTier(Components.Amplifier, stack);
 		if (tier == ComponentTier.None)
 			return 2;
@@ -306,11 +308,11 @@ public class BlockzapperItem extends ZapperItem {
 	}
 
 	@Override
-	protected int getCooldownDelay(ItemCooldownManager stack) {
+	protected int getCooldownDelay(ItemStack stack) {
 		return getCooldown(stack);
 	}
 
-	public static int getCooldown(ItemCooldownManager stack) {
+	public static int getCooldown(ItemStack stack) {
 		ComponentTier tier = getTier(Components.Accelerator, stack);
 		if (tier == ComponentTier.None)
 			return 10;
@@ -323,7 +325,7 @@ public class BlockzapperItem extends ZapperItem {
 	}
 
 	@Override
-	protected int getZappingRange(ItemCooldownManager stack) {
+	protected int getZappingRange(ItemStack stack) {
 		ComponentTier tier = getTier(Components.Scope, stack);
 		if (tier == ComponentTier.None)
 			return 15;
@@ -335,35 +337,35 @@ public class BlockzapperItem extends ZapperItem {
 		return 0;
 	}
 
-	protected static void dropBlocks(GameMode worldIn, PlayerAbilities playerIn, ItemCooldownManager item, Direction face,
+	protected static void dropBlocks(World worldIn, PlayerEntity playerIn, ItemStack item, Direction face,
 		BlockPos placed) {
-		BeehiveBlockEntity tileentity = worldIn.d_(placed)
-			.hasTileEntity() ? worldIn.c(placed) : null;
+		BlockEntity tileentity = worldIn.getBlockState(placed)
+			.hasTileEntity() ? worldIn.getBlockEntity(placed) : null;
 
 		if (getTier(Components.Retriever, item) == ComponentTier.None) {
-			BeetrootsBlock.a(worldIn.d_(placed), worldIn, placed.offset(face), tileentity);
+			Block.dropStacks(worldIn.getBlockState(placed), worldIn, placed.offset(face), tileentity);
 		}
 
 		if (getTier(Components.Retriever, item) == ComponentTier.Brass)
-			BeetrootsBlock.a(worldIn.d_(placed), worldIn, playerIn.cA(), tileentity);
+			Block.dropStacks(worldIn.getBlockState(placed), worldIn, playerIn.getBlockPos(), tileentity);
 
 		if (getTier(Components.Retriever, item) == ComponentTier.Chromatic)
-			for (ItemCooldownManager stack : BeetrootsBlock.a(worldIn.d_(placed), (ServerWorld) worldIn, placed,
+			for (ItemStack stack : Block.getDroppedStacks(worldIn.getBlockState(placed), (ServerWorld) worldIn, placed,
 				tileentity))
-				if (!playerIn.bm.e(stack))
-					BeetrootsBlock.a(worldIn, placed, stack);
+				if (!playerIn.inventory.insertStack(stack))
+					Block.dropStack(worldIn, placed, stack);
 	}
 
-	public static ComponentTier getTier(Components component, ItemCooldownManager stack) {
-		if (!stack.n() || !stack.o()
+	public static ComponentTier getTier(Components component, ItemStack stack) {
+		if (!stack.hasTag() || !stack.getTag()
 			.contains(component.name()))
-			stack.p()
+			stack.getOrCreateTag()
 				.putString(component.name(), ComponentTier.None.name());
-		return NBTHelper.readEnum(stack.o(), component.name(), ComponentTier.class);
+		return NBTHelper.readEnum(stack.getTag(), component.name(), ComponentTier.class);
 	}
 
-	public static void setTier(Components component, ComponentTier tier, ItemCooldownManager stack) {
-		NBTHelper.writeEnum(stack.p(), component.name(), tier);
+	public static void setTier(Components component, ComponentTier tier, ItemStack stack) {
+		NBTHelper.writeEnum(stack.getOrCreateTag(), component.name(), tier);
 	}
 
 	public static enum ComponentTier {

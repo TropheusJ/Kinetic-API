@@ -1,22 +1,23 @@
-package com.simibubi.kinetic_api.foundation.tileEntity.behaviour.linked;
+package com.simibubi.create.foundation.tileEntity.behaviour.linked;
 
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.entity.player.ItemCooldownManager;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.hit.EntityHitResult;
+
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.simibubi.kinetic_api.Create;
-import com.simibubi.kinetic_api.content.logistics.RedstoneLinkNetworkHandler;
-import com.simibubi.kinetic_api.content.logistics.RedstoneLinkNetworkHandler.Frequency;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.linked.LinkBehaviour.Mode;
+import com.simibubi.create.Create;
+import com.simibubi.create.content.logistics.RedstoneLinkNetworkHandler;
+import com.simibubi.create.content.logistics.RedstoneLinkNetworkHandler.Frequency;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.foundation.tileEntity.behaviour.linked.LinkBehaviour.Mode;
+import net.minecraft.block.BlockState;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.math.Vec3d;
 
 public class LinkBehaviour extends TileEntityBehaviour {
 
@@ -30,7 +31,7 @@ public class LinkBehaviour extends TileEntityBehaviour {
 	Frequency frequencyLast;
 	ValueBoxTransform firstSlot;
 	ValueBoxTransform secondSlot;
-	EntityHitResult textShift;
+	Vec3d textShift;
 
 	public boolean newPosition;
 	private Mode mode;
@@ -43,7 +44,7 @@ public class LinkBehaviour extends TileEntityBehaviour {
 		frequencyLast = Frequency.EMPTY;
 		firstSlot = slots.getLeft();
 		secondSlot = slots.getRight();
-		textShift = EntityHitResult.a;
+		textShift = Vec3d.ZERO;
 		newPosition = true;
 	}
 
@@ -63,7 +64,7 @@ public class LinkBehaviour extends TileEntityBehaviour {
 		return behaviour;
 	}
 
-	public LinkBehaviour moveText(EntityHitResult shift) {
+	public LinkBehaviour moveText(Vec3d shift) {
 		textShift = shift;
 		return this;
 	}
@@ -96,7 +97,7 @@ public class LinkBehaviour extends TileEntityBehaviour {
 	@Override
 	public void initialize() {
 		super.initialize();
-		if (tileEntity.v().v)
+		if (tileEntity.getWorld().isClient)
 			return;
 		getHandler().addToNetwork(this);
 		newPosition = true;
@@ -109,7 +110,7 @@ public class LinkBehaviour extends TileEntityBehaviour {
 	@Override
 	public void remove() {
 		super.remove();
-		if (tileEntity.v().v)
+		if (tileEntity.getWorld().isClient)
 			return;
 		getHandler().removeFromNetwork(this);
 	}
@@ -118,31 +119,31 @@ public class LinkBehaviour extends TileEntityBehaviour {
 	public void write(CompoundTag nbt, boolean clientPacket) {
 		super.write(nbt, clientPacket);
 		nbt.put("FrequencyFirst", frequencyFirst.getStack()
-			.b(new CompoundTag()));
+			.toTag(new CompoundTag()));
 		nbt.put("FrequencyLast", frequencyLast.getStack()
-			.b(new CompoundTag()));
-		nbt.putLong("LastKnownPosition", tileEntity.o()
+			.toTag(new CompoundTag()));
+		nbt.putLong("LastKnownPosition", tileEntity.getPos()
 			.asLong());
 	}
 
 	@Override
 	public void read(CompoundTag nbt, boolean clientPacket) {
-		long positionInTag = tileEntity.o()
+		long positionInTag = tileEntity.getPos()
 			.asLong();
 		long positionKey = nbt.getLong("LastKnownPosition");
 		newPosition = positionInTag != positionKey;
 
 		super.read(nbt, clientPacket);
-		frequencyFirst = Frequency.of(ItemCooldownManager.a(nbt.getCompound("FrequencyFirst")));
-		frequencyLast = Frequency.of(ItemCooldownManager.a(nbt.getCompound("FrequencyLast")));
+		frequencyFirst = Frequency.of(ItemStack.fromTag(nbt.getCompound("FrequencyFirst")));
+		frequencyLast = Frequency.of(ItemStack.fromTag(nbt.getCompound("FrequencyLast")));
 	}
 
-	public void setFrequency(boolean first, ItemCooldownManager stack) {
-		stack = stack.i();
-		stack.e(1);
-		ItemCooldownManager toCompare = first ? frequencyFirst.getStack() : frequencyLast.getStack();
+	public void setFrequency(boolean first, ItemStack stack) {
+		stack = stack.copy();
+		stack.setCount(1);
+		ItemStack toCompare = first ? frequencyFirst.getStack() : frequencyLast.getStack();
 		boolean changed =
-			!ItemCooldownManager.c(stack, toCompare) || !ItemCooldownManager.a(stack, toCompare);
+			!ItemStack.areItemsEqualIgnoreDamage(stack, toCompare) || !ItemStack.areTagsEqual(stack, toCompare);
 
 		if (changed)
 			getHandler().removeFromNetwork(this);
@@ -169,12 +170,12 @@ public class LinkBehaviour extends TileEntityBehaviour {
 	}
 
 	public static class SlotPositioning {
-		Function<PistonHandler, Pair<EntityHitResult, EntityHitResult>> offsets;
-		Function<PistonHandler, EntityHitResult> rotation;
+		Function<BlockState, Pair<Vec3d, Vec3d>> offsets;
+		Function<BlockState, Vec3d> rotation;
 		float scale;
 
-		public SlotPositioning(Function<PistonHandler, Pair<EntityHitResult, EntityHitResult>> offsetsForState,
-			Function<PistonHandler, EntityHitResult> rotationForState) {
+		public SlotPositioning(Function<BlockState, Pair<Vec3d, Vec3d>> offsetsForState,
+			Function<BlockState, Vec3d> rotationForState) {
 			offsets = offsetsForState;
 			rotation = rotationForState;
 			scale = 1;
@@ -187,9 +188,9 @@ public class LinkBehaviour extends TileEntityBehaviour {
 
 	}
 
-	public boolean testHit(Boolean first, EntityHitResult hit) {
-		PistonHandler state = tileEntity.p();
-		EntityHitResult localHit = hit.d(EntityHitResult.b(tileEntity.o()));
+	public boolean testHit(Boolean first, Vec3d hit) {
+		BlockState state = tileEntity.getCachedState();
+		Vec3d localHit = hit.subtract(Vec3d.of(tileEntity.getPos()));
 		return (first ? firstSlot : secondSlot).testHit(state, localHit);
 	}
 

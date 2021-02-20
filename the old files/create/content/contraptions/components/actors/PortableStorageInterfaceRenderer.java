@@ -1,48 +1,49 @@
-package com.simibubi.kinetic_api.content.contraptions.components.actors;
+package com.simibubi.create.content.contraptions.components.actors;
 
 import java.util.function.Consumer;
-import com.simibubi.kinetic_api.AllBlockPartials;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.components.structureMovement.MovementContext;
-import com.simibubi.kinetic_api.foundation.tileEntity.renderer.SafeTileEntityRenderer;
-import com.simibubi.kinetic_api.foundation.utility.AngleHelper;
-import com.simibubi.kinetic_api.foundation.utility.MatrixStacker;
-import com.simibubi.kinetic_api.foundation.utility.SuperByteBuffer;
-import ebv;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BackgroundRenderer;
-import net.minecraft.client.render.BufferVertexConsumer;
-import net.minecraft.client.render.OverlayVertexConsumer;
+import com.simibubi.create.AllBlockPartials;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.components.structureMovement.MovementContext;
+import com.simibubi.create.content.contraptions.components.structureMovement.render.ContraptionRenderDispatcher;
+import com.simibubi.create.foundation.render.SuperByteBuffer;
+import com.simibubi.create.foundation.tileEntity.renderer.SafeTileEntityRenderer;
+import com.simibubi.create.foundation.utility.AngleHelper;
+import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.foundation.utility.MatrixStacker;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
 public class PortableStorageInterfaceRenderer extends SafeTileEntityRenderer<PortableStorageInterfaceTileEntity> {
 
-	public PortableStorageInterfaceRenderer(ebv dispatcher) {
+	public PortableStorageInterfaceRenderer(BlockEntityRenderDispatcher dispatcher) {
 		super(dispatcher);
 	}
 
 	@Override
-	protected void renderSafe(PortableStorageInterfaceTileEntity te, float partialTicks, BufferVertexConsumer ms,
-		BackgroundRenderer buffer, int light, int overlay) {
-		PistonHandler blockState = te.p();
+	protected void renderSafe(PortableStorageInterfaceTileEntity te, float partialTicks, MatrixStack ms,
+		VertexConsumerProvider buffer, int light, int overlay) {
+		BlockState blockState = te.getCachedState();
 		float progress = te.getExtensionDistance(partialTicks);
-		OverlayVertexConsumer vb = buffer.getBuffer(VertexConsumerProvider.c());
+		VertexConsumer vb = buffer.getBuffer(RenderLayer.getSolid());
 		render(blockState, progress, te.isConnected(), sbb -> sbb.light(light)
 			.renderInto(ms, vb), ms);
 	}
 
-	public static void renderInContraption(MovementContext context, BufferVertexConsumer ms, BufferVertexConsumer msLocal,
-		BackgroundRenderer buffer) {
-		PistonHandler blockState = context.state;
+	public static void renderInContraption(MovementContext context, MatrixStack ms, MatrixStack msLocal,
+		VertexConsumerProvider buffer) {
+		BlockState blockState = context.state;
 		PortableStorageInterfaceTileEntity te = getTargetPSI(context);
-		OverlayVertexConsumer vb = buffer.getBuffer(VertexConsumerProvider.c());
-		float renderPartialTicks = KeyBinding.B()
-			.ai();
+		VertexConsumer vb = buffer.getBuffer(RenderLayer.getSolid());
+		float renderPartialTicks = AnimationTickHolder.getPartialTicks();
 
 		float progress = 0;
 		boolean lit = false;
@@ -51,9 +52,44 @@ public class PortableStorageInterfaceRenderer extends SafeTileEntityRenderer<Por
 			lit = te.isConnected();
 		}
 
-		render(blockState, progress, lit, sbb -> sbb.light(msLocal.c()
-			.a())
+		render(blockState, progress, lit, sbb -> sbb.light(msLocal.peek()
+			.getModel(), ContraptionRenderDispatcher.getLightOnContraption(context))
 			.renderInto(ms, vb), ms, msLocal);
+	}
+
+	private static void render(BlockState blockState, float progress, boolean lit,
+		Consumer<SuperByteBuffer> drawCallback, MatrixStack... matrixStacks) {
+		for (MatrixStack ms : matrixStacks)
+			ms.push();
+
+		SuperByteBuffer middle = getMiddleForState(blockState, lit).renderOn(blockState);
+		SuperByteBuffer top = getTopForState(blockState).renderOn(blockState);
+
+		Direction facing = blockState.get(PortableStorageInterfaceBlock.FACING);
+		for (MatrixStack ms : matrixStacks)
+			MatrixStacker.of(ms)
+				.centre()
+				.rotateY(AngleHelper.horizontalAngle(facing))
+				.rotateX(facing == Direction.UP ? 0 : facing == Direction.DOWN ? 180 : 90)
+				.unCentre();
+
+		for (MatrixStack ms : matrixStacks) {
+			ms.translate(0, progress / 2f, 0);
+			ms.push();
+			ms.translate(0, 6 / 16f, 0);
+		}
+
+		drawCallback.accept(middle);
+
+		for (MatrixStack ms : matrixStacks) {
+			ms.pop();
+			ms.translate(0, progress / 2f, 0);
+		}
+
+		drawCallback.accept(top);
+
+		for (MatrixStack ms : matrixStacks)
+			ms.pop();
 	}
 
 	protected static PortableStorageInterfaceTileEntity getTargetPSI(MovementContext context) {
@@ -62,7 +98,7 @@ public class PortableStorageInterfaceRenderer extends SafeTileEntityRenderer<Por
 			return null;
 
 		BlockPos pos = NbtHelper.toBlockPos(context.data.getCompound(_workingPos_));
-		BeehiveBlockEntity tileEntity = context.world.c(pos);
+		BlockEntity tileEntity = context.world.getBlockEntity(pos);
 		if (!(tileEntity instanceof PortableStorageInterfaceTileEntity))
 			return null;
 
@@ -72,42 +108,7 @@ public class PortableStorageInterfaceRenderer extends SafeTileEntityRenderer<Por
 		return psi;
 	}
 
-	private static void render(PistonHandler blockState, float progress, boolean lit,
-		Consumer<SuperByteBuffer> drawCallback, BufferVertexConsumer... matrixStacks) {
-		for (BufferVertexConsumer ms : matrixStacks)
-			ms.a();
-
-		SuperByteBuffer middle = getMiddleForState(blockState, lit).renderOn(blockState);
-		SuperByteBuffer top = getTopForState(blockState).renderOn(blockState);
-
-		Direction facing = blockState.c(PortableStorageInterfaceBlock.SHAPE);
-		for (BufferVertexConsumer ms : matrixStacks)
-			MatrixStacker.of(ms)
-				.centre()
-				.rotateY(AngleHelper.horizontalAngle(facing))
-				.rotateX(facing == Direction.UP ? 0 : facing == Direction.DOWN ? 180 : 90)
-				.unCentre();
-
-		for (BufferVertexConsumer ms : matrixStacks) {
-			ms.a(0, progress / 2f, 0);
-			ms.a();
-			ms.a(0, 6 / 16f, 0);
-		}
-
-		drawCallback.accept(middle);
-
-		for (BufferVertexConsumer ms : matrixStacks) {
-			ms.b();
-			ms.a(0, progress / 2f, 0);
-		}
-
-		drawCallback.accept(top);
-
-		for (BufferVertexConsumer ms : matrixStacks)
-			ms.b();
-	}
-
-	static AllBlockPartials getMiddleForState(PistonHandler state, boolean lit) {
+	static AllBlockPartials getMiddleForState(BlockState state, boolean lit) {
 		if (AllBlocks.PORTABLE_FLUID_INTERFACE.has(state))
 			return lit ? AllBlockPartials.PORTABLE_FLUID_INTERFACE_MIDDLE_POWERED
 				: AllBlockPartials.PORTABLE_FLUID_INTERFACE_MIDDLE;
@@ -115,7 +116,7 @@ public class PortableStorageInterfaceRenderer extends SafeTileEntityRenderer<Por
 			: AllBlockPartials.PORTABLE_STORAGE_INTERFACE_MIDDLE;
 	}
 
-	static AllBlockPartials getTopForState(PistonHandler state) {
+	static AllBlockPartials getTopForState(BlockState state) {
 		if (AllBlocks.PORTABLE_FLUID_INTERFACE.has(state))
 			return AllBlockPartials.PORTABLE_FLUID_INTERFACE_TOP;
 		return AllBlockPartials.PORTABLE_STORAGE_INTERFACE_TOP;

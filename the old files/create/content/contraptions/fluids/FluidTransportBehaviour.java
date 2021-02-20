@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
 import java.util.Collection;
 import java.util.IdentityHashMap;
@@ -6,19 +6,21 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
-import bqx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.content.contraptions.fluids.FluidTransportBehaviour.UpdatePhase;
-import com.simibubi.kinetic_api.content.contraptions.fluids.pipes.EncasedPipeBlock;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.BehaviourType;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import net.minecraft.block.piston.PistonHandler;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.contraptions.fluids.FluidTransportBehaviour.UpdatePhase;
+import com.simibubi.create.content.contraptions.fluids.pipes.EncasedPipeBlock;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.BehaviourType;
+import com.simibubi.create.foundation.utility.Iterate;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.BlockRenderView;
+import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
 public abstract class FluidTransportBehaviour extends TileEntityBehaviour {
@@ -39,11 +41,11 @@ public abstract class FluidTransportBehaviour extends TileEntityBehaviour {
 		phase = UpdatePhase.WAIT_FOR_PUMPS;
 	}
 
-	public boolean canPullFluidFrom(FluidStack fluid, PistonHandler state, Direction direction) {
+	public boolean canPullFluidFrom(FluidStack fluid, BlockState state, Direction direction) {
 		return true;
 	}
 
-	public abstract boolean canHaveFlowToward(PistonHandler state, Direction direction);
+	public abstract boolean canHaveFlowToward(BlockState state, Direction direction);
 
 	@Override
 	public void initialize() {
@@ -54,9 +56,9 @@ public abstract class FluidTransportBehaviour extends TileEntityBehaviour {
 	@Override
 	public void tick() {
 		super.tick();
-		GameMode world = getWorld();
+		World world = getWorld();
 		BlockPos pos = getPos();
-		boolean onClient = world.v;
+		boolean onClient = world.isClient;
 		
 		if (interfaces == null)
 			return;
@@ -123,7 +125,7 @@ public abstract class FluidTransportBehaviour extends TileEntityBehaviour {
 			for (PipeConnection connection : connections) {
 				FluidStack internalFluid = singleSource != connection ? availableFlow : FluidStack.EMPTY;
 				Predicate<FluidStack> extractionPredicate =
-					extracted -> canPullFluidFrom(extracted, tileEntity.p(), connection.side);
+					extracted -> canPullFluidFrom(extracted, tileEntity.getCachedState(), connection.side);
 				sendUpdate |= connection.manageFlows(world, pos, internalFluid, extractionPredicate);
 			}
 
@@ -144,7 +146,7 @@ public abstract class FluidTransportBehaviour extends TileEntityBehaviour {
 			if (nbt.contains(face.getName()))
 				interfaces.computeIfAbsent(face, d -> new PipeConnection(d));
 
-		// Invalid data_unused (missing/outdated). Defer init to runtime
+		// Invalid data (missing/outdated). Defer init to runtime
 		if (interfaces.isEmpty()) {
 			interfaces = null;
 			return;
@@ -208,7 +210,7 @@ public abstract class FluidTransportBehaviour extends TileEntityBehaviour {
 	public void wipePressure() {
 		if (interfaces != null)
 			for (Direction d : Iterate.directions) {
-				if (!canHaveFlowToward(tileEntity.p(), d))
+				if (!canHaveFlowToward(tileEntity.getCachedState(), d))
 					interfaces.remove(d);
 				else
 					interfaces.computeIfAbsent(d, PipeConnection::new);
@@ -225,24 +227,24 @@ public abstract class FluidTransportBehaviour extends TileEntityBehaviour {
 			return;
 		interfaces = new IdentityHashMap<>();
 		for (Direction d : Iterate.directions)
-			if (canHaveFlowToward(tileEntity.p(), d))
+			if (canHaveFlowToward(tileEntity.getCachedState(), d))
 				interfaces.put(d, new PipeConnection(d));
 	}
 
-	public AttachmentTypes getRenderedRimAttachment(bqx world, BlockPos pos, PistonHandler state,
+	public AttachmentTypes getRenderedRimAttachment(BlockRenderView world, BlockPos pos, BlockState state,
 		Direction direction) {
 		if (!canHaveFlowToward(state, direction))
 			return AttachmentTypes.NONE;
 
 		BlockPos offsetPos = pos.offset(direction);
-		PistonHandler facingState = world.d_(offsetPos);
+		BlockState facingState = world.getBlockState(offsetPos);
 
-		if (facingState.b() instanceof PumpBlock && facingState.c(PumpBlock.FACING)
+		if (facingState.getBlock() instanceof PumpBlock && facingState.get(PumpBlock.FACING)
 			.getAxis() == direction.getAxis())
 			return AttachmentTypes.NONE;
 
 		if (AllBlocks.ENCASED_FLUID_PIPE.has(facingState)
-			&& facingState.c(EncasedPipeBlock.FACING_TO_PROPERTY_MAP.get(direction.getOpposite())))
+			&& facingState.get(EncasedPipeBlock.FACING_TO_PROPERTY_MAP.get(direction.getOpposite())))
 			return AttachmentTypes.NONE;
 
 		if (FluidPropagator.hasFluidCapability(world, offsetPos, direction.getOpposite())

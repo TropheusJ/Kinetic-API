@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.logistics.block.diodes;
+package com.simibubi.create.content.logistics.block.diodes;
 
-import com.simibubi.kinetic_api.content.contraptions.wrench.IWrenchable;
-import net.minecraft.block.DaylightDetectorBlock;
+import com.simibubi.create.content.contraptions.wrench.IWrenchable;
+import net.minecraft.block.AbstractRedstoneGateBlock;
 
-public abstract class AbstractDiodeBlock extends DaylightDetectorBlock implements IWrenchable {
+public abstract class AbstractDiodeBlock extends AbstractRedstoneGateBlock implements IWrenchable {
 
-	public AbstractDiodeBlock(c builder) {
+	public AbstractDiodeBlock(Settings builder) {
 		super(builder);
 	}
 	

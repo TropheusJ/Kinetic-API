@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.content.logistics.block.diodes;
+package com.simibubi.create.content.logistics.block.diodes;
 
-import static com.simibubi.kinetic_api.content.logistics.block.diodes.AdjustableRepeaterBlock.POWERING;
+import static com.simibubi.create.content.logistics.block.diodes.AdjustableRepeaterBlock.POWERING;
 
-import net.minecraft.block.entity.BellBlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 
 public class AdjustablePulseRepeaterTileEntity extends AdjustableRepeaterTileEntity {
 
-	public AdjustablePulseRepeaterTileEntity(BellBlockEntity<? extends AdjustablePulseRepeaterTileEntity> type) {
+	public AdjustablePulseRepeaterTileEntity(BlockEntityType<? extends AdjustablePulseRepeaterTileEntity> type) {
 		super(type);
 	}
 
@@ -17,12 +17,12 @@ public class AdjustablePulseRepeaterTileEntity extends AdjustableRepeaterTileEnt
 
 		if (charging && atMax) {
 			if (powering) {
-				d.a(e, p().a(POWERING, false));
+				world.setBlockState(pos, getCachedState().with(POWERING, false));
 				charging = false;
 				return;
 			}
-			if (!powering && !d.v)
-				d.a(e, p().a(POWERING, true));
+			if (!powering && !world.isClient)
+				world.setBlockState(pos, getCachedState().with(POWERING, true));
 			return;
 		}
 		
@@ -30,8 +30,8 @@ public class AdjustablePulseRepeaterTileEntity extends AdjustableRepeaterTileEnt
 			return;
 
 		if (!charging && !atMin) {
-			if (!d.v)
-				d.a(e, p().a(POWERING, false));
+			if (!world.isClient)
+				world.setBlockState(pos, getCachedState().with(POWERING, false));
 			state = 0;
 			return;
 		}

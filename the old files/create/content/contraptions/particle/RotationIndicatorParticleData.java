@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.contraptions.particle;
+package com.simibubi.create.content.contraptions.particle;
 
 import java.util.Locale;
 
@@ -9,10 +9,10 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.codecs.PrimitiveCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.simibubi.kinetic_api.AllParticleTypes;
+import com.simibubi.create.AllParticleTypes;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.particle.ItemPickupParticle.b;
+import net.minecraft.client.particle.ParticleManager.SpriteAwareFactory;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
@@ -141,7 +141,7 @@ public class RotationIndicatorParticleData
 
 	@Override
 	@Environment(EnvType.CLIENT)
-	public b<RotationIndicatorParticleData> getMetaFactory() {
+	public SpriteAwareFactory<RotationIndicatorParticleData> getMetaFactory() {
 		return RotationIndicatorParticle.Factory::new;
 	}
 

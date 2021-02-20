@@ -1,11 +1,11 @@
-package com.simibubi.kinetic_api.content.contraptions.relays.encased;
+package com.simibubi.create.content.contraptions.relays.encased;
 
-import net.minecraft.block.entity.BellBlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.math.Direction;
 
 public abstract class SplitShaftTileEntity extends DirectionalShaftHalvesTileEntity {
 
-	public SplitShaftTileEntity(BellBlockEntity<?> typeIn) {
+	public SplitShaftTileEntity(BlockEntityType<?> typeIn) {
 		super(typeIn);
 	}
 

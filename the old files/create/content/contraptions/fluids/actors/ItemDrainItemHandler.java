@@ -1,8 +1,9 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids.actors;
+package com.simibubi.create.content.contraptions.fluids.actors;
 
-import com.simibubi.kinetic_api.content.contraptions.processing.EmptyingByBasin;
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.contraptions.processing.EmptyingByBasin;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -23,19 +24,19 @@ public class ItemDrainItemHandler implements IItemHandler {
 	}
 
 	@Override
-	public ItemCooldownManager getStackInSlot(int slot) {
+	public ItemStack getStackInSlot(int slot) {
 		return te.getHeldItemStack();
 	}
 
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
 		if (!te.getHeldItemStack()
-			.a())
+			.isEmpty())
 			return stack;
 		
-		ItemCooldownManager returned = ItemCooldownManager.tick;
-		if (stack.E() > 1 && EmptyingByBasin.canItemBeEmptied(te.v(), stack)) {
-			returned = ItemHandlerHelper.copyStackWithSize(stack, stack.E() - 1);
+		ItemStack returned = ItemStack.EMPTY;
+		if (stack.getCount() > 1 && EmptyingByBasin.canItemBeEmptied(te.getWorld(), stack)) {
+			returned = ItemHandlerHelper.copyStackWithSize(stack, stack.getCount() - 1);
 			stack = ItemHandlerHelper.copyStackWithSize(stack, 1);
 		}
 		
@@ -50,16 +51,16 @@ public class ItemDrainItemHandler implements IItemHandler {
 	}
 
 	@Override
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
+	public ItemStack extractItem(int slot, int amount, boolean simulate) {
 		TransportedItemStack held = te.heldItem;
 		if (held == null)
-			return ItemCooldownManager.tick;
+			return ItemStack.EMPTY;
 
-		ItemCooldownManager stack = held.stack.i();
-		ItemCooldownManager extracted = stack.a(amount);
+		ItemStack stack = held.stack.copy();
+		ItemStack extracted = stack.split(amount);
 		if (!simulate) {
 			te.heldItem.stack = stack;
-			if (stack.a())
+			if (stack.isEmpty())
 				te.heldItem = null;
 			te.notifyUpdate();
 		}
@@ -72,7 +73,7 @@ public class ItemDrainItemHandler implements IItemHandler {
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		return true;
 	}
 

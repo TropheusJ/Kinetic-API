@@ -1,29 +1,30 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Predicate;
-import afj;
-import apx;
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.utility.BlockFace;
-import com.simibubi.kinetic_api.foundation.utility.Couple;
-import com.simibubi.kinetic_api.foundation.utility.Iterate;
-import com.simibubi.kinetic_api.foundation.utility.LerpedFloat;
-import com.simibubi.kinetic_api.foundation.utility.VecHelper;
+
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.utility.BlockFace;
+import com.simibubi.create.foundation.utility.Couple;
+import com.simibubi.create.foundation.utility.Iterate;
+import com.simibubi.create.foundation.utility.LerpedFloat;
+import com.simibubi.create.foundation.utility.VecHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.particle.ParticleEffect;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.Constants.NBT;
@@ -81,14 +82,14 @@ public class PipeConnection {
 		return true;
 	}
 
-	public void manageSource(GameMode world, BlockPos pos) {
+	public void manageSource(World world, BlockPos pos) {
 		if (!source.isPresent() && !determineSource(world, pos))
 			return;
 		FlowSource flowSource = source.get();
 		flowSource.manageSource(world);
 	}
 		
-	public boolean manageFlows(GameMode world, BlockPos pos, FluidStack internalFluid,
+	public boolean manageFlows(World world, BlockPos pos, FluidStack internalFluid,
 		Predicate<FluidStack> extractionPredicate) {
 
 		// Only keep network if still valid
@@ -159,7 +160,7 @@ public class PipeConnection {
 		return true;
 	}
 
-	private boolean determineSource(GameMode world, BlockPos pos) {
+	private boolean determineSource(World world, BlockPos pos) {
 		if (!world.isAreaLoaded(pos, 1))
 			return false;
 		BlockFace location = new BlockFace(pos, side);
@@ -183,14 +184,14 @@ public class PipeConnection {
 		return true;
 	}
 
-	public void tickFlowProgress(GameMode world, BlockPos pos) {
+	public void tickFlowProgress(World world, BlockPos pos) {
 		if (!hasFlow())
 			return;
 		Flow flow = this.flow.get();
 		if (flow.fluid.isEmpty())
 			return;
 
-		if (world.v) {
+		if (world.isClient) {
 			if (!source.isPresent())
 				determineSource(world, pos);
 			
@@ -200,11 +201,11 @@ public class PipeConnection {
 			particleSplashNextTick = false;
 		}
 
-		float flowSpeed = 1 / 32f + afj.a(pressure.get(flow.inbound) / 512f, 0, 1) * 31 / 32f;
+		float flowSpeed = 1 / 32f + MathHelper.clamp(pressure.get(flow.inbound) / 512f, 0, 1) * 31 / 32f;
 		flow.progress.setValue(Math.min(flow.progress.getValue() + flowSpeed, 1));
 		if (flow.progress.getValue() >= 1) {
 			flow.complete = true;
-			if (flow.inbound && AllBlocks.GLASS_FLUID_PIPE.has(world.d_(pos)))
+			if (flow.inbound && AllBlocks.GLASS_FLUID_PIPE.has(world.getBlockState(pos)))
 				AllTriggers.triggerForNearbyPlayers(AllTriggers.GLASS_PIPE, world, pos, 5);
 		}
 	}
@@ -357,16 +358,16 @@ public class PipeConnection {
 	public static final float RIM_RADIUS = 1 / 4f + 1 / 64f;
 	public static final Random r = new Random();
 
-	public void spawnSplashOnRim(GameMode world, BlockPos pos, FluidStack fluid) {
-		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> spawnSplashOnRimInner(world, pos, fluid));
+	public void spawnSplashOnRim(World world, BlockPos pos, FluidStack fluid) {
+		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> spawnSplashOnRimInner(world, pos, fluid));
 	}
 
-	public void spawnParticles(GameMode world, BlockPos pos, FluidStack fluid) {
-		DistExecutor.runWhenOn(Dist.CLIENT, () -> () -> spawnParticlesInner(world, pos, fluid));
+	public void spawnParticles(World world, BlockPos pos, FluidStack fluid) {
+		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> spawnParticlesInner(world, pos, fluid));
 	}
 
 	@Environment(EnvType.CLIENT)
-	private void spawnParticlesInner(GameMode world, BlockPos pos, FluidStack fluid) {
+	private void spawnParticlesInner(World world, BlockPos pos, FluidStack fluid) {
 		if (!isRenderEntityWithinDistance(pos))
 			return;
 		if (hasOpenEnd())
@@ -376,14 +377,14 @@ public class PipeConnection {
 	}
 
 	@Environment(EnvType.CLIENT)
-	private void spawnSplashOnRimInner(GameMode world, BlockPos pos, FluidStack fluid) {
+	private void spawnSplashOnRimInner(World world, BlockPos pos, FluidStack fluid) {
 		if (!isRenderEntityWithinDistance(pos))
 			return;
 		spawnRimParticles(world, pos, fluid, SPLASH_PARTICLE_AMOUNT);
 	}
 
 	@Environment(EnvType.CLIENT)
-	private void spawnRimParticles(GameMode world, BlockPos pos, FluidStack fluid, int amount) {
+	private void spawnRimParticles(World world, BlockPos pos, FluidStack fluid, int amount) {
 		if (hasOpenEnd()) {
 			spawnPouringLiquid(world, pos, fluid, amount);
 			return;
@@ -394,9 +395,9 @@ public class PipeConnection {
 	}
 
 	@Environment(EnvType.CLIENT)
-	private void spawnPouringLiquid(GameMode world, BlockPos pos, FluidStack fluid, int amount) {
+	private void spawnPouringLiquid(World world, BlockPos pos, FluidStack fluid, int amount) {
 		ParticleEffect particle = FluidFX.getFluidParticle(fluid);
-		EntityHitResult directionVec = EntityHitResult.b(side.getVector());
+		Vec3d directionVec = Vec3d.of(side.getVector());
 		if (!hasFlow())
 			return;
 		Flow flow = this.flow.get();
@@ -405,13 +406,13 @@ public class PipeConnection {
 
 	@Environment(EnvType.CLIENT)
 	public static boolean isRenderEntityWithinDistance(BlockPos pos) {
-		apx renderViewEntity = KeyBinding.B()
-			.Z();
+		Entity renderViewEntity = MinecraftClient.getInstance()
+			.getCameraEntity();
 		if (renderViewEntity == null)
 			return false;
-		EntityHitResult center = VecHelper.getCenterOf(pos);
-		if (renderViewEntity.cz()
-			.f(center) > MAX_PARTICLE_RENDER_DISTANCE)
+		Vec3d center = VecHelper.getCenterOf(pos);
+		if (renderViewEntity.getPos()
+			.distanceTo(center) > MAX_PARTICLE_RENDER_DISTANCE)
 			return false;
 		return true;
 	}
@@ -424,12 +425,12 @@ public class PipeConnection {
 //			if (inbound)
 //				return;
 //
-//			Vec3d directionVec = new Vec3d(side.getDirectionVec());
-//			Vec3d scaleVec = directionVec.scale(-.25f * side.getAxisDirection()
+//			Vector3d directionVec = new Vector3d(side.getDirectionVec());
+//			Vector3d scaleVec = directionVec.scale(-.25f * side.getAxisDirection()
 //				.getOffset());
 //			directionVec = directionVec.scale(inbound ? .35f : .45f);
 //			CreateClient.outliner.chaseAABB("pressure" + pos.toShortString() + side.getName() + String.valueOf(inbound),
-//				FluidPropagator.smallCenter.offset(directionVec.add(new Vec3d(pos)))
+//				FluidPropagator.smallCenter.offset(directionVec.add(new Vector3d(pos)))
 //					.grow(scaleVec.x, scaleVec.y, scaleVec.z)
 //					.expand(0, pressure / 64f, 0)
 //					.grow(1 / 64f));
@@ -440,7 +441,7 @@ public class PipeConnection {
 //		if (!hasFlow())
 //			return;
 //
-//		Vec3d directionVec = new Vec3d(side.getDirectionVec());
+//		Vector3d directionVec = new Vector3d(side.getDirectionVec());
 //		float size = 1 / 4f;
 //		float length = .5f;
 //		Flow flow = this.flow.get();
@@ -450,11 +451,11 @@ public class PipeConnection {
 //		if (flow.progress == null)
 //			return;
 //		float value = flow.progress.getValue();
-//		Vec3d start = directionVec.scale(inbound ? .5 : .5f - length);
-//		Vec3d offset = directionVec.scale(length * (inbound ? -1 : 1))
+//		Vector3d start = directionVec.scale(inbound ? .5 : .5f - length);
+//		Vector3d offset = directionVec.scale(length * (inbound ? -1 : 1))
 //			.scale(value);
 //
-//		Vec3d scale = new Vec3d(1, 1, 1).subtract(directionVec.scale(side.getAxisDirection()
+//		Vector3d scale = new Vector3d(1, 1, 1).subtract(directionVec.scale(side.getAxisDirection()
 //			.getOffset()))
 //			.scale(size);
 //		AxisAlignedBB bb = new AxisAlignedBB(start, start.add(offset)).offset(VecHelper.getCenterOf(pos))

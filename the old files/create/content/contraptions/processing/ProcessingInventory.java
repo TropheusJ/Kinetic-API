@@ -1,7 +1,8 @@
-package com.simibubi.kinetic_api.content.contraptions.processing;
+package com.simibubi.create.content.contraptions.processing;
 
 import java.util.function.Consumer;
-import net.minecraft.entity.player.ItemCooldownManager;
+
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.items.ItemStackHandler;
 
@@ -9,16 +10,16 @@ public class ProcessingInventory extends ItemStackHandler {
 	public float remainingTime;
 	public float recipeDuration;
 	public boolean appliedRecipe;
-	public Consumer<ItemCooldownManager> callback;
+	public Consumer<ItemStack> callback;
 
-	public ProcessingInventory(Consumer<ItemCooldownManager> callback) {
+	public ProcessingInventory(Consumer<ItemStack> callback) {
 		super(10);
 		this.callback = callback;
 	}
 
 	public void clear() {
 		for (int i = 0; i < getSlots(); i++)
-			setStackInSlot(i, ItemCooldownManager.tick);
+			setStackInSlot(i, ItemStack.EMPTY);
 		remainingTime = 0;
 		recipeDuration = 0;
 		appliedRecipe = false;
@@ -26,16 +27,16 @@ public class ProcessingInventory extends ItemStackHandler {
 
 	public boolean isEmpty() {
 		for (int i = 0; i < getSlots(); i++)
-			if (!getStackInSlot(i).a())
+			if (!getStackInSlot(i).isEmpty())
 				return false;
 		return true;
 	}
 
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
-		ItemCooldownManager insertItem = super.insertItem(slot, stack, simulate);
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+		ItemStack insertItem = super.insertItem(slot, stack, simulate);
 		if (slot == 0 && !insertItem.equals(stack, true))
-			callback.accept(insertItem.i());
+			callback.accept(insertItem.copy());
 		return insertItem;
 	}
 
@@ -57,12 +58,12 @@ public class ProcessingInventory extends ItemStackHandler {
 	}
 
 	@Override
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
-		return ItemCooldownManager.tick;
+	public ItemStack extractItem(int slot, int amount, boolean simulate) {
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		return slot == 0 && isEmpty();
 	}
 

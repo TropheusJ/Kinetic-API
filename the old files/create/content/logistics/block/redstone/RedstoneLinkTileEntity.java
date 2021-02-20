@@ -1,18 +1,19 @@
-package com.simibubi.kinetic_api.content.logistics.block.redstone;
+package com.simibubi.create.content.logistics.block.redstone;
 
-import static net.minecraft.block.enums.BambooLeaves.w;
+import static net.minecraft.state.properties.BlockStateProperties.POWERED;
 
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.simibubi.kinetic_api.AllBlocks;
-import com.simibubi.kinetic_api.foundation.tileEntity.SmartTileEntity;
-import com.simibubi.kinetic_api.foundation.tileEntity.TileEntityBehaviour;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.ValueBoxTransform;
-import com.simibubi.kinetic_api.foundation.tileEntity.behaviour.linked.LinkBehaviour;
-import net.minecraft.block.entity.BellBlockEntity;
-import net.minecraft.block.piston.PistonHandler;
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.foundation.tileEntity.SmartTileEntity;
+import com.simibubi.create.foundation.tileEntity.TileEntityBehaviour;
+import com.simibubi.create.foundation.tileEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.foundation.tileEntity.behaviour.linked.LinkBehaviour;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -25,7 +26,7 @@ public class RedstoneLinkTileEntity extends SmartTileEntity {
 	private LinkBehaviour link;
 	private boolean transmitter;
 
-	public RedstoneLinkTileEntity(BellBlockEntity<? extends RedstoneLinkTileEntity> type) {
+	public RedstoneLinkTileEntity(BlockEntityType<? extends RedstoneLinkTileEntity> type) {
 		super(type);
 	}
 
@@ -72,19 +73,19 @@ public class RedstoneLinkTileEntity extends SmartTileEntity {
 	}
 
 	@Override
-	protected void fromTag(PistonHandler state, CompoundTag compound, boolean clientPacket) {
+	protected void fromTag(BlockState state, CompoundTag compound, boolean clientPacket) {
 		transmitter = compound.getBoolean("Transmitter");
 		super.fromTag(state, compound, clientPacket);
 		
 		receivedSignal = compound.getInt("Receive");
 		receivedSignalChanged = compound.getBoolean("ReceivedChanged");
-		if (d == null || d.v || !link.newPosition)
+		if (world == null || world.isClient || !link.newPosition)
 			transmittedSignal = compound.getInt("Transmit");
 	}
 
 	@Override
-	public void aj_() {
-		super.aj_();
+	public void tick() {
+		super.tick();
 
 		if (isTransmitterBlock() != transmitter) {
 			transmitter = isTransmitterBlock();
@@ -97,28 +98,28 @@ public class RedstoneLinkTileEntity extends SmartTileEntity {
 
 		if (transmitter)
 			return;
-		if (d.v)
+		if (world.isClient)
 			return;
 		
-		PistonHandler blockState = p();
+		BlockState blockState = getCachedState();
 		if (!AllBlocks.REDSTONE_LINK.has(blockState))
 			return;
 
-		if ((getReceivedSignal() > 0) != blockState.c(w)) {
+		if ((getReceivedSignal() > 0) != blockState.get(POWERED)) {
 			receivedSignalChanged = true;
-			d.a(e, blockState.a(w));
+			world.setBlockState(pos, blockState.cycle(POWERED));
 		}
 		
 		if (receivedSignalChanged) {
-			Direction attachedFace = blockState.c(RedstoneLinkBlock.SHAPE).getOpposite();
-			BlockPos attachedPos = e.offset(attachedFace);
-			d.a(e, d.d_(e).b());
-			d.a(attachedPos, d.d_(attachedPos).b());
+			Direction attachedFace = blockState.get(RedstoneLinkBlock.FACING).getOpposite();
+			BlockPos attachedPos = pos.offset(attachedFace);
+			world.updateNeighbors(pos, world.getBlockState(pos).getBlock());
+			world.updateNeighbors(attachedPos, world.getBlockState(attachedPos).getBlock());
 		}
 	}
 
 	protected Boolean isTransmitterBlock() {
-		return !p().c(RedstoneLinkBlock.RECEIVER);
+		return !getCachedState().get(RedstoneLinkBlock.RECEIVER);
 	}
 
 	public int getReceivedSignal() {

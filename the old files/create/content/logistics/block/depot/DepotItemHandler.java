@@ -1,7 +1,8 @@
-package com.simibubi.kinetic_api.content.logistics.block.depot;
+package com.simibubi.create.content.logistics.block.depot;
 
-import com.simibubi.kinetic_api.content.contraptions.relays.belt.transport.TransportedItemStack;
-import net.minecraft.entity.player.ItemCooldownManager;
+import com.simibubi.create.content.contraptions.relays.belt.transport.TransportedItemStack;
+
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 
 public class DepotItemHandler implements IItemHandler {
@@ -19,42 +20,42 @@ public class DepotItemHandler implements IItemHandler {
 	}
 
 	@Override
-	public ItemCooldownManager getStackInSlot(int slot) {
+	public ItemStack getStackInSlot(int slot) {
 		return slot == MAIN_SLOT ? te.getHeldItemStack() : te.processingOutputBuffer.getStackInSlot(slot - 1);
 	}
 
 	@Override
-	public ItemCooldownManager insertItem(int slot, ItemCooldownManager stack, boolean simulate) {
+	public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
 		if (slot != MAIN_SLOT)
 			return stack;
 		if (!te.getHeldItemStack()
-			.a())
+			.isEmpty())
 			return stack;
 		if (!te.isOutputEmpty())
 			return stack;
 		if (!simulate) {
 			te.setHeldItem(new TransportedItemStack(stack));
-			te.X_();
+			te.markDirty();
 			te.sendData();
 		}
-		return ItemCooldownManager.tick;
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemCooldownManager extractItem(int slot, int amount, boolean simulate) {
+	public ItemStack extractItem(int slot, int amount, boolean simulate) {
 		if (slot != MAIN_SLOT)
 			return te.processingOutputBuffer.extractItem(slot - 1, amount, simulate);
 
 		TransportedItemStack held = te.heldItem;
 		if (held == null)
-			return ItemCooldownManager.tick;
-		ItemCooldownManager stack = held.stack.i();
-		ItemCooldownManager extracted = stack.a(amount);
+			return ItemStack.EMPTY;
+		ItemStack stack = held.stack.copy();
+		ItemStack extracted = stack.split(amount);
 		if (!simulate) {
 			te.heldItem.stack = stack;
-			if (stack.a())
+			if (stack.isEmpty())
 				te.heldItem = null;
-			te.X_();
+			te.markDirty();
 			te.sendData();
 		}
 		return extracted;
@@ -66,7 +67,7 @@ public class DepotItemHandler implements IItemHandler {
 	}
 
 	@Override
-	public boolean isItemValid(int slot, ItemCooldownManager stack) {
+	public boolean isItemValid(int slot, ItemStack stack) {
 		return slot == MAIN_SLOT;
 	}
 

@@ -1,12 +1,12 @@
-package com.simibubi.kinetic_api.foundation.gui;
+package com.simibubi.create.foundation.gui;
 
-import com.simibubi.kinetic_api.Create;
-import dkt;
+import com.simibubi.create.Create;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screen.PresetsScreen;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.BufferVertexConsumer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -81,6 +81,9 @@ public enum AllGuiTextures {
 	INDICATOR_YELLOW("widgets.png", 54, 18, 18, 6),
 	INDICATOR_RED("widgets.png", 72, 18, 18, 6),
 
+	// PlacementIndicator
+	PLACEMENT_INDICATOR_SHEET("placement_indicator.png", 0, 0, 16, 256);
+
 	;
 
 	public static final int FONT_COLOR = 0x575F7A;
@@ -107,20 +110,20 @@ public enum AllGuiTextures {
 
 	@Environment(EnvType.CLIENT)
 	public void bind() {
-		KeyBinding.B()
-			.L()
-			.a(location);
+		MinecraftClient.getInstance()
+			.getTextureManager()
+			.bindTexture(location);
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void draw(BufferVertexConsumer matrixStack, dkt screen, int x, int y) {
+	public void draw(MatrixStack matrixStack, DrawableHelper screen, int x, int y) {
 		bind();
-		screen.b(matrixStack, x, y, startX, startY, width, height);
+		screen.drawTexture(matrixStack, x, y, startX, startY, width, height);
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void draw(BufferVertexConsumer matrixStack, int x, int y) {
-		draw(matrixStack, new PresetsScreen(null) {
+	public void draw(MatrixStack matrixStack, int x, int y) {
+		draw(matrixStack, new Screen(null) {
 		}, x, y);
 	}
 

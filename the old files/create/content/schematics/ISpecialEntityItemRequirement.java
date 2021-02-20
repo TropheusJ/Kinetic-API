@@ -1,4 +1,4 @@
-package com.simibubi.kinetic_api.content.schematics;
+package com.simibubi.create.content.schematics;
 
 public interface ISpecialEntityItemRequirement {
 

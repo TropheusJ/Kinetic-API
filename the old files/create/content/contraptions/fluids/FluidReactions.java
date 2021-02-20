@@ -1,63 +1,64 @@
-package com.simibubi.kinetic_api.content.contraptions.fluids;
+package com.simibubi.create.content.contraptions.fluids;
 
-import com.simibubi.kinetic_api.AllFluids;
-import com.simibubi.kinetic_api.foundation.advancement.AllTriggers;
-import com.simibubi.kinetic_api.foundation.fluid.FluidHelper;
-import com.simibubi.kinetic_api.foundation.utility.BlockHelper;
-import cut;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.piston.PistonHandler;
-import net.minecraft.fluid.EmptyFluid;
-import net.minecraft.fluid.FlowableFluid;
-import net.minecraft.tag.BlockTags;
+import com.simibubi.create.AllFluids;
+import com.simibubi.create.foundation.advancement.AllTriggers;
+import com.simibubi.create.foundation.fluid.FluidHelper;
+import com.simibubi.create.foundation.utility.BlockHelper;
+
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
 public class FluidReactions {
 
-	public static void handlePipeFlowCollision(GameMode world, BlockPos pos, FluidStack fluid, FluidStack fluid2) {
-		cut f1 = fluid.getFluid();
-		cut f2 = fluid2.getFluid();
+	public static void handlePipeFlowCollision(World world, BlockPos pos, FluidStack fluid, FluidStack fluid2) {
+		Fluid f1 = fluid.getFluid();
+		Fluid f2 = fluid2.getFluid();
 		BlockHelper.destroyBlock(world, pos, 1);
 		AllTriggers.triggerForNearbyPlayers(AllTriggers.PIPE_COLLISION, world, pos, 5);
 
-		if (f1 == FlowableFluid.c && f2 == FlowableFluid.field_15901 || f2 == FlowableFluid.c && f1 == FlowableFluid.field_15901)
-			world.a(pos, BellBlock.m.n());
-		else if (f1 == FlowableFluid.field_15901 && FluidHelper.hasBlockState(f2)) {
-			PistonHandler lavaInteraction = AllFluids.getLavaInteraction(FluidHelper.convertToFlowing(f2)
-				.h());
+		if (f1 == Fluids.WATER && f2 == Fluids.LAVA || f2 == Fluids.WATER && f1 == Fluids.LAVA)
+			world.setBlockState(pos, Blocks.COBBLESTONE.getDefaultState());
+		else if (f1 == Fluids.LAVA && FluidHelper.hasBlockState(f2)) {
+			BlockState lavaInteraction = AllFluids.getLavaInteraction(FluidHelper.convertToFlowing(f2)
+				.getDefaultState());
 			if (lavaInteraction != null)
-				world.a(pos, lavaInteraction);
-		} else if (f2 == FlowableFluid.field_15901 && FluidHelper.hasBlockState(f1)) {
-			PistonHandler lavaInteraction = AllFluids.getLavaInteraction(FluidHelper.convertToFlowing(f1)
-				.h());
+				world.setBlockState(pos, lavaInteraction);
+		} else if (f2 == Fluids.LAVA && FluidHelper.hasBlockState(f1)) {
+			BlockState lavaInteraction = AllFluids.getLavaInteraction(FluidHelper.convertToFlowing(f1)
+				.getDefaultState());
 			if (lavaInteraction != null)
-				world.a(pos, lavaInteraction);
+				world.setBlockState(pos, lavaInteraction);
 		}
 	}
 
-	public static void handlePipeSpillCollision(GameMode world, BlockPos pos, cut pipeFluid, EmptyFluid worldFluid) {
-		cut pf = FluidHelper.convertToStill(pipeFluid);
-		cut wf = worldFluid.a();
-		if (pf.a(BlockTags.field_15481) && wf == FlowableFluid.field_15901)
-			world.a(pos, BellBlock.bK.n());
-		else if (pf == FlowableFluid.c && wf == FlowableFluid.d)
-			world.a(pos, BellBlock.m.n());
-		else if (pf == FlowableFluid.field_15901 && wf == FlowableFluid.c)
-			world.a(pos, BellBlock.ATTACHMENT.n());
-		else if (pf == FlowableFluid.field_15901 && wf == FlowableFluid.LEVEL)
-			world.a(pos, BellBlock.m.n());
+	public static void handlePipeSpillCollision(World world, BlockPos pos, Fluid pipeFluid, FluidState worldFluid) {
+		Fluid pf = FluidHelper.convertToStill(pipeFluid);
+		Fluid wf = worldFluid.getFluid();
+		if (pf.isIn(FluidTags.WATER) && wf == Fluids.LAVA)
+			world.setBlockState(pos, Blocks.OBSIDIAN.getDefaultState());
+		else if (pf == Fluids.WATER && wf == Fluids.FLOWING_LAVA)
+			world.setBlockState(pos, Blocks.COBBLESTONE.getDefaultState());
+		else if (pf == Fluids.LAVA && wf == Fluids.WATER)
+			world.setBlockState(pos, Blocks.STONE.getDefaultState());
+		else if (pf == Fluids.LAVA && wf == Fluids.FLOWING_WATER)
+			world.setBlockState(pos, Blocks.COBBLESTONE.getDefaultState());
 
-		if (pf == FlowableFluid.field_15901) {
-			PistonHandler lavaInteraction = AllFluids.getLavaInteraction(worldFluid);
+		if (pf == Fluids.LAVA) {
+			BlockState lavaInteraction = AllFluids.getLavaInteraction(worldFluid);
 			if (lavaInteraction != null)
-				world.a(pos, lavaInteraction);
-		} else if (wf == FlowableFluid.d && FluidHelper.hasBlockState(pf)) {
-			PistonHandler lavaInteraction = AllFluids.getLavaInteraction(FluidHelper.convertToFlowing(pf)
-				.h());
+				world.setBlockState(pos, lavaInteraction);
+		} else if (wf == Fluids.FLOWING_LAVA && FluidHelper.hasBlockState(pf)) {
+			BlockState lavaInteraction = AllFluids.getLavaInteraction(FluidHelper.convertToFlowing(pf)
+				.getDefaultState());
 			if (lavaInteraction != null)
-				world.a(pos, lavaInteraction);
+				world.setBlockState(pos, lavaInteraction);
 		}
 	}
 

@@ -1,17 +1,17 @@
-package com.simibubi.kinetic_api.content.curiosities.zapper;
+package com.simibubi.create.content.curiosities.zapper;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import net.minecraft.block.entity.BeehiveBlockEntity;
-import net.minecraft.structure.processor.StructureProcessor.c;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.structure.Structure.StructureBlockInfo;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 public class ZapperLog {
 
-	private GameMode activeWorld;
-	private List<List<c>> log = new LinkedList<>();
+	private World activeWorld;
+	private List<List<StructureBlockInfo>> log = new LinkedList<>();
 //	private int redoIndex;
 
 	/*
@@ -19,23 +19,23 @@ public class ZapperLog {
 	 * 
 	 * For survival mode: does undo have the required blocks
 	 * 
-	 * For creative mode: what data_unused did removed TEs have
+	 * For creative mode: what data did removed TEs have
 	 * 
 	 * When undo: remove added blocks (added -> air) replace replaced blocks (added
 	 * -> before) add removed blocks (air -> before)
 	 * 
 	 */
 
-	public void record(GameMode world, List<BlockPos> positions) {
+	public void record(World world, List<BlockPos> positions) {
 //		if (maxLogLength() == 0)
 //			return;
 		if (world != activeWorld)
 			log.clear();
 		activeWorld = world;
 
-		List<c> blocks = positions.stream().map(pos -> {
-			BeehiveBlockEntity tileEntity = world.c(pos);
-			return new c(pos, world.d_(pos), tileEntity == null ? null : tileEntity.serializeNBT());
+		List<StructureBlockInfo> blocks = positions.stream().map(pos -> {
+			BlockEntity tileEntity = world.getBlockEntity(pos);
+			return new StructureBlockInfo(pos, world.getBlockState(pos), tileEntity == null ? null : tileEntity.serializeNBT());
 		}).collect(Collectors.toList());
 
 		log.add(0, blocks);
