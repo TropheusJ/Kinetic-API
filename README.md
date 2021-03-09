@@ -1,3 +1,6 @@
+# THIS PROJECT IS NOW DISCONTINUED
+https://github.com/smellypengu/CreateFabric will be the primary fabric port of Create instead due to it having more progress. 
+
 # Kinetic API
 
 ## About
